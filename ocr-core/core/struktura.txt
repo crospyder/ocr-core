@@ -1,0 +1,58 @@
+.
+├── backend
+│   └── data
+│       └── uploads
+├── data
+│   └── uploads
+│       └── batch
+├── database
+│   ├── connection.py
+│   ├── models.py
+│   └── __pycache__
+│       ├── connection.cpython-311.pyc
+│       └── models.cpython-311.pyc
+├── main.py
+├── ocr
+│   ├── ocr_engine.py
+│   └── __pycache__
+│       └── ocr_engine.cpython-311.pyc
+├── parsers
+│   ├── __pycache__
+│   │   └── supplier_extractor.cpython-311.pyc
+│   ├── supplier_extractor.py
+│   └── ura_parser.py
+├── __pycache__
+│   └── main.cpython-311.pyc
+├── requirements.txt
+├── routes
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   └── upload.cpython-311.pyc
+│   └── upload.py
+├── struktura.txt
+└── venv
+    ├── bin
+    │   ├── activate
+    │   ├── activate.csh
+    │   ├── activate.fish
+    │   ├── Activate.ps1
+    │   ├── fastapi
+    │   ├── pip
+    │   ├── pip3
+    │   ├── pip3.11
+    │   ├── pymupdf
+    │   ├── pytesseract
+    │   ├── python -> python3
+    │   ├── python3 -> /usr/bin/python3
+    │   ├── python3.11 -> python3
+    │   └── uvicorn
+    ├── include
+    │   ├── python3.11
+    │   └── site
+    ├── lib
+    │   └── python3.11
+    ├── lib64 -> lib
+    └── pyvenv.cfg
+
+24 directories, 32 files

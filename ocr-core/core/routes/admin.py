@@ -1,0 +1,46 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from core.database.connection import SessionMain
+from core.database.models import User
+from passlib.context import CryptContext
+from pydantic import BaseModel
+
+router = APIRouter(prefix="/api/admin")
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_db():
+    db = SessionMain()
+    try:
+        yield db
+    finally:
+        db.close()
+
+class UserCreate(BaseModel):
+    username: str
+    role: str
+    password: str = "defaultpassword"
+
+@router.post("/users")
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.username == user.username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Korisničko ime već postoji")
+
+    hashed_password = pwd_context.hash(user.password)
+    new_user = User(
+        username=user.username,
+        role=user.role,
+        password_hash=hashed_password,
+        client_id=1  # fiksno za master admina, prilagodi po potrebi
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"id": new_user.id, "username": new_user.username, "role": new_user.role}
+
+@router.get("/users")
+def get_users(db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    # Pretvori SQLAlchemy objekte u serializable dict
+    return [{"id": u.id, "username": u.username, "role": u.role} for u in users]

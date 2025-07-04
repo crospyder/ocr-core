@@ -1,0 +1,17 @@
+2025-07-03
+
+POSTIGNUTO:
+- Ispravljeni Pydantic modeli (schemas/documents.py) s validatorom za annotation polje.
+- Popravljen backend endpoint /api/documents/ za ispravan prikaz dokumenata i anotacija.
+- Implementiran CRUD za anotacije (backend/routes/annotations.py).
+- Riješen problem ResponseValidationError u FastAPI-ju.
+- Verzija 0.22 uspješno tagirana i pushana na GitHub.
+- Frontend prikazuje listu dokumenata i detalje pojedinačnog dokumenta.
+- Koncept prepoznavanja novog dobavljača s promptom za ručni unos pripremljen.
+
+DALJNJI KORACI:
+- Backend i baza: Dodati detekciju novog dobavljača (boolean is_new_supplier).
+- Frontend: Prompt za novi dobavljač kod uvoza, s opcijom ručnog unosa.
+- Razviti UI za ručno mapiranje važnih elemenata dokumenta.
+- Implementirati automatsko prepoznavanje dobavljača (domaći, EU, treće zemlje).
+- Dodati status ručne obrade i onemogućiti prikaz prompta nakon potvrde.
