@@ -1,24 +1,31 @@
 import React, { useEffect, useState } from "react";
-import DocumentCard from "../DocumentCard.jsx";
+import { useLocation } from "react-router-dom";
 
 export default function Documents() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [viewMode, setViewMode] = useState("list"); // 'list' ili 'grid'
+  const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
+  const [highlightIds, setHighlightIds] = useState([]);
+
+  const location = useLocation();
 
   async function fetchDocuments() {
     setLoading(true);
     try {
       const res = await fetch("/api/documents");
-      if (!res.ok)
-        throw new Error(
-          "Ne mogu se povezati na SQL bazu, greška pri dohvatu dokumenata."
-        );
+      if (!res.ok) throw new Error("Ne mogu se povezati na SQL bazu, greška pri dohvatu dokumenata.");
       const data = await res.json();
-      console.log("API documents data:", data);
       setDocuments(Array.isArray(data) ? data : []);
       setError(null);
+
+      if (location.state?.justUploaded) {
+        const lastUploadedCount = location.state.uploadedIds?.length || 5;
+        const lastIds = location.state.uploadedIds || (Array.isArray(data) ? data.slice(0, lastUploadedCount).map(doc => doc.id) : []);
+        setHighlightIds(lastIds);
+      } else {
+        setHighlightIds([]);
+      }
     } catch (err) {
       setError(err.message);
       setDocuments([]);
@@ -31,97 +38,102 @@ export default function Documents() {
     fetchDocuments();
   }, []);
 
+  useEffect(() => {
+    if (highlightIds.length > 0) {
+      const timer = setTimeout(() => setHighlightIds([]), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightIds]);
+
+  const sortedDocuments = React.useMemo(() => {
+    if (!sortConfig.key) return documents;
+
+    return [...documents].sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+
+      // Pretvaramo datume u Date objekte radi usporedbe
+      if (sortConfig.key === "date") {
+        aVal = aVal ? new Date(aVal) : null;
+        bVal = bVal ? new Date(bVal) : null;
+      }
+
+      // Sortiranje po dobavljaču po polju supplier_name_ocr
+      if (sortConfig.key === "supplier_name_ocr") {
+        aVal = aVal ? aVal.toLowerCase() : "";
+        bVal = bVal ? bVal.toLowerCase() : "";
+      }
+
+      // Sortiranje po OIB-u
+      if (sortConfig.key === "supplier_oib") {
+        aVal = aVal || "";
+        bVal = bVal || "";
+      }
+
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+
+      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [documents, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    setSortConfig({ key, direction });
+  };
+
   if (loading) return <p>Učitavanje dokumenata...</p>;
   if (error) return <p className="text-danger">Greška: {error}</p>;
 
   return (
     <div className="container mt-4">
-      <h2 className="h3 mb-4 text-primary">
-        Prethodno uploadani dokumenti obrađeni OCR-om
-      </h2>
-
-      {/* Toggle tipki za promjenu prikaza */}
-      <div className="mb-3">
-        <button
-          className={`btn btn-sm me-2 ${
-            viewMode === "list" ? "btn-primary" : "btn-outline-primary"
-          }`}
-          onClick={() => setViewMode("list")}
-          aria-pressed={viewMode === "list"}
-        >
-          Lista
-        </button>
-        <button
-          className={`btn btn-sm ${
-            viewMode === "grid" ? "btn-primary" : "btn-outline-primary"
-          }`}
-          onClick={() => setViewMode("grid")}
-          aria-pressed={viewMode === "grid"}
-        >
-          Grid
-        </button>
-      </div>
+      <h2 className="h3 mb-4 text-primary">Prethodno uploadani dokumenti obrađeni OCR-om</h2>
 
       {documents.length === 0 ? (
         <p>U bazi podataka nemamo dokumenata</p>
-      ) : viewMode === "list" ? (
-        <div className="list-group">
-          {documents.map((doc) => (
-            <div className="list-group-item" key={doc.id}>
-              <DocumentCard
-                id={doc.id}
-                title={doc.filename}
-                partner={doc.supplier?.naziv_firme || "Nepoznato"}
-                date={
-                  doc.date
-                    ? new Date(doc.date).toLocaleDateString("hr-HR")
-                    : "Nepoznat datum"
-                }
-                amount={
-                  doc.amount
-                    ? doc.amount.toLocaleString("hr-HR") + " kn"
-                    : "-"
-                }
-                ocrSnippet={
-                  doc.ocrresult
-                    ? doc.ocrresult.slice(0, 150) +
-                      (doc.ocrresult.length > 150 ? "..." : "")
-                    : "-"
-                }
-                viewMode="list"
-              />
-            </div>
-          ))}
-        </div>
       ) : (
-        <div className="row g-4">
-          {documents.map((doc) => (
-            <div className="col-12 col-md-6 col-lg-4" key={doc.id}>
-              <DocumentCard
-                id={doc.id}
-                title={doc.filename}
-                partner={doc.supplier?.naziv_firme || "Nepoznato"}
-                date={
-                  doc.date
-                    ? new Date(doc.date).toLocaleDateString("hr-HR")
-                    : "Nepoznat datum"
-                }
-                amount={
-                  doc.amount
-                    ? doc.amount.toLocaleString("hr-HR") + " kn"
-                    : "-"
-                }
-                ocrSnippet={
-                  doc.ocrresult
-                    ? doc.ocrresult.slice(0, 70) +
-                      (doc.ocrresult.length > 70 ? "..." : "")
-                    : "-"
-                }
-                viewMode="grid"
-              />
-            </div>
-          ))}
-        </div>
+        <table className="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th style={{ cursor: "pointer" }} onClick={() => requestSort("filename")}>Naziv dokumenta</th>
+              <th style={{ cursor: "pointer" }} onClick={() => requestSort("date")}>Arhivirano</th>
+              <th style={{ cursor: "pointer" }} onClick={() => requestSort("supplier_name_ocr")}>Dobavljač</th>
+              <th style={{ cursor: "pointer" }} onClick={() => requestSort("supplier_oib")}>OIB</th>
+              <th style={{ cursor: "pointer" }} onClick={() => requestSort("amount")}>Iznos</th>
+              <th>Status obrade</th>
+              <th>Status validacije</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedDocuments.map((doc) => (
+              <tr
+                key={doc.id}
+                className={highlightIds.includes(doc.id) ? "highlight-row" : ""}
+                title={doc.validation_alert || ""}
+              >
+                <td>
+                  <a href={`/documents/${doc.id}`} title={doc.filename}>
+                    {doc.filename.length > 20 ? doc.filename.slice(0, 20) + "..." : doc.filename}
+                  </a>
+                </td>
+                <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "Nepoznato"}</td>
+                <td>{doc.supplier_name_ocr || "Nepoznato"}</td>
+                <td>{doc.supplier_oib || "-"}</td>
+                <td>{doc.amount !== undefined && doc.amount !== null ? doc.amount.toLocaleString("hr-HR") + " kn" : "-"}</td>
+                <td>{doc.status || "-"}</td>
+                <td>
+                  {doc.validation_status === "valid" && <span className="text-success">Validno</span>}
+                  {doc.validation_status === "not_found" && <span className="text-warning">Dobavljač nije u bazi</span>}
+                  {doc.validation_status === "missing_oib" && <span className="text-danger">Nedostaje OIB - ručna provjera</span>}
+                  {!doc.validation_status && "-"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );

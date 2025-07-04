@@ -3,6 +3,8 @@ import Sidebar from "./Sidebar.jsx";
 import Topbar from "./Topbar.jsx";
 import Footer from "./Footer.jsx";
 import { Outlet } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Layout() {
   return (
@@ -15,6 +17,17 @@ export default function Layout() {
         </main>
       </div>
       <Footer />
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </div>
   );
 }

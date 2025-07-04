@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import LoadingModal from "./LoadingModal.jsx";
+import { toast } from "react-toastify";
 
 export default function DocumentsUpload({ onUploadComplete, onDebug }) {
   const [files, setFiles] = useState([]);
@@ -11,52 +12,62 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
     e.target.value = null;
   }
 
-  async function handleUpload() {
-    if (files.length === 0) {
-      alert("Odaberi barem jednu datoteku.");
-      return;
-    }
-
-    const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
-
-    try {
-      setLoading(true);
-      onDebug?.(`📤 Počinjem upload ${files.length} datoteka...`);
-
-      const response = await fetch("/api/upload/documents", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error("Greška kod slanja datoteka: " + text);
-      }
-
-      const data = await response.json();
-      const count = data?.processed?.length || 0;
-
-      onDebug?.(`✅ Upload uspješan: ${count} datoteka poslano.`);
-      alert("Upload uspješan!");
-      setFiles([]);
-      onUploadComplete?.();
-    } catch (error) {
-      onDebug?.(`❌ Upload greška: ${error.message}`);
-      alert("Greška: " + error.message);
-    } finally {
-      setLoading(false);
-    }
+ async function handleUpload() {
+  if (files.length === 0) {
+    toast.warn("⚠️ Odaberi barem jednu datoteku.");
+    return;
   }
+
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
+
+  try {
+    setLoading(true);
+    onDebug?.(`📤 Počinjem upload ${files.length} datoteka...`);
+
+    const response = await fetch("/api/upload/documents", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error("Greška kod slanja datoteka: " + text);
+    }
+
+    const data = await response.json();
+    const processedDocs = data?.processed || [];
+    const uploadedIds = processedDocs.map(item => item.id);
+    const count = uploadedIds.length;
+
+    // Prikaz upozorenja ako neki dokument ima validation_alert
+    processedDocs.forEach(doc => {
+      if (doc.validation_alert) {
+        toast.warn(`⚠️ ${doc.original_filename}: ${doc.validation_alert}`);
+      }
+    });
+
+    onDebug?.(`✅ Upload uspješan: ${count} datoteka poslano.`);
+    setFiles([]);
+
+    // Sad vraćamo cijeli array dokumenata s detaljima
+    onUploadComplete?.({ success: true, uploadedIds, documents: processedDocs });
+  } catch (error) {
+    onDebug?.(`❌ Upload greška: ${error.message}`);
+    toast.error("❌ Greška: " + error.message);
+    onUploadComplete?.({ success: false });
+  } finally {
+    setLoading(false);
+  }
+}
+
 
   return (
     <>
       <LoadingModal visible={loading} message="Uploading and OCR processing..." />
 
       <div className="card shadow p-4 mx-auto" style={{ maxWidth: "640px" }}>
-        <label className="form-label fw-semibold mb-3">
-          Upload dokumenata
-        </label>
+        <label className="form-label fw-semibold mb-3">Upload dokumenata</label>
 
         <button
           type="button"

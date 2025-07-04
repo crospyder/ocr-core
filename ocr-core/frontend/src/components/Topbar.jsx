@@ -1,14 +1,19 @@
 // src/components/Topbar.jsx
 
 import React from "react";
+import logo from "../../images/logo-spineict.png";
 
 export default function Topbar() {
   return (
-    <header className="bg-white shadow-sm px-6 py-4 flex justify-between items-center border-b">
-      <div>
-        <h1 className="text-xl font-semibold text-blue-800">OCR Sustav</h1>
+    <header 
+      className="navbar navbar-light bg-light border-bottom shadow-sm px-3 d-flex justify-content-between align-items-center" 
+      style={{ height: "250px" }}
+    >
+      <div className="d-flex align-items-center">
+        <img src={logo} alt="Spine ICT Logo" style={{ height: "120px", width: "auto" }} />
+        <h1 className="ms-4 mb-0 display-4 text-primary">OCR Sustav</h1>
       </div>
-      <div className="text-sm text-gray-600">Dobrodošli, korisniče</div>
+      <div className="text-secondary fs-4">Dobrodošli, korisniče</div>
     </header>
   );
 }

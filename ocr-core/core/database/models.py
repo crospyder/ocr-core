@@ -1,6 +1,7 @@
-from sqlalchemy import JSON, Column, Integer, String, ForeignKey, TIMESTAMP, Text, func
+from sqlalchemy import JSON, Column, Integer, String, ForeignKey, TIMESTAMP, Text, func, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -19,16 +20,15 @@ class Document(Base):
     filename = Column(String(255), nullable=False)
     ocrresult = Column(Text)
     supplier_id = Column(Integer, ForeignKey("clients.id"), nullable=True)
-    supplier_name_ocr = Column(String(255), nullable=True)  # NOVO polje za naziv dobavljača iz OCR-a
+    supplier_name_ocr = Column(String(255), nullable=True)
+    supplier_oib = Column(String(11), nullable=True)  # <-- NOVO polje za OIB
     date = Column(TIMESTAMP, nullable=True)
     amount = Column(Integer, nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
-    # Relacija prema Client modelu
     supplier = relationship("Client", backref="documents")
-
-    # Relacija prema anotacijama
     annotation = relationship("DocumentAnnotation", back_populates="document", uselist=False)
+
 
 class User(Base):
     __tablename__ = "users"
@@ -47,3 +47,14 @@ class DocumentAnnotation(Base):
     annotations = Column(JSON, nullable=False)  # JSON polje za označene podatke
 
     document = relationship("Document", back_populates="annotation")
+
+class ParsedOIB(Base):
+    __tablename__ = "parsed_oib"
+    __table_args__ = (UniqueConstraint("oib", name="uq_oib"),)
+
+    supplier_id = Column(Integer, primary_key=True, autoincrement=True)
+    supplier_name = Column(String(255), nullable=False)
+    oib = Column(String(11), nullable=False, unique=True)
+    supplier_address = Column(String(255), nullable=True)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)

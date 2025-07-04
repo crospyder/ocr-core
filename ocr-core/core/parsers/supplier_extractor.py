@@ -1,14 +1,23 @@
 import re
 
+OWN_OIB = "10238889600"  # tu stavi svoj stvarni OIB
+
 def extract_supplier_info(text: str) -> dict:
     """
     Ekstrahira naziv firme, OIB, adresu iz OCR teksta.
     Firma mora imati sufiks d.o.o., j.d.o.o. ili prefiks obrt.
     OIB je obavezan.
     """
-    # Pronađi OIB (11 znamenki)
-    oib_match = re.search(r"\b(\d{11})\b", text)
-    oib = oib_match.group(1) if oib_match else None
+
+    # Pronađi sve OIB-ove (11 znamenki)
+    all_oibs = re.findall(r"\b(\d{11})\b", text)
+    
+    # Ignoriraj vlastiti OIB i uzmi prvi drugi OIB (dobavljača)
+    oib = None
+    for found_oib in all_oibs:
+        if found_oib != OWN_OIB:
+            oib = found_oib
+            break
 
     # Pronađi naziv firme
     firma_match = re.search(r"([A-ZČĆŽŠĐ][A-ZČĆŽŠĐa-zčćžšđ0-9 &\"\'\-]+(?:d\.o\.o\.|j\.d\.o\.o\.))", text)
