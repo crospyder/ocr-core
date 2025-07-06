@@ -1,12 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import 'bootstrap/dist/css/bootstrap.min.css';
+import "bootstrap/dist/css/bootstrap.min.css";
 
+import Deployment from "./src/components/pages/Deployment.jsx";
 import App from "./src/App.jsx";
 import Upload from "./src/components/pages/Upload.jsx";
 import Documents from "./src/components/pages/Documents.jsx";
-import DocumentDetail from "./src/components/DocumentDetail.jsx"; // Nova komponenta za detalje dokumenta
+import DocumentDetail from "./src/components/DocumentDetail.jsx";
 import AdminPanel from "./src/components/AdminPanel.jsx";
 
 import "./main.css";
@@ -20,6 +21,7 @@ const router = createBrowserRouter([
       { path: "documents", element: <Documents /> },
       { path: "documents/:id", element: <DocumentDetail /> }, // Detalji pojedinog dokumenta
       { path: "admin", element: <AdminPanel /> },
+      { path: "deployment", element: <Deployment /> }, // ➕ OVA LINIJA
     ],
   },
 ]);

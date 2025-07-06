@@ -37,6 +37,13 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
     naziv = getattr(doc, "supplier_name_ocr", None) or (doc.supplier.name if doc.supplier else None)
     oib = getattr(doc, "supplier_oib", None) or (doc.supplier.oib if doc.supplier else None)
 
+    # Dodaj dohvat skraćenog naziva tvrtke iz sudreg_response ako postoji
+    skraceni_naziv = None
+    if doc.sudreg_response and isinstance(doc.sudreg_response, dict):
+        skracene_tvrtke = doc.sudreg_response.get("skracene_tvrtke")
+        if skracene_tvrtke and isinstance(skracene_tvrtke, list) and len(skracene_tvrtke) > 0:
+            skraceni_naziv = skracene_tvrtke[0].get("ime")
+
     return {
         "id": doc.id,
         "filename": doc.filename,
@@ -46,8 +53,12 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
         "supplier_id": doc.supplier_id,
         "supplier_name_ocr": naziv,
         "supplier_oib": oib,
-        "annotation": doc.annotation.annotations if doc.annotation else []
+        "annotation": doc.annotation.annotations if doc.annotation else [],
+        "sudreg_response": doc.sudreg_response,
+        "skraceni_naziv": skraceni_naziv  # <-- ovo novo polje
     }
+
+
 
 @router.patch("/{document_id}")
 def update_document_supplier(

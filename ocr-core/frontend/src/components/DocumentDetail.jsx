@@ -11,7 +11,6 @@ export default function DocumentDetail() {
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [savingSupplier, setSavingSupplier] = useState(false);
 
-  // Dohvati dokument
   useEffect(() => {
     async function fetchDocument() {
       setLoading(true);
@@ -20,13 +19,11 @@ export default function DocumentDetail() {
         if (!res.ok) throw new Error("Ne mogu dohvatiti dokument");
         const data = await res.json();
         setDocument(data);
-
         if (data.annotation && Array.isArray(data.annotation)) {
           setInitialTags(data.annotation);
         } else {
           setInitialTags([]);
         }
-
         setSelectedSupplier(data.supplier_id || "");
       } catch (e) {
         alert(e.message);
@@ -37,7 +34,6 @@ export default function DocumentDetail() {
     fetchDocument();
   }, [id]);
 
-  // Dohvati listu dobavljača
   useEffect(() => {
     async function fetchClients() {
       try {
@@ -52,7 +48,6 @@ export default function DocumentDetail() {
     fetchClients();
   }, []);
 
-  // Spremi oznake
   async function handleSaveTags(tags) {
     try {
       const res = await fetch(`/api/annotations/${id}`, {
@@ -67,7 +62,6 @@ export default function DocumentDetail() {
     }
   }
 
-  // Spremi odabranog dobavljača
   async function handleSupplierChange(e) {
     const newSupplierId = e.target.value;
     setSelectedSupplier(newSupplierId);
@@ -114,11 +108,55 @@ export default function DocumentDetail() {
         </select>
       </div>
 
-      <OcrTextTagger
-        text={document.ocrresult || ""}
-        onSave={handleSaveTags}
-        initialTags={initialTags}
-      />
+      <div
+        style={{
+          display: "flex",
+          gap: "1rem",
+          height: "60vh",
+          overflow: "hidden",
+        }}
+      >
+        {/* OCR prikaz */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            backgroundColor: "#f9f9f9",
+            padding: "1rem",
+            borderRadius: "6px",
+            boxShadow: "0 0 8px rgba(0,0,0,0.1)",
+          }}
+        >
+          <OcrTextTagger
+            text={document.ocrresult || ""}
+            onSave={handleSaveTags}
+            initialTags={initialTags}
+          />
+        </div>
+
+        {/* RAW Sudreg odgovor */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            backgroundColor: "#f0f0f0",
+            padding: "1rem",
+            borderRadius: "6px",
+            boxShadow: "0 0 8px rgba(0,0,0,0.1)",
+          }}
+        >
+          <h4>RAW odgovor iz Sudskog registra (sudreg_response)</h4>
+          {document.sudreg_response ? (
+            <pre style={{ fontSize: "0.9rem" }}>
+              {typeof document.sudreg_response === "object"
+                ? JSON.stringify(document.sudreg_response, null, 2)
+                : document.sudreg_response}
+            </pre>
+          ) : (
+            <p>Nema dostupnih podataka iz Sudskog registra.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -95,7 +95,7 @@ export default function Documents() {
       {documents.length === 0 ? (
         <p>U bazi podataka nemamo dokumenata</p>
       ) : (
-        <table className="table table-striped table-hover">
+        <table className="table table-striped table-hover table-sm">
           <thead>
             <tr>
               <th style={{ cursor: "pointer" }} onClick={() => requestSort("filename")}>Naziv dokumenta</th>

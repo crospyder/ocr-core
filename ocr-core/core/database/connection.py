@@ -1,5 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base
+
 
 DATABASE_URL_MAIN = "mysql+pymysql://npausic:Spineict%402025!@localhost/SpineICT_OCR"
 
@@ -17,3 +19,5 @@ def get_db():
         yield db
     finally:
         db.close()
+
+Base = declarative_base()

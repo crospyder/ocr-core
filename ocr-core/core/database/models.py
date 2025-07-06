@@ -12,7 +12,7 @@ class Client(Base):
     oib = Column(String(20), nullable=False)
     db_name = Column(String(255), nullable=False, unique=True)
     licenses = Column(Integer, default=1)
-    created_at = Column(TIMESTAMP, server_default=func.now())
+    archived_at = Column(TIMESTAMP, server_default=func.now())
 
 class Document(Base):
     __tablename__ = "documents"
@@ -24,10 +24,10 @@ class Document(Base):
     supplier_oib = Column(String(11), nullable=True)  # <-- NOVO polje za OIB
     date = Column(TIMESTAMP, nullable=True)
     amount = Column(Integer, nullable=True)
-    created_at = Column(TIMESTAMP, server_default=func.now())
-
+    archived_at = Column(TIMESTAMP, server_default=func.now())
     supplier = relationship("Client", backref="documents")
     annotation = relationship("DocumentAnnotation", back_populates="document", uselist=False)
+    sudreg_response = Column(Text, nullable=True)
 
 
 class User(Base):
@@ -38,7 +38,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     email = Column(String(255))
     role = Column(String(50), default="user")
-    created_at = Column(TIMESTAMP, server_default=func.now())
+    archived_at = Column(TIMESTAMP, server_default=func.now())
 
 class DocumentAnnotation(Base):
     __tablename__ = "document_annotations"
@@ -56,5 +56,4 @@ class ParsedOIB(Base):
     supplier_name = Column(String(255), nullable=False)
     oib = Column(String(11), nullable=False, unique=True)
     supplier_address = Column(String(255), nullable=True)
-    created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -1,5 +1,6 @@
 import os
 import uuid
+import json
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Query
 from typing import List
@@ -7,7 +8,7 @@ from modules.ocr_processing.workers.engine import perform_ocr
 from core.database.connection import SessionMain
 from core.database.models import Document, Client
 from core.parsers.supplier_extractor import extract_supplier_info
-from modules.sudreg_api.client import SudregClient  # import Sudreg client
+from modules.sudreg_api.client import SudregClient
 
 router = APIRouter()
 
@@ -15,7 +16,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "uploads"))
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-sudreg_client = SudregClient()  # Inicijaliziraj Sudreg client
+sudreg_client = SudregClient()
 
 @router.post("/documents")
 async def upload_documents(files: List[UploadFile] = File(...)):
@@ -39,38 +40,56 @@ async def upload_documents(files: List[UploadFile] = File(...)):
             })
             continue
 
+        upload_time = datetime.utcnow()
         text = perform_ocr(file_path)
         supplier_info = extract_supplier_info(text)
         oib = supplier_info.get("oib")
 
         sudreg_data = None
+        sudreg_raw = None
+        skraceni_naziv = None
+
         if oib:
             try:
-                sudreg_data = sudreg_client.get_company_by_oib(oib)
-                supplier_info.update({
-                    "naziv_firme": sudreg_data.naziv,
-                    "adresa": sudreg_data.adresa,
-                    "oib": sudreg_data.oib,
-                })
+                sudreg_data, sudreg_raw = sudreg_client.get_company_by_oib(oib, db)
+                if sudreg_data:
+                    supplier_info.update({
+                        "naziv_firme": sudreg_data.naziv,
+                        "adresa": sudreg_data.adresa,
+                        "oib": sudreg_data.oib,
+                    })
+
+                if sudreg_raw and isinstance(sudreg_raw, dict):
+                    skracene_tvrtke = sudreg_raw.get("skracene_tvrtke")
+                    if (
+                        skracene_tvrtke
+                        and isinstance(skracene_tvrtke, list)
+                        and len(skracene_tvrtke) > 0
+                    ):
+                        skraceni_naziv = skracene_tvrtke[0].get("ime")
+
+                else:
+                    supplier_info["alert"] = "⚠️ Dobavljač nije pronađen u Sudregu"
+
             except Exception as e:
-                supplier_info["alert"] = f"❌ Neuspješan dohvat podataka s Sudreg API-ja: {e}"
+                sudreg_raw = {"error": str(e)}
+                supplier_info["alert"] = f"❌ Greška u komunikaciji sa Sudreg API-jem: {e}"
 
-        supplier_obj = None
-        if oib:
-            supplier_obj = db.query(Client).filter(Client.oib == oib).first()
-
-        if not oib:
+        else:
             supplier_info["alert"] = "❌ OIB nije pronađen – potrebna ručna validacija dokumenta."
 
+        supplier_obj = db.query(Client).filter(Client.oib == oib).first() if oib else None
         ocr_processed_at = datetime.utcnow()
 
         doc = Document(
             filename=unique_name,
             ocrresult=text,
             supplier_id=supplier_obj.id if supplier_obj else None,
-            supplier_name_ocr=supplier_info.get("naziv_firme") or None,
-            supplier_oib=oib,  # <-- OIB ide ovdje
-            date=ocr_processed_at
+            supplier_name_ocr=skraceni_naziv or supplier_info.get("naziv_firme") or None,
+            supplier_oib=oib,
+            archived_at=upload_time,
+            date=ocr_processed_at,
+            sudreg_response=json.dumps(sudreg_raw, ensure_ascii=False) if sudreg_raw else None,
         )
         db.add(doc)
         db.commit()
@@ -84,38 +103,8 @@ async def upload_documents(files: List[UploadFile] = File(...)):
             "ocrresult_preview": text[:300] + "..." if text and len(text) > 300 else text,
             "ocrresult_full": text,
             "supplier": supplier_info,
-            "sudreg_data": sudreg_data.dict() if sudreg_data else None
+            "sudreg_data": sudreg_data.dict() if sudreg_data else None,
         })
 
     db.close()
     return {"processed": results}
-
-
-
-@router.get("/documents")
-def get_documents(skip: int = Query(0), limit: int = Query(100)):
-    db = SessionMain()
-    try:
-        documents = (
-            db.query(Document)
-            .order_by(Document.date.desc())  # sortiraj po datumu OCR obrade
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
-        result = []
-        for doc in documents:
-            result.append({
-                "id": doc.id,
-                "filename": doc.filename,
-                "date": doc.date.isoformat() if doc.date else None,
-                "supplier": {
-                    "naziv_firme": doc.supplier.name if doc.supplier else None,
-                    "oib": doc.supplier.oib if doc.supplier else None,
-                } if doc.supplier else None,
-                "amount": doc.amount,
-                "status": "-",  # možeš kasnije nadograditi status
-            })
-        return result
-    finally:
-        db.close()
