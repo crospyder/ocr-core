@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 
 export default function DocumentsUpload({ onUploadComplete, onDebug }) {
   const [files, setFiles] = useState([]);
+  const [docType, setDocType] = useState("");
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
 
@@ -12,61 +13,84 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
     e.target.value = null;
   }
 
- async function handleUpload() {
-  if (files.length === 0) {
-    toast.warn("⚠️ Odaberi barem jednu datoteku.");
-    return;
+  function handleDocTypeChange(e) {
+    setDocType(e.target.value);
   }
 
-  const formData = new FormData();
-  files.forEach((file) => formData.append("files", file));
-
-  try {
-    setLoading(true);
-    onDebug?.(`📤 Počinjem upload ${files.length} datoteka...`);
-
-    const response = await fetch("/api/upload/documents", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error("Greška kod slanja datoteka: " + text);
+  async function handleUpload() {
+    if (!docType) {
+      toast.warn("⚠️ Molim odaberite tip dokumenta.");
+      return;
     }
 
-    const data = await response.json();
-    const processedDocs = data?.processed || [];
-    const uploadedIds = processedDocs.map(item => item.id);
-    const count = uploadedIds.length;
+    if (files.length === 0) {
+      toast.warn("⚠️ Odaberi barem jednu datoteku.");
+      return;
+    }
 
-    // Prikaz upozorenja ako neki dokument ima validation_alert
-    processedDocs.forEach(doc => {
-      if (doc.validation_alert) {
-        toast.warn(`⚠️ ${doc.original_filename}: ${doc.validation_alert}`);
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+    formData.append("document_type", docType);
+
+    try {
+      setLoading(true);
+      onDebug?.(`📤 Počinjem upload ${files.length} datoteka...`);
+
+      const response = await fetch("/api/upload/documents", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error("Greška kod slanja datoteka: " + text);
       }
-    });
 
-    onDebug?.(`✅ Upload uspješan: ${count} datoteka poslano.`);
-    setFiles([]);
+      const data = await response.json();
+      const processedDocs = data?.processed || [];
+      const uploadedIds = processedDocs.map(item => item.id);
+      const count = uploadedIds.length;
 
-    // Sad vraćamo cijeli array dokumenata s detaljima
-    onUploadComplete?.({ success: true, uploadedIds, documents: processedDocs });
-  } catch (error) {
-    onDebug?.(`❌ Upload greška: ${error.message}`);
-    toast.error("❌ Greška: " + error.message);
-    onUploadComplete?.({ success: false });
-  } finally {
-    setLoading(false);
+      // Prikaz upozorenja ako neki dokument ima validation_alert
+      processedDocs.forEach(doc => {
+        if (doc.validation_alert) {
+          toast.warn(`⚠️ ${doc.original_filename}: ${doc.validation_alert}`);
+        }
+      });
+
+      onDebug?.(`✅ Upload uspješan: ${count} datoteka poslano.`);
+      setFiles([]);
+      setDocType("");
+
+      onUploadComplete?.({ success: true, uploadedIds, documents: processedDocs });
+    } catch (error) {
+      onDebug?.(`❌ Upload greška: ${error.message}`);
+      toast.error("❌ Greška: " + error.message);
+      onUploadComplete?.({ success: false });
+    } finally {
+      setLoading(false);
+    }
   }
-}
-
 
   return (
     <>
       <LoadingModal visible={loading} message="Uploading and OCR processing..." />
 
       <div className="card shadow p-4 mx-auto" style={{ maxWidth: "640px" }}>
+        <label className="form-label fw-semibold mb-3">Tip dokumenta:</label>
+        <select
+          className="form-select mb-3"
+          value={docType}
+          onChange={handleDocTypeChange}
+          disabled={loading}
+        >
+          <option value="">-- odaberite tip --</option>
+          <option value="URA">URA</option>
+          <option value="IRA">IRA</option>
+          <option value="IZVOD">IZVOD</option>
+          <option value="UGOVOR">UGOVOR</option>
+        </select>
+
         <label className="form-label fw-semibold mb-3">Upload dokumenata</label>
 
         <button

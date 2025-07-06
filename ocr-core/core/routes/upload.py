@@ -2,7 +2,7 @@ import os
 import uuid
 import json
 from datetime import datetime
-from fastapi import APIRouter, UploadFile, File, Query
+from fastapi import APIRouter, UploadFile, File, Form
 from typing import List
 from modules.ocr_processing.workers.engine import perform_ocr
 from core.database.connection import SessionMain
@@ -19,7 +19,10 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 sudreg_client = SudregClient()
 
 @router.post("/documents")
-async def upload_documents(files: List[UploadFile] = File(...)):
+async def upload_documents(
+    files: List[UploadFile] = File(...),
+    document_type: str = Form(...)
+):
     results = []
     db = SessionMain()
 
@@ -89,6 +92,7 @@ async def upload_documents(files: List[UploadFile] = File(...)):
             supplier_oib=oib,
             archived_at=upload_time,
             date=ocr_processed_at,
+            document_type=document_type,  # <-- dodano polje
             sudreg_response=json.dumps(sudreg_raw, ensure_ascii=False) if sudreg_raw else None,
         )
         db.add(doc)
@@ -104,6 +108,7 @@ async def upload_documents(files: List[UploadFile] = File(...)):
             "ocrresult_full": text,
             "supplier": supplier_info,
             "sudreg_data": sudreg_data.dict() if sudreg_data else None,
+            "document_type": document_type,  # vraćamo natrag frontend-u
         })
 
     db.close()

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from sqlalchemy.orm import Session
 from typing import List
 from core.database.connection import get_db
@@ -8,8 +8,16 @@ from core.schemas.documents import DocumentOut
 router = APIRouter()
 
 @router.get("/", response_model=List[DocumentOut])
-def list_documents(db: Session = Depends(get_db)):
-    documents = db.query(Document).all()
+def list_documents(
+    document_type: str | None = Query(None, description="Vrsta dokumenta (URA, IRA, IZVOD, UGOVOR, ...)"),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Document)
+
+    if document_type:
+        query = query.filter(Document.document_type == document_type)
+
+    documents = query.all()
     result = []
     for doc in documents:
         naziv = getattr(doc, "supplier_name_ocr", None) or (doc.supplier.name if doc.supplier else None)
@@ -26,6 +34,7 @@ def list_documents(db: Session = Depends(get_db)):
             "supplier_oib": oib,
             "annotation": doc.annotation.annotations if doc.annotation else []
         })
+
     return result
 
 @router.get("/{document_id}", response_model=DocumentOut)

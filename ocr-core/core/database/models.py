@@ -28,6 +28,7 @@ class Document(Base):
     supplier = relationship("Client", backref="documents")
     annotation = relationship("DocumentAnnotation", back_populates="document", uselist=False)
     sudreg_response = Column(Text, nullable=True)
+    document_type = Column(String, nullable=True)
 
 
 class User(Base):
