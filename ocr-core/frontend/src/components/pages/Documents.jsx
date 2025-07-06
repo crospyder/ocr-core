@@ -54,7 +54,7 @@ export default function Documents() {
       let aVal = a[sortConfig.key];
       let bVal = b[sortConfig.key];
 
-      if (sortConfig.key === "date") {
+      if (sortConfig.key === "date" || sortConfig.key === "invoice_date" || sortConfig.key === "due_date") {
         aVal = aVal ? new Date(aVal) : null;
         bVal = bVal ? new Date(bVal) : null;
       }
@@ -110,22 +110,24 @@ export default function Documents() {
         <table className="table table-striped table-hover table-sm">
           <thead>
             <tr>
+              <th style={{ width: "50px" }}>#</th>
               <th style={{ cursor: "pointer" }} onClick={() => requestSort("filename")}>Naziv dokumenta</th>
               <th style={{ cursor: "pointer" }} onClick={() => requestSort("date")}>Arhivirano</th>
               <th style={{ cursor: "pointer" }} onClick={() => requestSort("supplier_name_ocr")}>Dobavljač</th>
               <th style={{ cursor: "pointer" }} onClick={() => requestSort("supplier_oib")}>OIB</th>
-              <th style={{ cursor: "pointer" }} onClick={() => requestSort("amount")}>Iznos</th>
-              <th>Status obrade</th>
-              <th>Status validacije</th>
+              {/* Uklonjeno: Iznos, Status obrade, Status validacije */}
+              <th style={{ cursor: "pointer" }} onClick={() => requestSort("invoice_date")}>Datum računa</th>
+              <th style={{ cursor: "pointer" }} onClick={() => requestSort("due_date")}>Datum valute</th>
             </tr>
           </thead>
           <tbody>
-            {sortedDocuments.map((doc) => (
+            {sortedDocuments.map((doc, index) => (
               <tr
                 key={doc.id}
                 className={highlightIds.includes(doc.id) ? "highlight-row" : ""}
                 title={doc.validation_alert || ""}
               >
+                <td>{doc.id}</td>
                 <td>
                   <a href={`/documents/${doc.id}`} title={doc.filename}>
                     {doc.filename.length > 20 ? doc.filename.slice(0, 20) + "..." : doc.filename}
@@ -134,14 +136,8 @@ export default function Documents() {
                 <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "Nepoznato"}</td>
                 <td>{doc.supplier_name_ocr || "Nepoznato"}</td>
                 <td>{doc.supplier_oib || "-"}</td>
-                <td>{doc.amount !== undefined && doc.amount !== null ? doc.amount.toLocaleString("hr-HR") + " kn" : "-"}</td>
-                <td>{doc.status || "-"}</td>
-                <td>
-                  {doc.validation_status === "valid" && <span className="text-success">Validno</span>}
-                  {doc.validation_status === "not_found" && <span className="text-warning">Dobavljač nije u bazi</span>}
-                  {doc.validation_status === "missing_oib" && <span className="text-danger">Nedostaje OIB - ručna provjera</span>}
-                  {!doc.validation_status && "-"}
-                </td>
+                <td>{doc.invoice_date ? new Date(doc.invoice_date).toLocaleDateString("hr-HR") : "-"}</td>
+                <td>{doc.due_date ? new Date(doc.due_date).toLocaleDateString("hr-HR") : "-"}</td>
               </tr>
             ))}
           </tbody>

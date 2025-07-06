@@ -32,7 +32,10 @@ def list_documents(
             "supplier_id": doc.supplier_id,
             "supplier_name_ocr": naziv,
             "supplier_oib": oib,
-            "annotation": doc.annotation.annotations if doc.annotation else []
+            "annotation": doc.annotation.annotations if doc.annotation else [],
+            "invoice_date": doc.invoice_date.isoformat() if doc.invoice_date else None,
+            "due_date": doc.due_date.isoformat() if doc.due_date else None,
+            "document_type": doc.document_type,
         })
 
     return result
@@ -46,12 +49,17 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
     naziv = getattr(doc, "supplier_name_ocr", None) or (doc.supplier.name if doc.supplier else None)
     oib = getattr(doc, "supplier_oib", None) or (doc.supplier.oib if doc.supplier else None)
 
-    # Dodaj dohvat skraćenog naziva tvrtke iz sudreg_response ako postoji
+    # Dohvat skraćenog naziva tvrtke iz sudreg_response ako postoji
     skraceni_naziv = None
-    if doc.sudreg_response and isinstance(doc.sudreg_response, dict):
-        skracene_tvrtke = doc.sudreg_response.get("skracene_tvrtke")
-        if skracene_tvrtke and isinstance(skracene_tvrtke, list) and len(skracene_tvrtke) > 0:
-            skraceni_naziv = skracene_tvrtke[0].get("ime")
+    if doc.sudreg_response:
+        try:
+            import json
+            sudreg_json = json.loads(doc.sudreg_response)
+            skracene_tvrtke = sudreg_json.get("skracene_tvrtke")
+            if skracene_tvrtke and isinstance(skracene_tvrtke, list) and len(skracene_tvrtke) > 0:
+                skraceni_naziv = skracene_tvrtke[0].get("ime")
+        except Exception:
+            pass
 
     return {
         "id": doc.id,
@@ -64,9 +72,12 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
         "supplier_oib": oib,
         "annotation": doc.annotation.annotations if doc.annotation else [],
         "sudreg_response": doc.sudreg_response,
-        "skraceni_naziv": skraceni_naziv  # <-- ovo novo polje
+        "skraceni_naziv": skraceni_naziv,
+        "invoice_date": doc.invoice_date.isoformat() if doc.invoice_date else None,
+        "due_date": doc.due_date.isoformat() if doc.due_date else None,
+        "document_type": doc.document_type,
+        "parsed": doc.parsed  # vraćamo parsed JSON kao string
     }
-
 
 
 @router.patch("/{document_id}")

@@ -9,8 +9,15 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
   const inputRef = useRef(null);
 
   function handleFilesChange(e) {
-    setFiles(Array.from(e.target.files));
-    e.target.value = null;
+    const allFiles = Array.from(e.target.files);
+    const pdfFiles = allFiles.filter(file =>
+      file.name.toLowerCase().endsWith(".pdf")
+    );
+    if (pdfFiles.length === 0) {
+      toast.warn("⚠️ Nema PDF datoteka u odabranom folderu.");
+    }
+    setFiles(pdfFiles);
+    e.target.value = null; // resetiraj input da može ponovno odabrati isti folder
   }
 
   function handleDocTypeChange(e) {
@@ -24,17 +31,17 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
     }
 
     if (files.length === 0) {
-      toast.warn("⚠️ Odaberi barem jednu datoteku.");
+      toast.warn("⚠️ Odaberi barem jednu PDF datoteku.");
       return;
     }
 
     const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
+    files.forEach(file => formData.append("files", file));
     formData.append("document_type", docType);
 
     try {
       setLoading(true);
-      onDebug?.(`📤 Počinjem upload ${files.length} datoteka...`);
+      onDebug?.(`📤 Počinjem upload ${files.length} PDF datoteka...`);
 
       const response = await fetch("/api/upload/documents", {
         method: "POST",
@@ -49,16 +56,15 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
       const data = await response.json();
       const processedDocs = data?.processed || [];
       const uploadedIds = processedDocs.map(item => item.id);
-      const count = uploadedIds.length;
 
-      // Prikaz upozorenja ako neki dokument ima validation_alert
+      // Upozorenja za dokumente s alertom
       processedDocs.forEach(doc => {
         if (doc.validation_alert) {
           toast.warn(`⚠️ ${doc.original_filename}: ${doc.validation_alert}`);
         }
       });
 
-      onDebug?.(`✅ Upload uspješan: ${count} datoteka poslano.`);
+      onDebug?.(`✅ Upload uspješan: ${uploadedIds.length} datoteka poslano.`);
       setFiles([]);
       setDocType("");
 
@@ -91,7 +97,7 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
           <option value="UGOVOR">UGOVOR</option>
         </select>
 
-        <label className="form-label fw-semibold mb-3">Upload dokumenata</label>
+        <label className="form-label fw-semibold mb-3">Upload foldera (PDF dokumenti)</label>
 
         <button
           type="button"
@@ -100,26 +106,28 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
           className="form-control text-center p-5 border border-primary border-2 bg-light mb-3"
           style={{ cursor: "pointer" }}
         >
-          Povucite datoteke ovdje ili kliknite za odabir
+          Odaberi folder s PDF dokumentima (uključujući podfoldere)
         </button>
 
         <input
           type="file"
-          id="file-upload"
           multiple
+          webkitdirectory="true"
+          directory=""
           className="d-none"
           onChange={handleFilesChange}
           disabled={loading}
           ref={inputRef}
+          accept=".pdf"
         />
 
         {files.length > 0 && (
           <div className="mb-3">
-            <h6 className="fw-bold">Odabrane datoteke:</h6>
+            <h6 className="fw-bold">Odabrane PDF datoteke:</h6>
             <ul className="list-group">
               {files.map((file, idx) => (
                 <li className="list-group-item" key={idx}>
-                  {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                  {file.webkitRelativePath || file.name} ({(file.size / 1024).toFixed(2)} KB)
                 </li>
               ))}
             </ul>
@@ -132,7 +140,7 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
           onClick={handleUpload}
           disabled={loading}
         >
-          Pošalji
+          Pošalji PDF datoteke
         </button>
       </div>
     </>
