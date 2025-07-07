@@ -2,10 +2,10 @@
 
 body, #root {
   font-family: 'Inter', sans-serif;
-  background-color: #f4f5f7; /* svijetlo siva pozadina poput Jire */
-  color: #172b4d; /* tamno plavo-siva, osnovna tekst boja */
+  background-color: #f4f5f7;
+  color: #172b4d;
   margin: 0;
-  padding: 2rem;
+  padding: 0;
   min-height: 100vh;
 }
 
@@ -17,7 +17,7 @@ header {
 header h1 {
   font-weight: 700;
   font-size: 2.5rem;
-  color: #0052cc; /* Atlassian plava */
+  color: #15396e;
   margin-bottom: 0.3rem;
   letter-spacing: -0.02em;
 }
@@ -26,12 +26,12 @@ header p.subtitle {
   font-style: normal;
   font-weight: 500;
   font-size: 1.125rem;
-  color: #6b778c; /* Jira siva */
+  color: #6b778c;
   margin-top: 0;
 }
 
 button {
-  background-color: #0052cc;
+  background-color: #15396e;
   border: none;
   border-radius: 4px;
   color: white;
@@ -44,42 +44,196 @@ button {
 }
 
 button:hover {
-  background-color: #0747a6;
-  box-shadow: 0 4px 8px rgba(7, 71, 166, 0.5);
+  background-color: #0052cc;
+  box-shadow: 0 4px 8px rgba(0, 82, 204, 0.5);
 }
 
 main {
   max-width: 100%;
   margin: 0 auto;
 }
+
 .highlight-row {
-  background-color: #fff3b0 !important; /* žuta nijansa sa !important */
+  background-color: #fff3b0 !important;
   transition: background-color 0.6s ease;
 }
 
 /* Kompaktna tablica za Documents komponentu */
 .container.mt-4 table.table {
-  font-size: 0.85rem; /* manji font */
+  font-size: 0.85rem;
 }
 
 .container.mt-4 table.table th,
 .container.mt-4 table.table td {
-  padding: 0.3rem 0.6rem; /* smanjeni padding u ćelijama */
+  padding: 0.3rem 0.6rem;
   vertical-align: middle;
 }
 
-/* Opcionalno: manja margina i font naslova */
 .container.mt-4 h2.h3 {
   margin-bottom: 0.75rem;
   font-size: 1.4rem;
 }
 
-.container.mt-4 table.table {
-  font-size: 0.85rem; /* manji font */
+.nav-link {
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
-.container.mt-4 table.table th,
-.container.mt-4 table.table td {
-  padding: 0.3rem 0.6rem; /* smanjeni padding */
+.nav-link:hover {
+  background-color: #0052cc;
+  color: #ffffff !important;
+}
+
+.active-link {
+  background-color: #15396e;
+  color: #ffffff !important;
+  font-weight: 700;
+  border-left: 4px solid #ffc107;
+}
+
+header.navbar {
+  background-color: #ffffff;
+}
+
+table td,
+.table th {
+  font-size: 0.85rem;
   vertical-align: middle;
+}
+
+select.form-select {
+  font-size: 0.9rem;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #e8f0fe;
+}
+
+.bg-white {
+  background-color: #ffffff !important;
+}
+
+.animated-breadcrumb {
+  opacity: 0;
+  transform: translateX(-10px);
+  animation: fadeInSlide 0.3s forwards;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.breadcrumb-item.active {
+  font-weight: 600;
+  color: #15396e;
+}
+
+.breadcrumb-separator {
+  color: #6c757d;
+  user-select: none;
+  margin: 0 0.3rem;
+}
+
+@keyframes fadeInSlide {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Poboljšani hover na dropdown toggle (username) */
+.dropdown-toggle {
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-toggle:hover,
+.dropdown-toggle:focus {
+  background-color: #e9f0ff;
+  color: #15396e;
+  box-shadow: none !important;
+  outline: none;
+  border-color: #15396e;
+  cursor: pointer;
+}
+
+/* Osjetljiviji logo margin */
+.navbar img {
+  transition: transform 0.3s ease;
+}
+
+.navbar img:hover {
+  transform: scale(1.05);
+}
+
+/* Fino sjenčanje topbara */
+.navbar {
+  box-shadow: 0 2px 6px rgba(0, 82, 204, 0.15);
+}
+
+/* Jači i čistiji font za naslov u topbaru */
+.navbar .text-primary {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #15396e !important;
+}
+
+/* Dropdown menu malo elegantniji */
+.dropdown-menu {
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: 0.95rem;
+}
+
+/* Dropdown item hover */
+.dropdown-item:hover, .dropdown-item:focus {
+  background-color: #e6f0ff;
+  color: #15396e;
+}
+/* Pagination osnovna boja linkova */
+.page-link {
+  color: #0052cc;
+  border-color: #dee2e6;
+  background-color: #ffffff;
+  transition: all 0.2s ease-in-out;
+}
+
+.page-link:hover {
+  color: #ffffff;
+  background-color: #0052cc;
+  border-color: #0052cc;
+}
+
+/* Aktivna stranica */
+.page-item.active .page-link {
+  background-color: #15396e;
+  border-color: #0052cc;
+  color: #ffffff;
+  font-weight: 600;
+}
+/* Seksi stil za tag tipke */
+.btn-tag {
+  border: 1px solid #0052cc;
+  background-color: white;
+  color: #0052cc;
+  font-weight: 500;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 82, 204, 0.1);
+}
+
+.btn-tag:hover,
+.btn-tag:focus {
+  background-color: #0052cc;
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 82, 204, 0.25);
+  text-decoration: none;
+  outline: none;
+}
+.document-title {
+  font-size: 18px;
+  font-weight: 400;
+  color: #003366; /* tamnija, ozbiljnija plava */
+  margin-bottom: 1rem;
+  letter-spacing: 0.2px;
+  text-align: right;
 }

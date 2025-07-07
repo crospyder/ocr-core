@@ -23,8 +23,8 @@ export default function Upload() {
         }
       });
 
-      // Postavi modal data i prikaži modal s podacima prvog dokumenta
-      setModalData(docs[0]); // prikazujemo prvi dokument (možeš prilagoditi)
+      // Prikaži modal s podacima prvog dokumenta
+      setModalData(docs[0]);
       setShowModal(true);
 
       const uploadedIds = result.uploadedIds || docs.map(d => d.id);

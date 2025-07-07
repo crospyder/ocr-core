@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Info } from "lucide-react";
 
 // Definicija tipova tagova koje korisnik može označiti
 const TAG_TYPES = [
@@ -10,36 +11,31 @@ const TAG_TYPES = [
 ];
 
 export default function OcrTextTagger({ text, initialTags = [], onSave }) {
-  // Početno stanje tagova iz propsa
   const [tags, setTags] = useState(initialTags);
   const textRef = useRef(null);
 
-  // Kad se promijeni initialTags (npr. dohvaćene anotacije), update state
   useEffect(() => {
     setTags(initialTags);
   }, [initialTags]);
 
-  // Dohvati indeks početka i kraja selektiranog teksta unutar prikazanog teksta
   function getSelectionIndices() {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return null;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
 
-  const range = selection.getRangeAt(0);
-  if (!textRef.current.contains(range.commonAncestorContainer)) return null;
+    const range = selection.getRangeAt(0);
+    if (!textRef.current.contains(range.commonAncestorContainer)) return null;
 
-  const preRange = document.createRange();
-  preRange.selectNodeContents(textRef.current);
-  preRange.setEnd(range.startContainer, range.startOffset);
+    const preRange = document.createRange();
+    preRange.selectNodeContents(textRef.current);
+    preRange.setEnd(range.startContainer, range.startOffset);
 
-  const start = preRange.toString().length;
-  const selectedText = selection.toString();
-  const end = start + selectedText.length;
+    const start = preRange.toString().length;
+    const selectedText = selection.toString();
+    const end = start + selectedText.length;
 
-  return { start, end };
-}
+    return { start, end };
+  }
 
-
-  // Handler za označavanje selektiranog teksta kao određeni tip taga
   function handleTag(type) {
     const indices = getSelectionIndices();
     if (!indices) {
@@ -48,35 +44,27 @@ export default function OcrTextTagger({ text, initialTags = [], onSave }) {
     }
 
     const selectedText = text.slice(indices.start, indices.end);
-
-    // Dodajemo novi tag u listu
     setTags((prev) => [...prev, { type, ...indices, value: selectedText }]);
-
-    // Resetiramo selekciju u pregledniku
     window.getSelection().removeAllRanges();
   }
 
-  // Brisanje taga po indeksu
   function removeTag(index) {
     setTags((prev) => prev.filter((_, i) => i !== index));
   }
 
-  // Render teksta s označenim dijelovima (highlight)
   function renderTextWithHighlights() {
     if (tags.length === 0) return text;
 
-    // Sortiramo tagove po početnom indeksu radi pravilnog prikaza
     const sortedTags = [...tags].sort((a, b) => a.start - b.start);
 
     let result = [];
     let lastIndex = 0;
 
     sortedTags.forEach(({ start, end, type }, i) => {
-      // Dodajemo tekst prije taga
       if (lastIndex < start) {
         result.push(text.slice(lastIndex, start));
       }
-      // Dodajemo označeni tekst s pozadinskim osvjetljenjem
+
       result.push(
         <span
           key={"tag-" + i}
@@ -93,7 +81,6 @@ export default function OcrTextTagger({ text, initialTags = [], onSave }) {
       lastIndex = end;
     });
 
-    // Dodajemo ostatak teksta nakon zadnjeg taga
     if (lastIndex < text.length) {
       result.push(text.slice(lastIndex));
     }
@@ -103,7 +90,13 @@ export default function OcrTextTagger({ text, initialTags = [], onSave }) {
 
   return (
     <div>
-      <h5>OCR tekst - označite tekst i kliknite na tipku za tagiranje</h5>
+      {/* Info uputa */}
+      <div className="alert alert-info d-flex align-items-center" style={{ fontSize: "0.9rem" }}>
+        <Info size={18} className="me-2" />
+        Ako automatski OCR očitanje nije bilo precizno, označite važne elemente (OIB, iznos...) i kliknite odgovarajuću tipku, zatim spremite oznake.
+      </div>
+
+      {/* Prikaz teksta s oznakama */}
       <div
         ref={textRef}
         style={{
@@ -115,19 +108,22 @@ export default function OcrTextTagger({ text, initialTags = [], onSave }) {
           overflowY: "auto",
           userSelect: "text",
           fontFamily: "monospace",
-          fontSize: "14px",
+          fontSize: "16px",
           lineHeight: "1.4",
+          backgroundColor: "#fff",
+          borderRadius: "6px",
         }}
-        tabIndex={0} // da div može primiti fokus i selekciju
+        tabIndex={0}
       >
         {renderTextWithHighlights()}
       </div>
 
-      <div className="mt-3">
+      {/* Tipke za tagiranje */}
+      <div className="mt-3 d-flex flex-wrap gap-2">
         {TAG_TYPES.map(({ key, label }) => (
           <button
             key={key}
-            className="btn btn-sm btn-outline-primary me-2 mb-2"
+            className="btn-tag"
             onClick={() => handleTag(key)}
           >
             {label}
@@ -135,30 +131,35 @@ export default function OcrTextTagger({ text, initialTags = [], onSave }) {
         ))}
       </div>
 
-      <div className="mt-3">
+      {/* Popis označenih polja */}
+      <div className="mt-4">
         <h6>Označena polja:</h6>
-        {tags.length === 0 && <p>Nema označenih polja.</p>}
-        <ul className="list-group">
-          {tags.map(({ type, value }, i) => (
-            <li
-              key={i}
-              className="list-group-item d-flex justify-content-between align-items-center"
-            >
-              <div>
-                <strong>{TAG_TYPES.find((t) => t.key === type)?.label}:</strong>{" "}
-                {value}
-              </div>
-              <button
-                className="btn btn-sm btn-outline-danger"
-                onClick={() => removeTag(i)}
+        {tags.length === 0 ? (
+          <p className="text-muted">Nema označenih polja.</p>
+        ) : (
+          <ul className="list-group">
+            {tags.map(({ type, value }, i) => (
+              <li
+                key={i}
+                className="list-group-item d-flex justify-content-between align-items-center"
               >
-                &times;
-              </button>
-            </li>
-          ))}
-        </ul>
+                <div>
+                  <strong>{TAG_TYPES.find((t) => t.key === type)?.label}:</strong>{" "}
+                  {value}
+                </div>
+                <button
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => removeTag(i)}
+                >
+                  &times;
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
+      {/* Gumb za spremanje */}
       <button
         className="btn btn-primary mt-3"
         onClick={() => onSave && onSave(tags)}

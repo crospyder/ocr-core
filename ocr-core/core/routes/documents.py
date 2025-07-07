@@ -1,13 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, Body, Query
+from fastapi import APIRouter, Depends, HTTPException, Body, Query, Path
 from sqlalchemy.orm import Session
 from typing import List
-from core.database.connection import get_db
-from core.database.models import Document
-from core.schemas.documents import DocumentOut
+from fastapi.responses import FileResponse
 import shutil
 import os
 
+from core.database.connection import get_db
+from core.database.models import Document
+from core.schemas.documents import DocumentOut
+
 router = APIRouter()
+
+UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "uploads"))
 
 @router.get("/", response_model=List[DocumentOut])
 def list_documents(
@@ -42,13 +46,12 @@ def list_documents(
 
     return result
 
+
 @router.get("/stats-info")
 def documents_stats(db: Session = Depends(get_db)):
     total_docs = db.query(Document).count()
     processed_docs = db.query(Document).filter(Document.ocrresult != None).count()
 
-    # Ukupna veličina PDF datoteka u MB
-    UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "uploads"))
     total_size_bytes = 0
     if os.path.exists(UPLOAD_DIR):
         for fname in os.listdir(UPLOAD_DIR):
@@ -57,7 +60,6 @@ def documents_stats(db: Session = Depends(get_db)):
                 total_size_bytes += os.path.getsize(fpath)
     total_size_mb = total_size_bytes / (1024 * 1024)
 
-    # Preostali slobodan prostor na disku u MB (na partciji gdje je UPLOAD_DIR)
     usage = shutil.disk_usage(UPLOAD_DIR)
     free_mb = usage.free / (1024 * 1024)
 
@@ -68,6 +70,7 @@ def documents_stats(db: Session = Depends(get_db)):
         "free_space_mb": round(free_mb, 2),
     }
 
+
 @router.get("/{document_id}", response_model=DocumentOut)
 def get_document(document_id: int, db: Session = Depends(get_db)):
     doc = db.query(Document).filter(Document.id == document_id).first()
@@ -77,7 +80,6 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
     naziv = getattr(doc, "supplier_name_ocr", None) or (doc.supplier.name if doc.supplier else None)
     oib = getattr(doc, "supplier_oib", None) or (doc.supplier.oib if doc.supplier else None)
 
-    # Dohvat skraćenog naziva tvrtke iz sudreg_response ako postoji
     skraceni_naziv = None
     if doc.sudreg_response:
         try:
@@ -104,8 +106,26 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
         "invoice_date": doc.invoice_date.isoformat() if doc.invoice_date else None,
         "due_date": doc.due_date.isoformat() if doc.due_date else None,
         "document_type": doc.document_type,
-        "parsed": doc.parsed  # vraćamo parsed JSON kao string
+        "parsed": doc.parsed
     }
+
+
+@router.get("/{document_id}/file")
+def get_document_file(document_id: int = Path(..., description="ID dokumenta"), db: Session = Depends(get_db)):
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if not doc.filename:
+        raise HTTPException(status_code=404, detail="Nema spremljenog PDF-a za ovaj dokument")
+
+    file_path = os.path.join(UPLOAD_DIR, doc.filename)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="PDF datoteka nije pronađena na disku")
+
+    headers = {"Content-Disposition": f"inline; filename={doc.filename}"}
+    return FileResponse(path=file_path, media_type="application/pdf", headers=headers)
+
 
 @router.patch("/{document_id}")
 def update_document_supplier(

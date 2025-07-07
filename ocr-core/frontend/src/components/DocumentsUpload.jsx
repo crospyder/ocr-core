@@ -6,7 +6,8 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
   const [files, setFiles] = useState([]);
   const [docType, setDocType] = useState("");
   const [loading, setLoading] = useState(false);
-  const inputRef = useRef(null);
+  const inputFolderRef = useRef(null);
+  const inputFileRef = useRef(null);
 
   function handleFilesChange(e) {
     const allFiles = Array.from(e.target.files);
@@ -14,10 +15,10 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
       file.name.toLowerCase().endsWith(".pdf")
     );
     if (pdfFiles.length === 0) {
-      toast.warn("⚠️ Nema PDF datoteka u odabranom folderu.");
+      toast.warn("⚠️ Nema PDF datoteka u odabranom folderu ili datoteci.");
     }
     setFiles(pdfFiles);
-    e.target.value = null; // resetiraj input da može ponovno odabrati isti folder
+    e.target.value = null; // reset input da može ponovno odabrati isti folder/file
   }
 
   function handleDocTypeChange(e) {
@@ -97,18 +98,16 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
           <option value="UGOVOR">UGOVOR</option>
         </select>
 
-        <label className="form-label fw-semibold mb-3">Upload foldera (PDF dokumenti)</label>
-
+        <label className="form-label fw-semibold mb-1">Upload foldera (PDF dokumenti)</label>
         <button
           type="button"
-          onClick={() => inputRef.current && inputRef.current.click()}
+          onClick={() => inputFolderRef.current && inputFolderRef.current.click()}
           disabled={loading}
           className="form-control text-center p-5 border border-primary border-2 bg-light mb-3"
           style={{ cursor: "pointer" }}
         >
           Odaberi folder s PDF dokumentima (uključujući podfoldere)
         </button>
-
         <input
           type="file"
           multiple
@@ -117,7 +116,26 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
           className="d-none"
           onChange={handleFilesChange}
           disabled={loading}
-          ref={inputRef}
+          ref={inputFolderRef}
+          accept=".pdf"
+        />
+
+        <label className="form-label fw-semibold mb-1">Ili odaberi pojedinačnu datoteku (PDF)</label>
+        <button
+          type="button"
+          onClick={() => inputFileRef.current && inputFileRef.current.click()}
+          disabled={loading}
+          className="form-control text-center p-3 border border-secondary border-2 bg-light mb-3"
+          style={{ cursor: "pointer" }}
+        >
+          Odaberi pojedinačnu PDF datoteku
+        </button>
+        <input
+          type="file"
+          className="d-none"
+          onChange={handleFilesChange}
+          disabled={loading}
+          ref={inputFileRef}
           accept=".pdf"
         />
 
