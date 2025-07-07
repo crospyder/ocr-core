@@ -9,13 +9,23 @@ export default function Documents() {
   const [highlightIds, setHighlightIds] = useState([]);
   const [documentType, setDocumentType] = useState("");
 
+  // Nova stanja za statistiku
+  const [stats, setStats] = useState({
+    total_documents: 0,
+    processed_documents: 0,
+    total_pdf_size_mb: 0,
+    free_space_mb: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState(null);
+
   const location = useLocation();
 
   async function fetchDocuments() {
     setLoading(true);
     try {
       const query = documentType ? `?document_type=${encodeURIComponent(documentType)}` : "";
-      const res = await fetch(`/api/documents${query}`);
+      const res = await fetch(`/api/documents/${query}`);
       if (!res.ok) throw new Error("Ne mogu se povezati na SQL bazu, greška pri dohvatu dokumenata.");
       const data = await res.json();
       setDocuments(Array.isArray(data) ? data : []);
@@ -36,8 +46,24 @@ export default function Documents() {
     }
   }
 
+  async function fetchStats() {
+    setStatsLoading(true);
+    try {
+      const res = await fetch("/api/documents/stats-info");
+      if (!res.ok) throw new Error("Greška pri dohvatu statistike dokumenata.");
+      const data = await res.json();
+      setStats(data);
+      setStatsError(null);
+    } catch (err) {
+      setStatsError(err.message);
+    } finally {
+      setStatsLoading(false);
+    }
+  }
+
   useEffect(() => {
     fetchDocuments();
+    fetchStats();
   }, [documentType]);
 
   useEffect(() => {
@@ -85,6 +111,24 @@ export default function Documents() {
 
   return (
     <div className="container mt-4">
+
+      {/* Prikaz statistike */}
+      <div className="mb-4 p-3 bg-light rounded border">
+        <h5>Statistika dokumenata</h5>
+        {statsLoading ? (
+          <p>Učitavanje statistike...</p>
+        ) : statsError ? (
+          <p className="text-danger">Greška: {statsError}</p>
+        ) : (
+          <ul className="list-unstyled mb-0">
+            <li><strong>Ukupno dokumenata u bazi:</strong> {stats.total_documents}</li>
+            <li><strong>Broj obrađenih dokumenata (OCR):</strong> {stats.processed_documents}</li>
+            <li><strong>Ukupna veličina PDF datoteka:</strong> {stats.total_pdf_size_mb} MB</li>
+            <li><strong>Preostali slobodan prostor na disku:</strong> {stats.free_space_mb} MB</li>
+          </ul>
+        )}
+      </div>
+
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2 className="h3 text-primary">Prethodno uploadani dokumenti obrađeni OCR-om</h2>
         <select

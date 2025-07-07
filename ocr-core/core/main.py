@@ -15,6 +15,7 @@ from core.routes.annotations import router as annotations_router
 from core.routes import logs
 from core.database.models import Base
 from core.database.connection import engine_main
+from core.routes import client_info
 
 
 app = FastAPI()
@@ -35,6 +36,7 @@ app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
 app.include_router(clients_router, prefix="/api/clients")
 app.include_router(annotations_router, prefix="/api/annotations")
 app.include_router(logs.router, prefix="/api/logs")
+app.include_router(client_info.router, prefix="/api/client")
 
 # Automatsko učitavanje modula iz /modules
 load_module_routers(app)

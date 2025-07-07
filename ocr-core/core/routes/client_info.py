@@ -1,4 +1,3 @@
-# chatGPT je peder
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
 from core.schemas.client_info import ClientInfo
@@ -8,7 +7,7 @@ import json
 
 router = APIRouter()
 
-@router.post("/client/upload")
+@router.post("/upload")
 async def upload_client_info(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not file.filename.endswith((".json", ".txt")):
         raise HTTPException(status_code=400, detail="Dozvoljeni formati: .json, .txt")
@@ -31,12 +30,29 @@ async def upload_client_info(file: UploadFile = File(...), db: Session = Depends
 
     return {"msg": "Klijent uspješno spremljen", "client_id": new_client.id}
 
-@router.get("/client/info")
+@router.get("/info")
 def get_client_info(db: Session = Depends(get_db)):
     client = db.query(ClientCompany).first()
+
     if not client:
-        raise HTTPException(status_code=404, detail="Nema podataka o klijentu")
+        return {
+            "needs_setup": True,
+            "message": (
+                "Molim uploadajte datoteku s klijentskim podacima u slijedećoj JSON formi:\n\n"
+                "{\n"
+                '  "naziv_firme": "",\n'
+                '  "oib": "",\n'
+                '  "adresa": "",\n'
+                '  "kontakt_osoba": "",\n'
+                '  "email": "",\n'
+                '  "telefon": "",\n'
+                '  "broj_seatova": ""\n'
+                "}"
+            )
+        }
+
     return {
+        "needs_setup": False,
         "naziv_firme": client.naziv_firme,
         "oib": client.oib,
         "adresa": client.adresa,

@@ -4,6 +4,8 @@ from typing import List
 from core.database.connection import get_db
 from core.database.models import Document
 from core.schemas.documents import DocumentOut
+import shutil
+import os
 
 router = APIRouter()
 
@@ -39,6 +41,32 @@ def list_documents(
         })
 
     return result
+
+@router.get("/stats-info")
+def documents_stats(db: Session = Depends(get_db)):
+    total_docs = db.query(Document).count()
+    processed_docs = db.query(Document).filter(Document.ocrresult != None).count()
+
+    # Ukupna veličina PDF datoteka u MB
+    UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "uploads"))
+    total_size_bytes = 0
+    if os.path.exists(UPLOAD_DIR):
+        for fname in os.listdir(UPLOAD_DIR):
+            fpath = os.path.join(UPLOAD_DIR, fname)
+            if os.path.isfile(fpath):
+                total_size_bytes += os.path.getsize(fpath)
+    total_size_mb = total_size_bytes / (1024 * 1024)
+
+    # Preostali slobodan prostor na disku u MB (na partciji gdje je UPLOAD_DIR)
+    usage = shutil.disk_usage(UPLOAD_DIR)
+    free_mb = usage.free / (1024 * 1024)
+
+    return {
+        "total_documents": total_docs,
+        "processed_documents": processed_docs,
+        "total_pdf_size_mb": round(total_size_mb, 2),
+        "free_space_mb": round(free_mb, 2),
+    }
 
 @router.get("/{document_id}", response_model=DocumentOut)
 def get_document(document_id: int, db: Session = Depends(get_db)):
@@ -78,7 +106,6 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
         "document_type": doc.document_type,
         "parsed": doc.parsed  # vraćamo parsed JSON kao string
     }
-
 
 @router.patch("/{document_id}")
 def update_document_supplier(

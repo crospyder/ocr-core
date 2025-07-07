@@ -19,7 +19,7 @@ export default function Layout() {
       <Footer />
       <ToastContainer
         position="top-right"
-        autoClose={4000}
+        autoClose={8000}
         hideProgressBar={false}
         newestOnTop
         closeOnClick
