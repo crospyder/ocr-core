@@ -1,3 +1,20 @@
+## [v0.30] – 2025-07-07
+
+### Dodano
+- Batch upload PDF-ova iz foldera s podrškom za odabir i jednog ili više fajlova.
+- Modalni prikaz detalja prvog dokumenta nakon upload procesa.
+- Poboljšana UX notifikacija i prikaz upozorenja za validacijske alerte.
+- Proxy konfiguracija za frontend razvoj s backendom.
+- Podrška za `invoice_date` i `due_date` u frontend prikazu dokumenata.
+
+### Promijenjeno
+- Refaktoriran `DocumentsUpload.jsx` za podršku upload foldera i pojedinačnih fajlova.
+- `Upload.jsx` sada upravlja modalom i navigacijom nakon uspješnog uploada.
+- Optimiziran proces prikaza upozorenja i grešaka kroz `react-toastify`.
+
+### Ispravljeno
+- Rješeni problemi s fetch errorima povezanim s OneDrive sinkronizacijom.
+- Popravljeni edge case-ovi u odabiru i slanju datoteka za upload.
 # Changelog – OCR-Core
 ## [v0.30] – 2025-07-07
 
