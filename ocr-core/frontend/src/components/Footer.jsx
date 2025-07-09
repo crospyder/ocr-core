@@ -4,17 +4,18 @@ import React, { useEffect, useState } from "react";
 
 export default function Footer() {
   const [version, setVersion] = useState("v0.0.0");
-  const [buildDate, setBuildDate] = useState(null);
+  const [buildDate, setBuildDate] = useState("Nepoznato");
 
   useEffect(() => {
-    fetch("/version.json")
+    fetch("/core/version.json") // koristi mountano preko FastAPI: app.mount("/core", ...)
       .then((res) => res.json())
       .then((data) => {
-        if (data.version) setVersion(data.version);
-        if (data.build_date) setBuildDate(data.build_date);
+        setVersion(data.version || "v0.0.0");
+        setBuildDate(data.updated_at || "Nepoznato"); // <- ispravljen ključ
       })
       .catch(() => {
         setVersion("v0.0.0");
+        setBuildDate("Nepoznato");
       });
   }, []);
 
@@ -44,7 +45,7 @@ export default function Footer() {
       <div style={{ textAlign: "right", fontSize: "0.75rem", color: "#6c757d" }}>
         Verzija aplikacije: <strong>{version}</strong>
         <br />
-        Zadnje ažuriranje: {buildDate || "Nepoznato"}
+        Zadnje ažuriranje: {buildDate}
       </div>
     </footer>
   );

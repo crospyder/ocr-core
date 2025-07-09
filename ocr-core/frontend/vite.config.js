@@ -22,6 +22,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      "/core": {
+        target: "http://192.168.100.252:8000",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   optimizeDeps: {

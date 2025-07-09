@@ -57,6 +57,14 @@ def extract_oib(text: str) -> str | None:
     # Opcionalno možeš dodati checksum validaciju OIB-a
     return matches[0]
 
+def extract_invoice_date(text: str) -> str | None:
+    # Regex za pronalaženje datuma uz "VRIJEME IZDAVANJA"
+    date_pattern = r"VRIJEME IZDAVANJA:\s*(\d{2}\.\d{2}\.\d{4})"
+    match = re.search(date_pattern, text)
+    if match:
+        return match.group(1)  # Datum u formatu dd.mm.yyyy
+    return None
+
 def perform_ocr_and_get_supplier_info(file_path):
     text = perform_ocr(file_path)
     oib = extract_oib(text)
@@ -66,9 +74,13 @@ def perform_ocr_and_get_supplier_info(file_path):
             supplier_info = sudreg_client.get_company_by_oib(oib)
         except Exception as e:
             print(f"Greška u Sudreg API pozivu: {e}")
+    
+    # Dodajemo datum računa iz OCR-a
+    invoice_date = extract_invoice_date(text)
 
     return {
         "ocr_text": text,
         "supplier_oib": oib,
         "supplier_info": supplier_info.dict() if supplier_info else None,
+        "invoice_date": invoice_date,  # Datum računa (ako postoji)
     }

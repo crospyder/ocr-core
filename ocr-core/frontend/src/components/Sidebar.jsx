@@ -1,4 +1,3 @@
-// src/components/Sidebar.jsx
 import React from "react";
 import { NavLink } from "react-router-dom";
 import {
@@ -18,12 +17,12 @@ export default function Sidebar() {
     { to: "/partneri", label: "Partneri", icon: <Users size={18} />, end: true },
     { to: "/admin", label: "Admin Panel", icon: <Settings size={18} /> },
     { to: "/deployment", label: "Deployment", icon: <Server size={18} /> },
+    // Dodajemo link za pretragu
+    { to: "/search", label: "Pretraga", icon: <FileText size={18} /> },
   ];
 
   return (
-    <aside
-      className="sidebar bg-dark text-white px-3 py-4 d-flex flex-column"
-    >
+    <aside className="sidebar bg-dark text-white px-3 py-4 d-flex flex-column">
       <div className="mb-4 text-center">
         <h4 className="fw-bold text-light">Izbornik</h4>
       </div>

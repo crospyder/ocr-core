@@ -12,6 +12,8 @@ import Dashboard from "./src/components/dashboard/Dashboard.jsx"; // import dash
 import "./main.css";
 import PartnerDocuments from "./src/components/pages/PartnerDocuments.jsx";
 import Partneri from "./src/components/pages/Partneri.jsx";
+import SearchPage from "./src/components/SearchPage";  // Ako koristiš default export
+
 
 
 const router = createBrowserRouter([
@@ -27,6 +29,7 @@ const router = createBrowserRouter([
       { path: "deployment", element: <Deployment /> }, // ➕ OVA LINIJA
       { path: "documents/partner/:oib", element: <PartnerDocuments /> },
       { path: "partneri", element: <Partneri /> },
+      { path: "search", element: <SearchPage /> }, // Dodana ruta za SearchPage
 
     ],
   },
