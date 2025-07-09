@@ -1,3 +1,32 @@
+# Changelog – OCR-Core
+
+Sve važne promjene u ovom projektu dokumentirane su u ovom fajlu.
+
+## [v0.32] – 2025-07-09
+
+### Dodano
+- Dinamičko imenovanje PDF datoteka prema dobavljaču i vrsti dokumenta (`nazivvrsta-00001.pdf`).
+- Ako dokument nema valjan OIB ili se ne može identificirati, koristi se naziv `nepotpundokument-ura-00001.pdf`.
+- Imenovanje koristi slugifikaciju (npr. `MICROLINE d.o.o.` → `microlinedoo`).
+- Učitavanje podataka o vlasniku licence (klijenta) iz deployment `.json` datoteke za prepoznavanje domaćeg OIB-a.
+- Frontend `Documents.jsx` sada prikazuje puni naziv PDF datoteke bez kraćenja.
+- Dashboard prikazuje zadnjih 10 obrađenih dokumenata i detaljnu statistiku baze i diska.
+
+### Promijenjeno
+- `upload.py` koristi deployment klijentov OIB za prepoznavanje vlastitih računa i izbjegavanje zamjene vlasnika softvera za dobavljača.
+- Statistika po vrstama dokumenata (`URA`, `IRA`, `UGOVOR`, `IZVOD`) dostupna unutar API `/stats-info`.
+
+### Ispravljeno
+- Problem s pogrešnim prikazom vlasnika softvera kao dobavljača kod nepoznatih dokumenata.
+- Pravilno razgraničavanje validnih i nevalidnih dobavljača nakon OCR-a.
+- Dupli prikazi komponenti na dashboardu uklonjeni, layout rasterećen i u skladu s vizualnim prototipom.
+
+### Deployment
+- Nema dodatnih migracija. Potrebno imati podatke o vlasniku softvera (klijentu) u bazi za ispravno funkcioniranje novog imenovanja.
+- Verzija tagirana kao `v0.32`.
+
+---
+
 ## [v0.31] – 2025-07-09
 
 ### Dodano
@@ -9,6 +38,7 @@
 - Ispravljen `NameError` za `date` import u `schemas/documents.py`.
 - Pregled i potvrda ispravnog prikaza datuma u frontend sučelju.
 
+---
 
 ## [v0.30] – 2025-07-07
 
@@ -27,26 +57,9 @@
 ### Ispravljeno
 - Rješeni problemi s fetch errorima povezanim s OneDrive sinkronizacijom.
 - Popravljeni edge case-ovi u odabiru i slanju datoteka za upload.
-# Changelog – OCR-Core
-## [v0.30] – 2025-07-07
 
-### Dodano
-- Batch upload PDF-ova iz foldera s podrškom za odabir i jednog ili više fajlova.
-- Modalni prikaz detalja prvog dokumenta nakon upload procesa.
-- Poboljšana UX notifikacija i prikaz upozorenja za validacijske alerte.
-- Proxy konfiguracija za frontend razvoj s backendom.
-- Podrška za `invoice_date` i `due_date` u frontend prikazu dokumenata.
+---
 
-### Promijenjeno
-- Refaktoriran `DocumentsUpload.jsx` za podršku upload foldera i pojedinačnih fajlova.
-- `Upload.jsx` sada upravlja modalom i navigacijom nakon uspješnog uploada.
-- Optimiziran proces prikaza upozorenja i grešaka kroz `react-toastify`.
-
-### Ispravljeno
-- Rješeni problemi s fetch errorima povezanim s OneDrive sinkronizacijom.
-- Popravljeni edge case-ovi u odabiru i slanju datoteka za upload.
-
-Sve važne promjene u ovom projektu dokumentirane su u ovom fajlu.
 ## [v0.29] – 2025-07-07
 
 ### Dodano
@@ -67,6 +80,8 @@ Sve važne promjene u ovom projektu dokumentirane su u ovom fajlu.
 ### Deployment
 - Nema novih migracija osim inicijalne tablice `client_companies` (ako već nije kreirana).
 - Verzija tagirana kao `v0.29`.
+
+---
 
 ## [v0.28] – 2025-07-06
 
@@ -90,5 +105,3 @@ Sve važne promjene u ovom projektu dokumentirane su u ovom fajlu.
 ### Deployment
 - Potrebno ručno dodati stupce `invoice_date`, `due_date`, `parsed` u tablicu `documents` ako nisu automatski migrirani.
 - Tagirano kao `v0.28`.
-
-

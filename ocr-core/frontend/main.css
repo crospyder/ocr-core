@@ -1,368 +1,68 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-
-/* --- Osnovni stilovi --- */
-body, #root {
-  font-family: 'Inter', sans-serif;
-  background-color: #f4f5f7;
-  color: #172b4d;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
+.recent-documents-widget {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  min-height: 300px;
+  max-height: 420px;
+  overflow-y: auto;
 }
 
-main {
-  max-width: 100%;
-  margin: 0 auto;
-}
-
-/* --- Header stilovi --- */
-header {
-  text-align: center;
-  margin-bottom: 2.5rem;
-}
-
-header h1 {
-  font-weight: 700;
-  font-size: 2.5rem;
-  color: #15396e;
-  margin-bottom: 0.3rem;
-  letter-spacing: -0.02em;
-}
-
-header p.subtitle {
-  font-style: normal;
-  font-weight: 500;
-  font-size: 1.125rem;
-  color: #6b778c;
-  margin-top: 0;
-}
-
-/* --- Button stilovi --- */
-button {
-  background-color: #15396e;
-  border: none;
-  border-radius: 4px;
-  color: white;
+.recent-documents-widget h5 {
   font-weight: 600;
-  padding: 0.6rem 1.5rem;
-  font-size: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 82, 204, 0.4);
-  cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  color: #15396e;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
 }
 
-button:hover {
-  background-color: #0052cc;
-  box-shadow: 0 4px 8px rgba(0, 82, 204, 0.5);
+.recent-documents-widget .doc-item {
+  border-bottom: 1px dashed #e0e0e0;
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
 }
 
-/* --- Tabela Documents --- */
-table.table {
-  font-size: 0.85rem;
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 0.3rem;
-}
-
-table.table th,
-table.table td {
-  padding: 0.3rem 0.6rem;
-  vertical-align: middle;
-  background-color: white;
-  border-top: none;
+.recent-documents-widget .doc-item:last-child {
   border-bottom: none;
 }
 
-.table-hover tbody tr:hover {
-  background-color: #e8f0fe;
-}
-
-/* Highlight redak nakon upload-a */
-.highlight-row {
-  background-color: #fff3b0 !important;
-  transition: background-color 0.6s ease;
-}
-
-/* --- Naslovi --- */
-h2.h4.text-primary {
-  color: #15396e;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-/* --- Pagination stilovi --- */
-.page-link {
-  color: #0052cc;
-  border-color: #dee2e6;
-  background-color: #ffffff;
-  transition: all 0.2s ease-in-out;
-}
-
-.page-link:hover {
-  color: #ffffff;
-  background-color: #0052cc;
-  border-color: #0052cc;
-}
-
-.page-item.active .page-link {
-  background-color: #15396e;
-  border-color: #0052cc;
-  color: #ffffff;
+.recent-documents-widget .doc-link {
   font-weight: 600;
-}
-
-/* --- Form Select --- */
-select.form-select {
-  font-size: 0.9rem;
-}
-
-/* --- Tag Button stilovi --- */
-.btn-tag {
-  border: 1px solid #0052cc;
-  background-color: white;
-  color: #0052cc;
-  font-weight: 500;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 82, 204, 0.1);
-}
-
-.btn-tag:hover,
-.btn-tag:focus {
-  background-color: #0052cc;
-  color: white;
-  box-shadow: 0 2px 6px rgba(0, 82, 204, 0.25);
+  color: #15396e;
   text-decoration: none;
-  outline: none;
 }
 
-/* --- Sidebar stilovi --- */
-aside.bg-dark {
-  background-color: #212529 !important; /* Bootstrap dark */
-  color: white;
-  width: 250px;
-  height: calc(100vh - 100px);
-  position: sticky;
-  top: 100px;
-  overflow-y: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+.recent-documents-widget .doc-link:hover {
+  text-decoration: underline;
 }
 
-aside .nav-link {
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-  color: white !important;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-}
-
-aside .nav-link.active-link {
-  background-color: #15396e;
-  color: white !important;
-  font-weight: 700;
-  border-left: 4px solid #ffc107;
-}
-
-aside .nav-link:hover {
-  background-color: #0052cc;
-  color: white !important;
-}
-
-/* Gap između linkova u sidebaru */
-aside nav.flex-column.gap-2 > .nav-link {
-  margin-bottom: 0.25rem;
-}
-
-/* --- Breadcrumbs animacija i stilovi --- */
-.animated-breadcrumb {
-  opacity: 0;
-  transform: translateX(-10px);
-  animation: fadeInSlide 0.3s forwards;
-  display: inline-block;
-  margin-right: 0.5rem;
-}
-
-.breadcrumb-item.active {
-  font-weight: 600;
-  color: #15396e;
-}
-
-.breadcrumb-separator {
+.recent-documents-widget .doc-meta {
+  font-size: 0.8rem;
   color: #6c757d;
-  user-select: none;
-  margin: 0 0.3rem;
+  margin-top: 0.2rem;
 }
 
-@keyframes fadeInSlide {
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* --- Navbar i topbar --- */
-.navbar {
-  background-color: #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 82, 204, 0.15);
-}
-
-.navbar .text-primary {
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  color: #15396e !important;
-}
-
-.navbar img {
-  transition: transform 0.3s ease;
-}
-
-.navbar img:hover {
-  transform: scale(1.05);
-}
-
-/* Dropdown toggle */
-.dropdown-toggle {
-  transition: background-color 0.2s ease;
-}
-
-.dropdown-toggle:hover,
-.dropdown-toggle:focus {
-  background-color: #e9f0ff;
-  color: #15396e;
-  box-shadow: none !important;
-  outline: none;
-  border-color: #15396e;
-  cursor: pointer;
-}
-
-/* Dropdown menu */
-.dropdown-menu {
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  font-size: 0.95rem;
-}
-
-.dropdown-item:hover,
-.dropdown-item:focus {
-  background-color: #e6f0ff;
-  color: #15396e;
-}
-
-/* Dokument title */
-.document-title {
-  font-size: 18px;
-  font-weight: 400;
-  color: #003366; /* tamnija, ozbiljnija plava */
-  margin-bottom: 1rem;
-  letter-spacing: 0.2px;
-  text-align: right;
-}
-
-/* Container fluid za puni širinski layout */
-.container-fluid {
-  padding-left: 2rem;
-  padding-right: 2rem;
-  max-width: 1600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* DocumentDetail specifični stilovi */
-
-.document-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #15396e;
-  letter-spacing: 0.1px;
-  margin-bottom: 1.5rem;
-}
-
-/* Glavni container i layout */
-
-.row.mb-4 {
-  height: 80vh; /* visina za content u DocumentDetail */
-}
-
-.border {
-  border: 1px solid #dee2e6 !important;
-}
-
-.shadow-sm {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
-}
-
-.bg-light {
-  background-color: #f8f9fa !important;
-}
-
-.bg-white {
-  background-color: #fff !important;
-}
-
-/* Scrollable OCR TextTagger i Sudreg output */
-
-.ocr-text-tagger-wrapper {
-  flex-grow: 1;
-  overflow-y: auto;
-  font-family: monospace, monospace;
-  font-size: 0.9rem;
-  line-height: 1.3;
-}
-
-.sudreg-pre {
-  font-family: monospace, monospace;
-  font-size: 0.9rem;
-  max-height: 500px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  background-color: #fefefe;
-  border-radius: 4px;
-  padding: 1rem;
-  box-shadow: inset 0 0 5px #e0e0e0;
-}
-
-/* Naslovi sekcija */
-
-h5 {
-  color: #15396e;
+.doc-tag {
+  display: inline-block;
+  font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 1rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+  margin-left: 0.5rem;
 }
 
-/* Responsive: kad je uski viewport, vertikalni stacking */
+.doc-tag.ura { background-color: #f8d7da; color: #721c24; }
+.doc-tag.ira { background-color: #d4edda; color: #155724; }
+.doc-tag.ugovor { background-color: #d1ecf1; color: #0c5460; }
+.doc-tag.izvod { background-color: #fff3cd; color: #856404; }
 
-@media (max-width: 768px) {
-  .row.mb-4 {
-    height: auto;
-  }
-}
-/* Naslov sekcije Sudreg odgovora, jasno odvojen */
-.sudreg-header {
-  border-bottom: 2px solid #15396e;
-  padding-bottom: 0.3rem;
-  margin-bottom: 1rem;
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #15396e;
-}
-
-/* Formatirani output odgovora s scrollom */
-.sudreg-pre {
-  font-family: monospace, monospace;
-  font-size: 0.9rem;
-  max-height: 500px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  background-color: #fefefe;
-  border-radius: 4px;
-  padding: 1rem;
-  box-shadow: inset 0 0 5px #e0e0e0;
+.document-stats-widget {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  min-height: 300px;
 }

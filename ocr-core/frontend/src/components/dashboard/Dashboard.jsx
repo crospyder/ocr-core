@@ -1,34 +1,19 @@
-// src/components/dashboard/Dashboard.jsx
 import React from "react";
-import StatsCard from "./StatsCard";
-import BarChart from "./BarChart";
-import RecentActivity from "./RecentActivity";
 import { Container, Row, Col } from "react-bootstrap";
+import RecentDocuments from "./RecentDocuments";
+import DocumentStats from "./DocumentStats";
 
 const Dashboard = () => {
   return (
-    <Container fluid className="mt-4">
-      <Row className="mb-4">
-        <Col md={3}>
-          <StatsCard title="Ukupno dokumenata" value="124" icon="bi bi-file-earmark-text" />
-        </Col>
-        <Col md={3}>
-          <StatsCard title="Obrađeni dokumenti" value="98" icon="bi bi-check-circle" />
-        </Col>
-        <Col md={3}>
-          <StatsCard title="Novi dobavljači" value="5" icon="bi bi-person-plus" />
-        </Col>
-        <Col md={3}>
-          <StatsCard title="Slobodan prostor" value="1.2 GB" icon="bi bi-hdd" />
-        </Col>
-      </Row>
+    <Container fluid className="dashboard-container mt-4">
+      <h2 className="h4 text-primary mb-4">📊 Dashboard</h2>
 
-      <Row>
-        <Col md={8}>
-          <BarChart />
+      <Row className="g-4 mt-3">
+        <Col xs={12} md={6} lg={6}>
+          <RecentDocuments />
         </Col>
-        <Col md={4}>
-          <RecentActivity />
+        <Col xs={12} md={6} lg={6}>
+          <DocumentStats />
         </Col>
       </Row>
     </Container>

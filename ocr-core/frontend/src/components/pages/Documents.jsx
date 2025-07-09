@@ -189,10 +189,10 @@ export default function Documents() {
                 <tr key={doc.id} title={doc.validation_alert || ""}>
                   <td>{doc.id}</td>
                   <td>
-                    <a href={`/documents/${doc.id}`}>
-                      {doc.filename.length > 20 ? doc.filename.slice(0, 20) + "..." : doc.filename}
-                    </a>
-                  </td>
+  <a href={`/documents/${doc.id}`}>
+    {doc.filename}
+  </a>
+</td>
                   <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "-"}</td>
                   <td>{doc.supplier_name_ocr || "-"}</td>
                   <td>{doc.supplier_oib || "-"}</td>

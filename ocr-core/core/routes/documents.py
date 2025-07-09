@@ -6,12 +6,11 @@ import shutil
 import os
 import logging
 import traceback
+from sqlalchemy import text
 
 from core.database.connection import get_db
 from core.database.models import Document, DocumentAnnotation
 from core.schemas.documents import DocumentOut
-
-from sqlalchemy import text
 
 router = APIRouter()
 
@@ -20,12 +19,25 @@ UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file
 @router.get("/", response_model=List[DocumentOut])
 def list_documents(
     document_type: str | None = Query(None, description="Vrsta dokumenta (URA, IRA, IZVOD, UGOVOR, ...)"),
+    processed: bool = Query(default=False, description="Prikaži samo obrađene dokumente"),
+    limit: int = Query(default=100, ge=1, le=1000, description="Koliko dokumenata dohvatiti"),
+    order: str = Query(default="desc", regex="^(asc|desc)$", description="Sortiranje po datumu"),
     db: Session = Depends(get_db)
 ):
     query = db.query(Document)
+
     if document_type:
         query = query.filter(Document.document_type == document_type)
-    documents = query.all()
+
+    if processed:
+        query = query.filter(Document.ocrresult != None)
+
+    if order == "asc":
+        query = query.order_by(Document.date.asc())
+    else:
+        query = query.order_by(Document.date.desc())
+
+    documents = query.limit(limit).all()
 
     result = []
     for doc in documents:
@@ -48,12 +60,12 @@ def list_documents(
         })
     return result
 
-
 @router.get("/stats-info")
 def documents_stats(db: Session = Depends(get_db)):
     total_docs = db.query(Document).count()
     processed_docs = db.query(Document).filter(Document.ocrresult != None).count()
 
+    # Disk usage
     total_size_bytes = 0
     if os.path.exists(UPLOAD_DIR):
         for fname in os.listdir(UPLOAD_DIR):
@@ -65,14 +77,19 @@ def documents_stats(db: Session = Depends(get_db)):
     usage = shutil.disk_usage(UPLOAD_DIR)
     free_mb = usage.free / (1024 * 1024)
 
+    # Grupiranje po tipu dokumenta
+    from sqlalchemy import func
+    by_type_query = db.query(Document.document_type, func.count()).group_by(Document.document_type).all()
+    by_type = {row[0]: row[1] for row in by_type_query if row[0]}
+
     return {
         "total_documents": total_docs,
         "processed_documents": processed_docs,
         "total_pdf_size_mb": round(total_size_mb, 2),
         "free_space_mb": round(free_mb, 2),
+        "by_type": by_type
     }
-
-
+    
 @router.get("/{document_id}", response_model=DocumentOut)
 def get_document(document_id: int, db: Session = Depends(get_db)):
     doc = db.query(Document).filter(Document.id == document_id).first()
@@ -111,7 +128,6 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
         "parsed": doc.parsed
     }
 
-
 @router.get("/{document_id}/file")
 def get_document_file(document_id: int = Path(..., description="ID dokumenta"), db: Session = Depends(get_db)):
     doc = db.query(Document).filter(Document.id == document_id).first()
@@ -127,7 +143,6 @@ def get_document_file(document_id: int = Path(..., description="ID dokumenta"), 
 
     headers = {"Content-Disposition": f"inline; filename={doc.filename}"}
     return FileResponse(path=file_path, media_type="application/pdf", headers=headers)
-
 
 @router.patch("/{document_id}")
 def update_document_supplier(
@@ -148,9 +163,6 @@ def update_document_supplier(
     db.refresh(document)
 
     return {"message": "Supplier updated", "document_id": document.id}
-
-
-# Development only - briše sve dokumente i anotacije, resetira brojače (MySQL)
 
 @router.delete("/clear-all")
 def clear_all_documents(db: Session = Depends(get_db)):
