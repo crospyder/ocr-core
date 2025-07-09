@@ -1,6 +1,7 @@
 from pydantic import BaseModel, validator
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
+from datetime import datetime, date
 import json
 
 class SupplierOut(BaseModel):
@@ -24,6 +25,10 @@ class DocumentOut(DocumentBase):
     supplier_oib: Optional[str] = None
     annotation: Optional[List[Dict[str, Any]]] = None
     sudreg_response: Optional[Union[Dict[str, Any], str]] = None  # podržava dict ili raw string
+    invoice_date: Optional[date] = None             # ➕ dodano
+    due_date: Optional[date] = None                 # ➕ dodano
+    document_type: Optional[str] = None             # ➕ dodano
+    parsed: Optional[Dict[str, Any]] = None         # ➕ dodano
 
     @validator('annotation', pre=True, always=True)
     def validate_annotation(cls, v):

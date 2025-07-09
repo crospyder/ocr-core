@@ -1,3 +1,15 @@
+## [v0.31] – 2025-07-09
+
+### Dodano
+- Polja `invoice_date` i `due_date` dodana u model `Document` (baza + backend schema).
+- API `/api/documents/` i `/api/documents/{id}` prošireni za `invoice_date` i `due_date`.
+- Datum se sada serializira kao ISO string (`YYYY-MM-DD`) u JSON odgovorima.
+
+### Ispravljeno
+- Ispravljen `NameError` za `date` import u `schemas/documents.py`.
+- Pregled i potvrda ispravnog prikaza datuma u frontend sučelju.
+
+
 ## [v0.30] – 2025-07-07
 
 ### Dodano

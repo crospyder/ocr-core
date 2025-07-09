@@ -7,19 +7,24 @@ from modules.sudreg_api.client import SudregClient
 
 sudreg_client = SudregClient()
 
-def convert_pdf_to_images(pdf_path):
+def extract_text_from_pdf_native(pdf_path) -> str:
+    """Pokušaj izdvojiti native tekst iz PDF-a."""
     doc = fitz.open(pdf_path)
-    images = []
+    full_text = ""
     for page in doc:
-        pix = page.get_pixmap(dpi=300)
-        img_path = f"{pdf_path}_{page.number}.png"
-        pix.save(img_path)
-        images.append(Image.open(img_path))
-    return images
+        text = page.get_text()
+        full_text += text + "\n"
+    return full_text.strip()
 
 def perform_ocr(file_path):
     temp_images_paths = []
     if file_path.lower().endswith(".pdf"):
+        # Prvo pokušaš native tekst iz PDF-a
+        native_text = extract_text_from_pdf_native(file_path)
+        if native_text and len(native_text) > 100:  # prag za minimalnu dužinu
+            return native_text
+        
+        # fallback: OCR nad slikama iz PDF-a
         images = []
         doc = fitz.open(file_path)
         for page in doc:
@@ -36,7 +41,7 @@ def perform_ocr(file_path):
         text = pytesseract.image_to_string(img, lang="hrv", config="--oem 1 --psm 6")
         result_text += text + "\n"
 
-    # Obriši privremene slike
+    # Briši privremene slike
     for temp_img_path in temp_images_paths:
         if os.path.exists(temp_img_path):
             os.remove(temp_img_path)
@@ -44,7 +49,7 @@ def perform_ocr(file_path):
     return result_text
 
 def extract_oib(text: str) -> str | None:
-    # OIB je 11 znamenki, regex pronalazi prvi takav niz
+    # OIB je 11 znamenki, pronalazi prvi takav niz
     pattern = r"\b[0-9]{11}\b"
     matches = re.findall(pattern, text)
     if not matches:

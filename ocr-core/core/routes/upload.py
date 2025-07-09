@@ -1,6 +1,7 @@
 import os
 import uuid
 import json
+import logging
 from pydantic import BaseModel
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Form
@@ -20,12 +21,20 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 sudreg_client = SudregClient()
 
+# Konfiguracija logiranja - možeš podesiti format i level
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 def str_to_date(date_str):
     if not date_str:
         return None
     try:
         return datetime.strptime(date_str, "%Y-%m-%d").date()
-    except Exception:
+    except Exception as e:
+        logger.error(f"Greška pri parsiranju datuma '{date_str}': {e}")
         return None
 
 @router.post("/documents")
@@ -33,10 +42,12 @@ async def upload_documents(
     files: List[UploadFile] = File(...),
     document_type: str = Form(...)
 ):
+    logger.info(f"Početak upload procesa za {len(files)} datoteka, tip dokumenta: '{document_type}'")
     results = []
     db = SessionMain()
 
     for file in files:
+        logger.info(f"Procesiranje datoteke: {file.filename}")
         ext = os.path.splitext(file.filename)[1]
         unique_name = f"{uuid.uuid4().hex}{ext}"
         file_path = os.path.join(UPLOAD_DIR, unique_name)
@@ -45,7 +56,9 @@ async def upload_documents(
             content = await file.read()
             with open(file_path, "wb") as f:
                 f.write(content)
+            logger.info(f"Datoteka spremljena na disk: {file_path}")
         except Exception as e:
+            logger.error(f"Neuspješno spremanje datoteke {file.filename}: {e}")
             results.append({
                 "filename": file.filename,
                 "status": "FAILED",
@@ -54,18 +67,30 @@ async def upload_documents(
             continue
 
         upload_time = datetime.utcnow()
-        text = perform_ocr(file_path)
+        
+        try:
+            text = perform_ocr(file_path)
+            logger.info(f"OCR proces završen za datoteku {file.filename}, duljina teksta: {len(text)}")
+        except Exception as e:
+            logger.error(f"Greška tijekom OCR procesa za {file.filename}: {e}")
+            results.append({
+                "filename": file.filename,
+                "status": "FAILED",
+                "error": f"OCR error: {str(e)}"
+            })
+            continue
 
-        # Parsiranje podataka prema tipu dokumenta
         try:
             parser_func = dispatch_parser(document_type)
             parsed_data = parser_func(text)
+            logger.info(f"Parsiranje dokumenta završeno za {file.filename}")
         except Exception as e:
+            logger.error(f"Greška pri parsiranju dokumenta {file.filename}: {e}")
             parsed_data = {"parser_error": str(e)}
 
-        # Izvlačenje dobavljača iz OCR teksta
         supplier_info = extract_supplier_info(text)
         oib = supplier_info.get("oib")
+        logger.info(f"Ekstraktiran OIB: {oib} za datoteku {file.filename}")
 
         sudreg_data = None
         sudreg_raw = None
@@ -74,6 +99,7 @@ async def upload_documents(
         if oib:
             try:
                 sudreg_data, sudreg_raw = sudreg_client.get_company_by_oib(oib, db)
+                logger.info(f"Dohvaćeni podaci iz Sudreg API-ja za OIB: {oib}")
                 if sudreg_data:
                     supplier_info.update({
                         "naziv_firme": sudreg_data.naziv,
@@ -83,19 +109,18 @@ async def upload_documents(
 
                 if sudreg_raw and isinstance(sudreg_raw, dict):
                     skracene_tvrtke = sudreg_raw.get("skracene_tvrtke")
-                    if (
-                        skracene_tvrtke
-                        and isinstance(skracene_tvrtke, list)
-                        and len(skracene_tvrtke) > 0
-                    ):
+                    if skracene_tvrtke and isinstance(skracene_tvrtke, list) and len(skracene_tvrtke) > 0:
                         skraceni_naziv = skracene_tvrtke[0].get("ime")
                 else:
                     supplier_info["alert"] = "⚠️ Dobavljač nije pronađen u Sudregu"
+                    logger.warning(f"Dobavljač nije pronađen u Sudregu za OIB: {oib}")
             except Exception as e:
                 sudreg_raw = {"error": str(e)}
                 supplier_info["alert"] = f"❌ Greška u komunikaciji sa Sudreg API-jem: {e}"
+                logger.error(f"Greška u Sudreg API pozivu za OIB {oib}: {e}")
         else:
             supplier_info["alert"] = "❌ OIB nije pronađen – potrebna ručna validacija dokumenta."
+            logger.warning(f"OIB nije pronađen u OCR tekstu za datoteku {file.filename}")
 
         supplier_obj = db.query(Client).filter(Client.oib == oib).first() if oib else None
         ocr_processed_at = datetime.utcnow()
@@ -111,30 +136,40 @@ async def upload_documents(
         else:
             safe_parsed = parsed_data
 
-        # Parsiranje i fallback za due_date
         invoice_date = str_to_date(safe_parsed.get("invoice_date"))
         due_date = str_to_date(safe_parsed.get("due_date"))
         if due_date is None and invoice_date is not None:
             due_date = invoice_date
 
-        doc = Document(
-            filename=unique_name,
-            ocrresult=text,
-            supplier_id=supplier_obj.id if supplier_obj else None,
-            supplier_name_ocr=skraceni_naziv or supplier_info.get("naziv_firme") or None,
-            supplier_oib=oib,
-            archived_at=upload_time,
-            date=ocr_processed_at,
-            document_type=document_type,
-            invoice_date=invoice_date,
-            due_date=due_date,
-            sudreg_response=json.dumps(sudreg_raw, ensure_ascii=False) if sudreg_raw else None,
-            parsed=json.dumps(safe_parsed, ensure_ascii=False),
-        )
+        try:
+            doc = Document(
+                filename=unique_name,
+                ocrresult=text,
+                supplier_id=supplier_obj.id if supplier_obj else None,
+                supplier_name_ocr=skraceni_naziv or supplier_info.get("naziv_firme") or None,
+                supplier_oib=oib,
+                archived_at=upload_time,
+                date=ocr_processed_at,
+                document_type=document_type,
+                invoice_date=invoice_date,
+                due_date=due_date,
+                sudreg_response=json.dumps(sudreg_raw, ensure_ascii=False) if sudreg_raw else None,
+                parsed=json.dumps(safe_parsed, ensure_ascii=False),
+            )
 
-        db.add(doc)
-        db.commit()
-        db.refresh(doc)
+            db.add(doc)
+            db.commit()
+            db.refresh(doc)
+            logger.info(f"Dokument spremljen u bazu: ID {doc.id}, filename {unique_name}")
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Greška pri spremanju dokumenta u bazu za datoteku {file.filename}: {e}")
+            results.append({
+                "filename": file.filename,
+                "status": "FAILED",
+                "error": f"DB error: {str(e)}"
+            })
+            continue
 
         results.append({
             "id": doc.id,
@@ -150,4 +185,5 @@ async def upload_documents(
         })
 
     db.close()
+    logger.info(f"Upload procesa završen za {len(files)} datoteka.")
     return {"processed": results}

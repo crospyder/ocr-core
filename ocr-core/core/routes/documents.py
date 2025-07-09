@@ -4,10 +4,14 @@ from typing import List
 from fastapi.responses import FileResponse
 import shutil
 import os
+import logging
+import traceback
 
 from core.database.connection import get_db
-from core.database.models import Document
+from core.database.models import Document, DocumentAnnotation
 from core.schemas.documents import DocumentOut
+
+from sqlalchemy import text
 
 router = APIRouter()
 
@@ -19,11 +23,10 @@ def list_documents(
     db: Session = Depends(get_db)
 ):
     query = db.query(Document)
-
     if document_type:
         query = query.filter(Document.document_type == document_type)
-
     documents = query.all()
+
     result = []
     for doc in documents:
         naziv = getattr(doc, "supplier_name_ocr", None) or (doc.supplier.name if doc.supplier else None)
@@ -33,7 +36,7 @@ def list_documents(
             "id": doc.id,
             "filename": doc.filename,
             "ocrresult": doc.ocrresult,
-            "date": doc.date,
+            "date": doc.date.isoformat() if doc.date else None,
             "amount": doc.amount,
             "supplier_id": doc.supplier_id,
             "supplier_name_ocr": naziv,
@@ -43,7 +46,6 @@ def list_documents(
             "due_date": doc.due_date.isoformat() if doc.due_date else None,
             "document_type": doc.document_type,
         })
-
     return result
 
 
@@ -95,7 +97,7 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
         "id": doc.id,
         "filename": doc.filename,
         "ocrresult": doc.ocrresult,
-        "date": doc.date,
+        "date": doc.date.isoformat() if doc.date else None,
         "amount": doc.amount,
         "supplier_id": doc.supplier_id,
         "supplier_name_ocr": naziv,
@@ -146,3 +148,32 @@ def update_document_supplier(
     db.refresh(document)
 
     return {"message": "Supplier updated", "document_id": document.id}
+
+
+# Development only - briše sve dokumente i anotacije, resetira brojače (MySQL)
+
+@router.delete("/clear-all")
+def clear_all_documents(db: Session = Depends(get_db)):
+    try:
+        logging.info("Početak brisanja anotacija")
+        db.query(DocumentAnnotation).delete()
+        db.commit()
+        logging.info("Anotacije obrisane")
+
+        logging.info("Početak brisanja dokumenata")
+        db.query(Document).delete()
+        db.commit()
+        logging.info("Dokumenti obrisani")
+
+        logging.info("Resetiranje AUTO_INCREMENT brojača")
+        db.execute(text("ALTER TABLE document_annotations AUTO_INCREMENT = 1;"))
+        db.execute(text("ALTER TABLE documents AUTO_INCREMENT = 1;"))
+        db.commit()
+        logging.info("Brojači resetirani")
+
+        return {"message": "Sve tablice documents i document_annotations očišćene i brojači resetirani."}
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Greška prilikom resetiranja: {e}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Greška prilikom resetiranja: {e}")

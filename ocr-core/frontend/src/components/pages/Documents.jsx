@@ -1,5 +1,3 @@
-// src/components/pages/Documents.jsx
-
 import React, { useEffect, useState, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -10,17 +8,15 @@ export default function Documents() {
   const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
   const [highlightIds, setHighlightIds] = useState([]);
   const [documentType, setDocumentType] = useState("");
-
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
   const [stats, setStats] = useState({
     total_documents: 0,
     processed_documents: 0,
     total_pdf_size_mb: 0,
     free_space_mb: 0,
   });
-
+  const [clearLoading, setClearLoading] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -101,17 +97,49 @@ export default function Documents() {
     return sortedDocuments.slice(start, start + itemsPerPage);
   }, [sortedDocuments, currentPage, itemsPerPage]);
 
+  // Nova funkcija za brisanje svih dokumenata i anotacija
+  const handleClearAll = async () => {
+    if (!window.confirm("Jesi li siguran da želiš obrisati SVE dokumente i anotacije? Ova akcija je nepovratna!")) return;
+    setClearLoading(true);
+    try {
+      const res = await fetch("/api/documents/clear-all", { method: "DELETE" });
+      if (!res.ok) throw new Error("Greška pri brisanju dokumenata.");
+      alert("Svi dokumenti i anotacije su obrisani i brojači resetirani.");
+      // Refreshaš listu i statistiku nakon brisanja
+      fetchDocuments();
+      fetchStats();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setClearLoading(false);
+    }
+  };
+
   return (
     <div className="container mt-4">
-      <div className="mb-4 p-3 bg-white shadow-sm rounded border">
-        <h5 className="mb-2">📊 Statistika dokumenata</h5>
-        <ul className="list-unstyled mb-0">
-          <li><strong>Ukupno:</strong> {stats.total_documents}</li>
-          <li><strong>Obrađeni (OCR):</strong> {stats.processed_documents}</li>
-          <li><strong>PDF veličina:</strong> {stats.total_pdf_size_mb} MB</li>
-          <li><strong>Slobodan prostor:</strong> {stats.free_space_mb} MB</li>
-        </ul>
+      <div className="mb-4 p-3 bg-white shadow-sm rounded border d-flex justify-content-between align-items-center">
+        <div>
+          <h5 className="mb-2">📊 Statistika dokumenata</h5>
+          <ul className="list-unstyled mb-0">
+            <li><strong>Ukupno:</strong> {stats.total_documents}</li>
+            <li><strong>Obrađeni (OCR):</strong> {stats.processed_documents}</li>
+            <li><strong>PDF veličina:</strong> {stats.total_pdf_size_mb} MB</li>
+            <li><strong>Slobodan prostor:</strong> {stats.free_space_mb} MB</li>
+          </ul>
+        </div>
+
+        {/* CRVENI DEVELOPMENT GUMB */}
+        <button
+          className="btn btn-danger"
+          onClick={handleClearAll}
+          disabled={clearLoading}
+          title="Obriši sve dokumente i anotacije (dev alat)"
+        >
+          {clearLoading ? "Brisanje..." : "ISPRAZNI SVE"}
+        </button>
       </div>
+
+      {/* --- ostatak tvog postojećeg UI koda --- */}
 
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2 className="h4 text-primary mb-0">📁 OCR dokumenti</h2>
@@ -188,15 +216,11 @@ export default function Documents() {
             </tbody>
           </table>
 
-          {/* Pagination */}
           {itemsPerPage !== -1 && pageCount > 1 && (
             <nav className="mt-3">
               <ul className="pagination pagination-sm justify-content-end">
                 {Array.from({ length: pageCount }, (_, i) => (
-                  <li
-                    key={i}
-                    className={`page-item ${i + 1 === currentPage ? "active" : ""}`}
-                  >
+                  <li key={i} className={`page-item ${i + 1 === currentPage ? "active" : ""}`}>
                     <button className="page-link" onClick={() => setCurrentPage(i + 1)}>
                       {i + 1}
                     </button>
