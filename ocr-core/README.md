@@ -14,3 +14,4 @@ uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
 ## ako je potrebno dohvatiti sve pakete (SQLalchemy, Python itd)
 pip freeze > requirements.txt
 pip install > requirements.txt
+test
