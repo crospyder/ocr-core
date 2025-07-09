@@ -1,74 +1,47 @@
+// src/components/Sidebar.jsx
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Home, Upload, FileText, Settings, Server } from "lucide-react";
+import {
+  Home,
+  Upload,
+  FileText,
+  Settings,
+  Server,
+  Users,
+} from "lucide-react";
 
 export default function Sidebar() {
+  const navItems = [
+    { to: "/", label: "Početna", icon: <Home size={18} />, end: true },
+    { to: "/upload", label: "Upload", icon: <Upload size={18} /> },
+    { to: "/documents", label: "Dokumenti", icon: <FileText size={18} /> },
+    { to: "/partneri", label: "Partneri", icon: <Users size={18} />, end: true },
+    { to: "/admin", label: "Admin Panel", icon: <Settings size={18} /> },
+    { to: "/deployment", label: "Deployment", icon: <Server size={18} /> },
+  ];
+
   return (
     <aside
-      className="bg-dark text-white px-3 py-4 d-flex flex-column"
-      style={{
-        width: "250px",
-        height: "calc(100vh - 100px)", // zauzima preostali prostor ispod topbara
-        position: "sticky",
-        top: "100px", // odmah ispod topbara
-        overflowY: "auto",
-      }}
+      className="sidebar bg-dark text-white px-3 py-4 d-flex flex-column"
     >
       <div className="mb-4 text-center">
-        <h4 className="fw-bold text-light">📄 OCR Core</h4>
+        <h4 className="fw-bold text-light">Izbornik</h4>
       </div>
-      <nav className="nav flex-column gap-2">
-        <NavLink
-          to="/"
-          end
-          className={({ isActive }) =>
-            `nav-link d-flex align-items-center gap-2 px-3 py-2 rounded ${
-              isActive ? "active-link" : "text-white"
-            }`
-          }
-        >
-          <Home size={18} /> Početna
-        </NavLink>
-        <NavLink
-          to="/upload"
-          className={({ isActive }) =>
-            `nav-link d-flex align-items-center gap-2 px-3 py-2 rounded ${
-              isActive ? "active-link" : "text-white"
-            }`
-          }
-        >
-          <Upload size={18} /> Upload
-        </NavLink>
-        <NavLink
-          to="/documents"
-          className={({ isActive }) =>
-            `nav-link d-flex align-items-center gap-2 px-3 py-2 rounded ${
-              isActive ? "active-link" : "text-white"
-            }`
-          }
-        >
-          <FileText size={18} /> Dokumenti
-        </NavLink>
-        <NavLink
-          to="/admin"
-          className={({ isActive }) =>
-            `nav-link d-flex align-items-center gap-2 px-3 py-2 rounded ${
-              isActive ? "active-link" : "text-white"
-            }`
-          }
-        >
-          <Settings size={18} /> Admin Panel
-        </NavLink>
-        <NavLink
-          to="/deployment"
-          className={({ isActive }) =>
-            `nav-link d-flex align-items-center gap-2 px-3 py-2 rounded ${
-              isActive ? "active-link" : "text-white"
-            }`
-          }
-        >
-          <Server size={18} /> Deployment
-        </NavLink>
+      <nav className="nav flex-column gap-1">
+        {navItems.map(({ to, label, icon, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            className={({ isActive }) =>
+              `nav-link d-flex align-items-center gap-2 px-3 py-2 rounded sidebar-link ${
+                isActive ? "active-link" : "text-white"
+              }`
+            }
+          >
+            {icon} {label}
+          </NavLink>
+        ))}
       </nav>
     </aside>
   );

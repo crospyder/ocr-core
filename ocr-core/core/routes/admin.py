@@ -16,10 +16,24 @@ def get_db():
     finally:
         db.close()
 
+# === Pydantic modeli ===
+
 class UserCreate(BaseModel):
     username: str
     role: str
     password: str = "defaultpassword"
+
+class UserUpdate(BaseModel):
+    username: str | None = None
+    role: str | None = None
+    password: str | None = None
+
+# === Rute ===
+
+@router.get("/users")
+def get_users(db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    return [{"id": u.id, "username": u.username, "role": u.role} for u in users]
 
 @router.post("/users")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -32,15 +46,36 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         username=user.username,
         role=user.role,
         password_hash=hashed_password,
-        client_id=1  # fiksno za master admina, prilagodi po potrebi
+        client_id=1  # prilagodi po potrebi
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return {"id": new_user.id, "username": new_user.username, "role": new_user.role}
 
-@router.get("/users")
-def get_users(db: Session = Depends(get_db)):
-    users = db.query(User).all()
-    # Pretvori SQLAlchemy objekte u serializable dict
-    return [{"id": u.id, "username": u.username, "role": u.role} for u in users]
+@router.put("/users/{user_id}")
+def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
+
+    if payload.username:
+        user.username = payload.username
+    if payload.role:
+        user.role = payload.role
+    if payload.password:
+        user.password_hash = pwd_context.hash(payload.password)
+
+    db.commit()
+    db.refresh(user)
+    return {"message": "Korisnik ažuriran", "user": {"id": user.id, "username": user.username}}
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
+
+    db.delete(user)
+    db.commit()
+    return {"message": "Korisnik obrisan"}

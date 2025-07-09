@@ -2,9 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from core.database.connection import get_db
 from core.database.models import User, Client
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from passlib.context import CryptContext
-
 
 router = APIRouter()
 
@@ -29,6 +28,14 @@ class ClientCreate(BaseModel):
     oib: str
     db_name: str
     licenses: int = 1
+
+# Output model za dobavljače
+class SupplierOut(BaseModel):
+    id: int
+    name: str
+    oib: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
@@ -108,16 +115,8 @@ def create_client(client_data: ClientCreate, db: Session = Depends(get_db)):
     db.refresh(client)
     return client
 
-    # Output model za dobavljače
-class SupplierOut(BaseModel):
-    id: int
-    name: str
-    oib: str
-
-    class Config:
-        orm_mode = True
-
 # Ruta za dohvat dobavljača (klijenata) — frontend dropdown
 @router.get("/suppliers", response_model=list[SupplierOut])
 def list_suppliers(db: Session = Depends(get_db)):
     return db.query(Client).order_by(Client.name).all()
+

@@ -66,3 +66,54 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   min-height: 300px;
 }
+.active-link {
+  background-color: #ffffff;
+  color: #0d6efd !important;
+  font-weight: bold;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  height: calc(100vh - 100px); /* ispod topbara */
+  position: sticky;
+  top: 100px;
+  overflow-y: auto;
+  background-color: #212529;
+}
+
+/* Sidebar link styling */
+.sidebar-link {
+  color: #f8f9fa;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-link:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffc107 !important;
+}
+
+/* Active link styling */
+.sidebar-link.active-link {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: #ffc107 !important;
+  font-weight: 600;
+}
+
+/* Headings */
+.sidebar h4 {
+  color: #ffc107;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.footer-dark {
+  background-color: #212429;
+  color: #adb5bd;
+  font-size: 0.875rem;
+  border-top: 1px solid #2c2f33;
+  text-align: center;
+  padding: 1rem 0;
+}
+

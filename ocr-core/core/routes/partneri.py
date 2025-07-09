@@ -8,6 +8,8 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/partneri", tags=["partneri"])
 
+
+
 class PartnerOut(BaseModel):
     id: int
     naziv: str
@@ -18,13 +20,33 @@ class PartnerOut(BaseModel):
     kontakt_osoba: str | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # zamjena za orm_mode u Pydantic v2
+
+
+class PartnerUpdate(BaseModel):
+    adresa: str | None = None
+    kontakt_telefon: str | None = None
+    kontakt_email: str | None = None
+    kontakt_osoba: str | None = None
 
 
 @router.get("/", response_model=list[PartnerOut])
 def get_partneri(db: Session = Depends(get_db)):
     partneri = db.query(Partner).all()
     return partneri
+
+
+@router.put("/{partner_id}")
+def update_partner(partner_id: int, payload: PartnerUpdate, db: Session = Depends(get_db)):
+    partner = db.query(Partner).filter(Partner.id == partner_id).first()
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner nije pronađen")
+
+    for field, value in payload.dict(exclude_unset=True).items():
+        setattr(partner, field, value)
+
+    db.commit()
+    return {"message": "Partner ažuriran"}
 
 
 def sync_partner_from_document(db: Session, document_id: int):

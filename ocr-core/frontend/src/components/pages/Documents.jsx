@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function Documents() {
   const [documents, setDocuments] = useState([]);
@@ -10,12 +11,6 @@ export default function Documents() {
   const [supplierOib, setSupplierOib] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [stats, setStats] = useState({
-    total_documents: 0,
-    processed_documents: 0,
-    total_pdf_size_mb: 0,
-    free_space_mb: 0,
-  });
   const [clearLoading, setClearLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -29,7 +24,6 @@ export default function Documents() {
 
   useEffect(() => {
     fetchDocuments();
-    fetchStats();
   }, [documentType, supplierOib]);
 
   async function fetchDocuments() {
@@ -45,21 +39,25 @@ export default function Documents() {
       setDocuments(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err) {
-      setError(err.message);
+      toast.error(`❌ ${err.message}`);
       setDocuments([]);
     } finally {
       setLoading(false);
     }
   }
 
-  async function fetchStats() {
+  async function handleClearAll() {
+    if (!window.confirm("Jesi li siguran da želiš obrisati SVE dokumente i anotacije?")) return;
+    setClearLoading(true);
     try {
-      const res = await fetch("/api/documents/stats-info");
-      if (!res.ok) throw new Error("Greška pri dohvatu statistike.");
-      const data = await res.json();
-      setStats(data);
+      const res = await fetch("/api/documents/clear-all", { method: "DELETE" });
+      if (!res.ok) throw new Error("Greška pri brisanju dokumenata.");
+      toast.success("✅ Svi dokumenti i anotacije su obrisani.");
+      fetchDocuments();
     } catch (err) {
-      console.error(err);
+      toast.error(`❌ ${err.message}`);
+    } finally {
+      setClearLoading(false);
     }
   }
 
@@ -97,34 +95,9 @@ export default function Documents() {
     return sortedDocuments.slice(start, start + itemsPerPage);
   }, [sortedDocuments, currentPage, itemsPerPage]);
 
-  async function handleClearAll() {
-    if (!window.confirm("Jesi li siguran da želiš obrisati SVE dokumente i anotacije?")) return;
-    setClearLoading(true);
-    try {
-      const res = await fetch("/api/documents/clear-all", { method: "DELETE" });
-      if (!res.ok) throw new Error("Greška pri brisanju dokumenata.");
-      alert("Svi dokumenti i anotacije su obrisani.");
-      fetchDocuments();
-      fetchStats();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setClearLoading(false);
-    }
-  }
-
   return (
     <div className="container-fluid mt-4">
-      <div className="mb-4 p-3 bg-white shadow-sm rounded border d-flex justify-content-between align-items-center">
-        <div>
-          <h5 className="mb-2">📊 Statistika dokumenata</h5>
-          <ul className="list-unstyled mb-0">
-            <li><strong>Ukupno:</strong> {stats.total_documents}</li>
-            <li><strong>Obrađeni (OCR):</strong> {stats.processed_documents}</li>
-            <li><strong>PDF veličina:</strong> {stats.total_pdf_size_mb} MB</li>
-            <li><strong>Slobodan prostor:</strong> {stats.free_space_mb} MB</li>
-          </ul>
-        </div>
+      <div className="d-flex justify-content-end mb-3">
         <button className="btn btn-danger" onClick={handleClearAll} disabled={clearLoading}>
           {clearLoading ? "Brisanje..." : "ISPRAZNI SVE"}
         </button>
@@ -148,12 +121,20 @@ export default function Documents() {
             <option value="-1">Sve</option>
           </select>
           {supplierOib && (
-            <button className="btn btn-sm btn-outline-secondary" onClick={() => navigate("/documents")}>Prikaži sve dobavljače</button>
+            <button className="btn btn-sm btn-outline-secondary" onClick={() => navigate("/documents")}>
+              Prikaži sve dobavljače
+            </button>
           )}
         </div>
       </div>
 
-      {loading ? <p>Učitavanje...</p> : error ? <p className="text-danger">{error}</p> : paginatedDocs.length === 0 ? <p>Nema dokumenata za prikaz.</p> : (
+      {loading ? (
+        <p>Učitavanje...</p>
+      ) : error ? (
+        <p className="text-danger">{error}</p>
+      ) : paginatedDocs.length === 0 ? (
+        <p>Nema dokumenata za prikaz.</p>
+      ) : (
         <>
           <table className="table table-striped table-hover table-sm">
             <thead className="table-light">
@@ -176,10 +157,7 @@ export default function Documents() {
                   <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "-"}</td>
                   <td>
                     {doc.supplier_oib ? (
-                      <button
-                        className="btn btn-link p-0 text-decoration-underline"
-                        onClick={() => navigate(`/documents/partner/${doc.supplier_oib}`)}
-                      >
+                      <button className="btn btn-link p-0 text-decoration-underline" onClick={() => navigate(`/documents/partner/${doc.supplier_oib}`)}>
                         {doc.supplier_name_ocr || "-"}
                       </button>
                     ) : (
@@ -200,9 +178,7 @@ export default function Documents() {
               <ul className="pagination pagination-sm justify-content-end">
                 {Array.from({ length: pageCount }, (_, i) => (
                   <li key={i} className={`page-item ${i + 1 === currentPage ? "active" : ""}`}>
-                    <button className="page-link" onClick={() => setCurrentPage(i + 1)}>
-                      {i + 1}
-                    </button>
+                    <button className="page-link" onClick={() => setCurrentPage(i + 1)}>{i + 1}</button>
                   </li>
                 ))}
               </ul>

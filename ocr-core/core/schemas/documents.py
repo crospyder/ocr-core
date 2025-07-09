@@ -1,4 +1,4 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, ConfigDict
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, date
 import json
@@ -8,8 +8,7 @@ class SupplierOut(BaseModel):
     name: Optional[str] = None
     oib: Optional[str] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DocumentBase(BaseModel):
     filename: str
@@ -23,7 +22,7 @@ class DocumentOut(DocumentBase):
     supplier: Optional[SupplierOut] = None
     supplier_oib: Optional[str] = None
     annotation: Optional[List[Dict[str, Any]]] = None
-    sudreg_response: Optional[Union[Dict[str, Any], str]] = None  # podržava dict ili raw string
+    sudreg_response: Optional[Union[Dict[str, Any], str]] = None
     invoice_date: Optional[date] = None
     due_date: Optional[date] = None
     document_type: Optional[str] = None
@@ -45,7 +44,7 @@ class DocumentOut(DocumentBase):
             try:
                 return json.loads(v)
             except Exception:
-                return v  # vrati raw string ako parsiranje padne
+                return v
         return v
 
     @validator('parsed', pre=True, always=True)
@@ -59,5 +58,4 @@ class DocumentOut(DocumentBase):
                 return v
         return v
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
