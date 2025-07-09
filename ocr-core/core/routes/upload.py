@@ -7,9 +7,10 @@ from pydantic import BaseModel
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Form
 from typing import List
+from sqlalchemy.orm import Session
 from core.parsers.dispatcher import dispatch_parser
 from core.database.connection import SessionMain
-from core.database.models import Document, Client
+from core.database.models import Document, Client, Partner
 from core.parsers.supplier_extractor import extract_supplier_info
 from modules.sudreg_api.client import SudregClient
 from modules.ocr_processing.workers.engine import perform_ocr
@@ -81,31 +82,58 @@ async def upload_documents(
 
         supplier_info = extract_supplier_info(text)
         oib = supplier_info.get("oib")
+        partner_obj = None
 
         sudreg_data = None
         sudreg_raw = None
         skraceni_naziv = None
 
-        if oib:
-            try:
-                sudreg_data, sudreg_raw = sudreg_client.get_company_by_oib(oib, db)
-                if sudreg_data:
-                    supplier_info.update({
-                        "naziv_firme": sudreg_data.naziv,
-                        "adresa": sudreg_data.adresa,
-                        "oib": sudreg_data.oib,
-                    })
-                if sudreg_raw and isinstance(sudreg_raw, dict):
-                    skracene_tvrtke = sudreg_raw.get("skracene_tvrtke")
-                    if skracene_tvrtke and isinstance(skracene_tvrtke, list):
-                        skraceni_naziv = skracene_tvrtke[0].get("ime")
-            except Exception as e:
-                sudreg_raw = {"error": str(e)}
-                supplier_info["alert"] = f"❌ Greška u komunikaciji sa Sudreg API-jem: {e}"
-        else:
-            supplier_info["alert"] = "❌ OIB nije pronađen – potrebna ručna validacija dokumenta."
+        if oib and oib != owner_oib:
+            partner_obj = db.query(Partner).filter_by(oib=oib).first()
 
-        supplier_obj = db.query(Client).filter(Client.oib == oib).first() if oib else None
+            if partner_obj:
+                logger.info(f"Partner postoji u bazi: {partner_obj.naziv} ({partner_obj.oib})")
+                supplier_info.update({
+                    "naziv_firme": partner_obj.naziv,
+                    "adresa": partner_obj.adresa,
+                    "oib": partner_obj.oib,
+                })
+                skraceni_naziv = partner_obj.naziv
+            else:
+                try:
+                    sudreg_data, sudreg_raw = sudreg_client.get_company_by_oib(oib, db)
+                    if sudreg_data:
+                        if sudreg_raw and isinstance(sudreg_raw, dict):
+                            skracene_tvrtke = sudreg_raw.get("skracene_tvrtke")
+                            if skracene_tvrtke and isinstance(skracene_tvrtke, list):
+                                skraceni_naziv = skracene_tvrtke[0].get("ime")
+
+                        partner_naziv = skraceni_naziv or sudreg_data.naziv
+
+                        supplier_info.update({
+                            "naziv_firme": partner_naziv,
+                            "adresa": sudreg_data.adresa,
+                            "oib": sudreg_data.oib,
+                        })
+
+                        # Upis novog partnera
+                        novi_partner = Partner(
+                            naziv=partner_naziv,
+                            oib=sudreg_data.oib,
+                            adresa=sudreg_data.adresa,
+                            kontakt_email=None,
+                            kontakt_osoba=None,
+                            kontakt_telefon=None,
+                        )
+                        db.add(novi_partner)
+                        db.commit()
+                        logger.info(f"Dodan novi partner: {novi_partner.naziv} ({novi_partner.oib})")
+                except Exception as e:
+                    sudreg_raw = {"error": str(e)}
+                    supplier_info["alert"] = f"❌ Greška u Sudreg API-ju: {e}"
+        else:
+            supplier_info["alert"] = "❌ OIB nije pronađen ili je domaći OIB"
+            logger.warning("Nepotpun dokument - OIB nepoznat ili domaći")
 
         if isinstance(parsed_data, dict):
             safe_parsed = {
@@ -126,8 +154,8 @@ async def upload_documents(
             doc = Document(
                 filename=unique_name,
                 ocrresult=text,
-                supplier_id=supplier_obj.id if supplier_obj else None,
-                supplier_name_ocr=skraceni_naziv or supplier_info.get("naziv_firme") or None,
+                supplier_id=None,
+                supplier_name_ocr=skraceni_naziv or supplier_info.get("naziv_firme") or "Nepoznat dobavljač",
                 supplier_oib=oib,
                 archived_at=upload_time,
                 date=upload_time,
@@ -141,8 +169,7 @@ async def upload_documents(
             db.commit()
             db.refresh(doc)
 
-            # Provjera je li dokument nepotpun
-            is_nepotpun = not oib or (oib and oib == owner_oib)
+            is_nepotpun = not oib or (oib == owner_oib)
             naziv_slug = slugify(skraceni_naziv or supplier_info.get("naziv_firme") or "nepoznato")
             if is_nepotpun:
                 naziv_slug = "nepotpundokument"

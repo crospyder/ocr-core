@@ -62,3 +62,14 @@ class ParsedOIB(Base):
     oib = Column(String(11), nullable=False, unique=True)
     supplier_address = Column(String(255), nullable=True)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Partner(Base):
+    __tablename__ = "partneri"
+
+    id = Column(Integer, primary_key=True, index=True)
+    naziv = Column(String(255), nullable=False)
+    oib = Column(String(20), nullable=False, unique=True, index=True)
+    adresa = Column(String(255))
+    kontakt_telefon = Column(String(50))
+    kontakt_email = Column(String(100))
+    kontakt_osoba = Column(String(100))

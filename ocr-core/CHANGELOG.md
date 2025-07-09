@@ -1,6 +1,20 @@
 # Changelog – OCR-Core
 
-Sve važne promjene u ovom projektu dokumentirane su u ovom fajlu.
+## [v0.33] – 2025-07-09
+
+### Dodano
+- Backend logika: dokumenti sada prvo provjeravaju postoji li partner po OIB-u u tablici `partneri`, ako ne postoji – dohvaća se iz SudReg API-ja i sprema.
+- Naziv partnera se sada koristi **isključivo u skracenom obliku** i zapisuje dosljedno u `documents` i `partneri` tablicu.
+- Frontend: naziv dobavljača u `Documents.jsx` sada je klikabilan i vodi na `/documents/partner/{oib}` gdje se prikazuju svi dokumenti tog dobavljača.
+
+### Ispravljeno
+- Riješen problem gdje je kod drugog uploada istog partnera korišten puni naziv firme umjesto skraćenog.
+- Ispravljeno imenovanje PDF-ova kad se koristi dugi naziv iz Sudrega.
+- Popravljeno API filtriranje po OIB-u (route `/api/documents/by-oib/{oib}` vraća ispravne rezultate).
+
+### Deployment
+- Nema novih migracija ako `partneri` tablica već postoji.
+- Verzija tagirana kao `v0.33`.
 
 ## [v0.32] – 2025-07-09
 

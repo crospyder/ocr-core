@@ -10,6 +10,8 @@ import DocumentDetail from "./src/components/DocumentDetail.jsx";
 import AdminPanel from "./src/components/AdminPanel.jsx";
 import Dashboard from "./src/components/dashboard/Dashboard.jsx"; // import dashboard
 import "./main.css";
+import PartnerDocuments from "./src/components/pages/PartnerDocuments.jsx";
+
 
 const router = createBrowserRouter([
   {
@@ -22,6 +24,8 @@ const router = createBrowserRouter([
       { path: "documents/:id", element: <DocumentDetail /> }, // Detalji pojedinog dokumenta
       { path: "admin", element: <AdminPanel /> },
       { path: "deployment", element: <Deployment /> }, // ➕ OVA LINIJA
+      { path: "documents/partner/:oib", element: <PartnerDocuments /> },
+
     ],
   },
 ]);
