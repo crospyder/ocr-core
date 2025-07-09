@@ -19,7 +19,10 @@ export default function Layout() {
       <div className="d-flex flex-grow-1" style={{ height: "calc(100vh - 70px)", overflow: "hidden" }}>
         <Sidebar />
 
-        <main className="flex-grow-1 p-4 overflow-auto d-flex flex-column">
+        <main
+          className="flex-grow-1 p-4 overflow-auto d-flex flex-column"
+          style={{ width: "100%", overflowX: "hidden" }}
+        >
           <Breadcrumbs />
           <div className="flex-grow-1 mt-3">
             <Outlet />

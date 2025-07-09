@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
+/* --- Osnovni stilovi --- */
 body, #root {
   font-family: 'Inter', sans-serif;
   background-color: #f4f5f7;
@@ -9,6 +10,12 @@ body, #root {
   min-height: 100vh;
 }
 
+main {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* --- Header stilovi --- */
 header {
   text-align: center;
   margin-bottom: 2.5rem;
@@ -30,6 +37,7 @@ header p.subtitle {
   margin-top: 0;
 }
 
+/* --- Button stilovi --- */
 button {
   background-color: #15396e;
   border: none;
@@ -48,71 +56,130 @@ button:hover {
   box-shadow: 0 4px 8px rgba(0, 82, 204, 0.5);
 }
 
-main {
-  max-width: 100%;
-  margin: 0 auto;
-}
-
-.highlight-row {
-  background-color: #fff3b0 !important;
-  transition: background-color 0.6s ease;
-}
-
-/* Kompaktna tablica za Documents komponentu */
-.container.mt-4 table.table {
+/* --- Tabela Documents --- */
+table.table {
   font-size: 0.85rem;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.3rem;
 }
 
-.container.mt-4 table.table th,
-.container.mt-4 table.table td {
+table.table th,
+table.table td {
   padding: 0.3rem 0.6rem;
   vertical-align: middle;
-}
-
-.container.mt-4 h2.h3 {
-  margin-bottom: 0.75rem;
-  font-size: 1.4rem;
-}
-
-.nav-link {
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.nav-link:hover {
-  background-color: #0052cc;
-  color: #ffffff !important;
-}
-
-.active-link {
-  background-color: #15396e;
-  color: #ffffff !important;
-  font-weight: 700;
-  border-left: 4px solid #ffc107;
-}
-
-header.navbar {
-  background-color: #ffffff;
-}
-
-table td,
-.table th {
-  font-size: 0.85rem;
-  vertical-align: middle;
-}
-
-select.form-select {
-  font-size: 0.9rem;
+  background-color: white;
+  border-top: none;
+  border-bottom: none;
 }
 
 .table-hover tbody tr:hover {
   background-color: #e8f0fe;
 }
 
-.bg-white {
-  background-color: #ffffff !important;
+/* Highlight redak nakon upload-a */
+.highlight-row {
+  background-color: #fff3b0 !important;
+  transition: background-color 0.6s ease;
 }
 
+/* --- Naslovi --- */
+h2.h4.text-primary {
+  color: #15396e;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+/* --- Pagination stilovi --- */
+.page-link {
+  color: #0052cc;
+  border-color: #dee2e6;
+  background-color: #ffffff;
+  transition: all 0.2s ease-in-out;
+}
+
+.page-link:hover {
+  color: #ffffff;
+  background-color: #0052cc;
+  border-color: #0052cc;
+}
+
+.page-item.active .page-link {
+  background-color: #15396e;
+  border-color: #0052cc;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* --- Form Select --- */
+select.form-select {
+  font-size: 0.9rem;
+}
+
+/* --- Tag Button stilovi --- */
+.btn-tag {
+  border: 1px solid #0052cc;
+  background-color: white;
+  color: #0052cc;
+  font-weight: 500;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 82, 204, 0.1);
+}
+
+.btn-tag:hover,
+.btn-tag:focus {
+  background-color: #0052cc;
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 82, 204, 0.25);
+  text-decoration: none;
+  outline: none;
+}
+
+/* --- Sidebar stilovi --- */
+aside.bg-dark {
+  background-color: #212529 !important; /* Bootstrap dark */
+  color: white;
+  width: 250px;
+  height: calc(100vh - 100px);
+  position: sticky;
+  top: 100px;
+  overflow-y: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+aside .nav-link {
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  color: white !important;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+}
+
+aside .nav-link.active-link {
+  background-color: #15396e;
+  color: white !important;
+  font-weight: 700;
+  border-left: 4px solid #ffc107;
+}
+
+aside .nav-link:hover {
+  background-color: #0052cc;
+  color: white !important;
+}
+
+/* Gap između linkova u sidebaru */
+aside nav.flex-column.gap-2 > .nav-link {
+  margin-bottom: 0.25rem;
+}
+
+/* --- Breadcrumbs animacija i stilovi --- */
 .animated-breadcrumb {
   opacity: 0;
   transform: translateX(-10px);
@@ -139,7 +206,27 @@ select.form-select {
   }
 }
 
-/* Poboljšani hover na dropdown toggle (username) */
+/* --- Navbar i topbar --- */
+.navbar {
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 82, 204, 0.15);
+}
+
+.navbar .text-primary {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #15396e !important;
+}
+
+.navbar img {
+  transition: transform 0.3s ease;
+}
+
+.navbar img:hover {
+  transform: scale(1.05);
+}
+
+/* Dropdown toggle */
 .dropdown-toggle {
   transition: background-color 0.2s ease;
 }
@@ -154,81 +241,20 @@ select.form-select {
   cursor: pointer;
 }
 
-/* Osjetljiviji logo margin */
-.navbar img {
-  transition: transform 0.3s ease;
-}
-
-.navbar img:hover {
-  transform: scale(1.05);
-}
-
-/* Fino sjenčanje topbara */
-.navbar {
-  box-shadow: 0 2px 6px rgba(0, 82, 204, 0.15);
-}
-
-/* Jači i čistiji font za naslov u topbaru */
-.navbar .text-primary {
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  color: #15396e !important;
-}
-
-/* Dropdown menu malo elegantniji */
+/* Dropdown menu */
 .dropdown-menu {
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   font-size: 0.95rem;
 }
 
-/* Dropdown item hover */
-.dropdown-item:hover, .dropdown-item:focus {
+.dropdown-item:hover,
+.dropdown-item:focus {
   background-color: #e6f0ff;
   color: #15396e;
 }
-/* Pagination osnovna boja linkova */
-.page-link {
-  color: #0052cc;
-  border-color: #dee2e6;
-  background-color: #ffffff;
-  transition: all 0.2s ease-in-out;
-}
 
-.page-link:hover {
-  color: #ffffff;
-  background-color: #0052cc;
-  border-color: #0052cc;
-}
-
-/* Aktivna stranica */
-.page-item.active .page-link {
-  background-color: #15396e;
-  border-color: #0052cc;
-  color: #ffffff;
-  font-weight: 600;
-}
-/* Seksi stil za tag tipke */
-.btn-tag {
-  border: 1px solid #0052cc;
-  background-color: white;
-  color: #0052cc;
-  font-weight: 500;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 82, 204, 0.1);
-}
-
-.btn-tag:hover,
-.btn-tag:focus {
-  background-color: #0052cc;
-  color: white;
-  box-shadow: 0 2px 6px rgba(0, 82, 204, 0.25);
-  text-decoration: none;
-  outline: none;
-}
+/* Dokument title */
 .document-title {
   font-size: 18px;
   font-weight: 400;
@@ -236,4 +262,107 @@ select.form-select {
   margin-bottom: 1rem;
   letter-spacing: 0.2px;
   text-align: right;
+}
+
+/* Container fluid za puni širinski layout */
+.container-fluid {
+  padding-left: 2rem;
+  padding-right: 2rem;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* DocumentDetail specifični stilovi */
+
+.document-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #15396e;
+  letter-spacing: 0.1px;
+  margin-bottom: 1.5rem;
+}
+
+/* Glavni container i layout */
+
+.row.mb-4 {
+  height: 80vh; /* visina za content u DocumentDetail */
+}
+
+.border {
+  border: 1px solid #dee2e6 !important;
+}
+
+.shadow-sm {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+
+.bg-white {
+  background-color: #fff !important;
+}
+
+/* Scrollable OCR TextTagger i Sudreg output */
+
+.ocr-text-tagger-wrapper {
+  flex-grow: 1;
+  overflow-y: auto;
+  font-family: monospace, monospace;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.sudreg-pre {
+  font-family: monospace, monospace;
+  font-size: 0.9rem;
+  max-height: 500px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background-color: #fefefe;
+  border-radius: 4px;
+  padding: 1rem;
+  box-shadow: inset 0 0 5px #e0e0e0;
+}
+
+/* Naslovi sekcija */
+
+h5 {
+  color: #15396e;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* Responsive: kad je uski viewport, vertikalni stacking */
+
+@media (max-width: 768px) {
+  .row.mb-4 {
+    height: auto;
+  }
+}
+/* Naslov sekcije Sudreg odgovora, jasno odvojen */
+.sudreg-header {
+  border-bottom: 2px solid #15396e;
+  padding-bottom: 0.3rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #15396e;
+}
+
+/* Formatirani output odgovora s scrollom */
+.sudreg-pre {
+  font-family: monospace, monospace;
+  font-size: 0.9rem;
+  max-height: 500px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background-color: #fefefe;
+  border-radius: 4px;
+  padding: 1rem;
+  box-shadow: inset 0 0 5px #e0e0e0;
 }

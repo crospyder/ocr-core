@@ -1,12 +1,10 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useLocation } from "react-router-dom";
 
 export default function Documents() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
-  const [highlightIds, setHighlightIds] = useState([]);
   const [documentType, setDocumentType] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -17,21 +15,13 @@ export default function Documents() {
     free_space_mb: 0,
   });
   const [clearLoading, setClearLoading] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     fetchDocuments();
     fetchStats();
   }, [documentType]);
 
-  useEffect(() => {
-    if (highlightIds.length > 0) {
-      const timer = setTimeout(() => setHighlightIds([]), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [highlightIds]);
-
-  const fetchDocuments = async () => {
+  async function fetchDocuments() {
     setLoading(true);
     try {
       const query = documentType ? `?document_type=${encodeURIComponent(documentType)}` : "";
@@ -41,20 +31,15 @@ export default function Documents() {
       const data = await res.json();
       setDocuments(Array.isArray(data) ? data : []);
       setError(null);
-
-      if (location.state?.justUploaded) {
-        const ids = location.state.uploadedIds || data.slice(0, 5).map(doc => doc.id);
-        setHighlightIds(ids);
-      }
     } catch (err) {
       setError(err.message);
       setDocuments([]);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const fetchStats = async () => {
+  async function fetchStats() {
     try {
       const res = await fetch("/api/documents/stats-info");
       if (!res.ok) throw new Error("Greška pri dohvatu statistike.");
@@ -63,13 +48,13 @@ export default function Documents() {
     } catch (err) {
       console.error(err);
     }
-  };
+  }
 
-  const requestSort = (key) => {
+  function requestSort(key) {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
     setSortConfig({ key, direction });
-  };
+  }
 
   const sortedDocuments = useMemo(() => {
     const docs = [...documents];
@@ -84,28 +69,33 @@ export default function Documents() {
 
       if (aVal === null || aVal === undefined) return 1;
       if (bVal === null || bVal === undefined) return -1;
-      return sortConfig.direction === "asc"
-        ? aVal > bVal ? 1 : -1
-        : aVal < bVal ? 1 : -1;
+
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+
+      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+      return 0;
     });
   }, [documents, sortConfig]);
 
   const pageCount = Math.ceil(sortedDocuments.length / itemsPerPage);
+
   const paginatedDocs = useMemo(() => {
     if (itemsPerPage === -1) return sortedDocuments;
     const start = (currentPage - 1) * itemsPerPage;
     return sortedDocuments.slice(start, start + itemsPerPage);
   }, [sortedDocuments, currentPage, itemsPerPage]);
 
-  // Nova funkcija za brisanje svih dokumenata i anotacija
-  const handleClearAll = async () => {
+  async function handleClearAll() {
     if (!window.confirm("Jesi li siguran da želiš obrisati SVE dokumente i anotacije? Ova akcija je nepovratna!")) return;
     setClearLoading(true);
     try {
       const res = await fetch("/api/documents/clear-all", { method: "DELETE" });
       if (!res.ok) throw new Error("Greška pri brisanju dokumenata.");
       alert("Svi dokumenti i anotacije su obrisani i brojači resetirani.");
-      // Refreshaš listu i statistiku nakon brisanja
       fetchDocuments();
       fetchStats();
     } catch (err) {
@@ -113,10 +103,10 @@ export default function Documents() {
     } finally {
       setClearLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="container mt-4">
+    <div className="container-fluid mt-4">
       <div className="mb-4 p-3 bg-white shadow-sm rounded border d-flex justify-content-between align-items-center">
         <div>
           <h5 className="mb-2">📊 Statistika dokumenata</h5>
@@ -127,8 +117,6 @@ export default function Documents() {
             <li><strong>Slobodan prostor:</strong> {stats.free_space_mb} MB</li>
           </ul>
         </div>
-
-        {/* CRVENI DEVELOPMENT GUMB */}
         <button
           className="btn btn-danger"
           onClick={handleClearAll}
@@ -139,15 +127,16 @@ export default function Documents() {
         </button>
       </div>
 
-      {/* --- ostatak tvog postojećeg UI koda --- */}
-
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
         <h2 className="h4 text-primary mb-0">📁 OCR dokumenti</h2>
-        <div className="d-flex gap-3 align-items-center">
+        <div className="d-flex gap-3 align-items-center flex-wrap">
           <select
             className="form-select form-select-sm"
             value={documentType}
-            onChange={(e) => setDocumentType(e.target.value)}
+            onChange={(e) => {
+              setDocumentType(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="">Vrsta: Sve</option>
             <option value="URA">URA</option>
@@ -155,6 +144,7 @@ export default function Documents() {
             <option value="UGOVOR">UGOVOR</option>
             <option value="IZVOD">IZVOD</option>
           </select>
+
           <select
             className="form-select form-select-sm"
             value={itemsPerPage}
@@ -184,22 +174,19 @@ export default function Documents() {
           <table className="table table-striped table-hover table-sm">
             <thead className="table-light">
               <tr>
-                <th>#</th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort("id")}>#</th>
                 <th style={{ cursor: "pointer" }} onClick={() => requestSort("filename")}>Naziv</th>
-                <th onClick={() => requestSort("date")} style={{ cursor: "pointer" }}>Arhivirano</th>
-                <th onClick={() => requestSort("supplier_name_ocr")} style={{ cursor: "pointer" }}>Dobavljač</th>
-                <th onClick={() => requestSort("supplier_oib")} style={{ cursor: "pointer" }}>OIB</th>
-                <th onClick={() => requestSort("invoice_date")} style={{ cursor: "pointer" }}>Datum računa</th>
-                <th onClick={() => requestSort("due_date")} style={{ cursor: "pointer" }}>Datum valute</th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort("date")}>Arhivirano</th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort("supplier_name_ocr")}>Dobavljač</th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort("supplier_oib")}>OIB</th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort("br_racuna")}>Broj računa</th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort("invoice_date")}>Datum računa</th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort("due_date")}>Datum valute</th>
               </tr>
             </thead>
             <tbody>
               {paginatedDocs.map((doc) => (
-                <tr
-                  key={doc.id}
-                  className={highlightIds.includes(doc.id) ? "highlight-row" : ""}
-                  title={doc.validation_alert || ""}
-                >
+                <tr key={doc.id} title={doc.validation_alert || ""}>
                   <td>{doc.id}</td>
                   <td>
                     <a href={`/documents/${doc.id}`}>
@@ -209,6 +196,7 @@ export default function Documents() {
                   <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "-"}</td>
                   <td>{doc.supplier_name_ocr || "-"}</td>
                   <td>{doc.supplier_oib || "-"}</td>
+                  <td>{doc.br_racuna || "-"}</td>
                   <td>{doc.invoice_date ? new Date(doc.invoice_date).toLocaleDateString("hr-HR") : "-"}</td>
                   <td>{doc.due_date ? new Date(doc.due_date).toLocaleDateString("hr-HR") : "-"}</td>
                 </tr>

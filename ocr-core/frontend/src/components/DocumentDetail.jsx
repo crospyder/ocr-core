@@ -80,18 +80,16 @@ export default function DocumentDetail() {
         </div>
       </div>
 
-      {/* Sudreg output */}
+      {/* Sudreg output - jasna odvojena sekcija */}
       <div className="border rounded shadow-sm p-3 bg-white mb-5">
-        <h5 className="mb-3">RAW odgovor iz Sudskog registra</h5>
-        {document.sudreg_response ? (
-          <pre style={{ fontSize: "0.9rem", maxHeight: "500px", overflowY: "auto" }}>
-            {typeof document.sudreg_response === "object"
-              ? JSON.stringify(document.sudreg_response, null, 2)
-              : document.sudreg_response}
-          </pre>
-        ) : (
-          <p className="text-muted">Nema dostupnih podataka iz Sudskog registra.</p>
-        )}
+        <h5 className="sudreg-header">RAW odgovor iz Sudskog registra</h5>
+        <pre className="sudreg-pre">
+          {document.sudreg_response
+            ? (typeof document.sudreg_response === "object"
+                ? JSON.stringify(document.sudreg_response, null, 2)
+                : document.sudreg_response)
+            : "Nema dostupnih podataka iz Sudskog registra."}
+        </pre>
       </div>
     </div>
   );
