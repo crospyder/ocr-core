@@ -16,6 +16,10 @@ from modules.sudreg_api.client import SudregClient
 from modules.ocr_processing.workers.engine import perform_ocr
 from core.deployment import get_owner_oib
 
+# === NOVO: Elasticsearch import & client init ===
+from elasticsearch import Elasticsearch
+es = Elasticsearch(["http://localhost:9200"])
+
 router = APIRouter()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -41,6 +45,26 @@ def str_to_date(date_str):
 
 def slugify(text):
     return re.sub(r"[^a-zA-Z0-9]+", "", text.lower())
+
+# === NOVO: helper funkcija za indeksiranje jednog dokumenta ===
+def index_to_elasticsearch(doc):
+    try:
+        es.index(
+            index="spineict_ocr",
+            id=doc.id,
+            document={      # ispravno za ES 8.x i dalje, za ES 7.x koristi "body" ako treba
+                "id": doc.id,
+                "filename": doc.filename,
+                "ocrresult": doc.ocrresult,
+                "supplier_name_ocr": doc.supplier_name_ocr,
+                "document_type": doc.document_type,
+                "archived_at": str(doc.archived_at),
+                # Dodaj još polja po potrebi
+            }
+        )
+        logger.info(f"ES: Uspješno indeksiran dokument ID: {doc.id}")
+    except Exception as e:
+        logger.error(f"ES: Indeksiranje nije uspjelo za doc {doc.id}: {e}")
 
 @router.post("/documents")
 async def upload_documents(
@@ -168,6 +192,9 @@ async def upload_documents(
             db.add(doc)
             db.commit()
             db.refresh(doc)
+
+            # === NOVO: Indeksiraj u Elasticsearch odmah nakon commita ===
+            index_to_elasticsearch(doc)
 
             is_nepotpun = not oib or (oib == owner_oib)
             naziv_slug = slugify(skraceni_naziv or supplier_info.get("naziv_firme") or "nepoznato")
