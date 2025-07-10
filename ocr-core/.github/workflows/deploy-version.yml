@@ -5,7 +5,7 @@ on:
     branches:
       - main  # promijeni ako koristiš drugu glavnu granu
    tags:
-     - 'v*'
+      - 'v*'
 
 jobs:
   build-and-upload-version:
