@@ -1,8 +1,8 @@
 {
   "naziv_aplikacije": "SpineICT DMS OCR-core",
-  "verzija": "v0.4.1",
-  "zadnje_azuriranje": "2025-07-10T18:19:06+02:00",
-  "build_info": "18f4158",
+  "verzija": "b205816",
+  "zadnje_azuriranje": "2025-07-10T18:21:41.174253",
+  "build_info": "b205816",
   "opis": "Glavni sustav za DMS, OCR i multitenant obradu dokumenata.",
   "copyright": "© 2025 SpineICT Solutions d.o.o.",
   "kontakt_email": "support@spine-ict.hr",
