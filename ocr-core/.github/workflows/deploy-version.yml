@@ -1,0 +1,41 @@
+name: Deploy version.json update
+
+on:
+  push:
+    branches:
+      - main  # promijeni ako koristiš drugu glavnu granu
+
+jobs:
+  build-and-upload-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repozitorija
+        uses: actions/checkout@v3
+
+      - name: Generiraj version.json
+        run: |
+          VERZIJA=$(git describe --tags --exact-match 2>/dev/null || git rev-parse --short HEAD)
+          BUILD_INFO=$(git rev-parse --short HEAD)
+          DATE=$(date --iso-8601=seconds)
+          cat > core/version.json << EOF
+          {
+            "naziv_aplikacije": "SpineICT DMS OCR-core",
+            "verzija": "$VERZIJA",
+            "zadnje_azuriranje": "$DATE",
+            "build_info": "$BUILD_INFO",
+            "opis": "Glavni sustav za DMS, OCR i multitenant obradu dokumenata.",
+            "copyright": "© 2025 SpineICT Solutions d.o.o.",
+            "kontakt_email": "support@spine-ict.hr",
+            "dodatno": {},
+            "status": "active"
+          }
+          EOF
+
+      - name: Commitaj i pushaj promjene version.json
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add core/version.json
+          git diff --quiet && echo "Nema promjena za commit" || git commit -m "Automatski update version.json"
+          git push
