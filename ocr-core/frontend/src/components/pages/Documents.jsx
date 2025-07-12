@@ -10,7 +10,7 @@ export default function Documents() {
   const [documentType, setDocumentType] = useState("");
   const [supplierOib, setSupplierOib] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(50);  // default 50
   const [clearLoading, setClearLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -38,26 +38,39 @@ export default function Documents() {
       const data = await res.json();
       setDocuments(Array.isArray(data) ? data : []);
       setError(null);
+      console.log("Dokumenti dohvaćeni:", data.length);
     } catch (err) {
       toast.error(`❌ ${err.message}`);
       setDocuments([]);
+      console.error("Greška pri dohvatu dokumenata:", err);
     } finally {
       setLoading(false);
     }
   }
 
   async function handleClearAll() {
-    if (!window.confirm("Jesi li siguran da želiš obrisati SVE dokumente i anotacije?")) return;
+    if (!window.confirm("Jesi li siguran da želiš obrisati SVE dokumente, anotacije, partnere, PDF-ove i Elasticsearch indeks?")) return;
+
     setClearLoading(true);
+    console.log("Početak brisanja svih podataka...");
+
     try {
       const res = await fetch("/api/documents/clear-all", { method: "DELETE" });
-      if (!res.ok) throw new Error("Greška pri brisanju dokumenata.");
-      toast.success("✅ Svi dokumenti i anotacije su obrisani.");
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Greška pri brisanju dokumenata: ${errorText}`);
+      }
+
+      const result = await res.json();
+      console.log("Rezultat brisanja:", result.message);
+      toast.success("✅ Svi dokumenti, partneri, anotacije, PDF-ovi i ES indeks su obrisani.");
       fetchDocuments();
     } catch (err) {
       toast.error(`❌ ${err.message}`);
+      console.error("Greška pri brisanju:", err);
     } finally {
       setClearLoading(false);
+      console.log("Brisanje završeno.");
     }
   }
 
@@ -98,26 +111,38 @@ export default function Documents() {
   return (
     <div className="container-fluid mt-4">
       <div className="d-flex justify-content-end mb-3">
-        <button className="btn btn-danger" onClick={handleClearAll} disabled={clearLoading}>
-          {clearLoading ? "Brisanje..." : "ISPRAZNI SVE"}
-        </button>
+        
       </div>
 
       <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
         <h2 className="h4 text-primary mb-0">📁 OCR dokumenti</h2>
         <div className="d-flex gap-3 align-items-center flex-wrap">
-          <select className="form-select form-select-sm" value={documentType} onChange={(e) => { setDocumentType(e.target.value); setCurrentPage(1); }}>
+          <select
+            className="form-select form-select-sm"
+            value={documentType}
+            onChange={(e) => {
+              setDocumentType(e.target.value);
+              setCurrentPage(1);
+            }}
+          >
             <option value="">Vrsta: Sve</option>
             <option value="URA">URA</option>
             <option value="IRA">IRA</option>
             <option value="UGOVOR">UGOVOR</option>
             <option value="IZVOD">IZVOD</option>
           </select>
-          <select className="form-select form-select-sm" value={itemsPerPage} onChange={(e) => { const val = parseInt(e.target.value); setItemsPerPage(val); setCurrentPage(1); }}>
-            <option value="10">10 / stranici</option>
-            <option value="20">20</option>
-            <option value="50">50</option>
+          <select
+            className="form-select form-select-sm"
+            value={itemsPerPage}
+            onChange={(e) => {
+              const val = parseInt(e.target.value);
+              setItemsPerPage(val);
+              setCurrentPage(1);
+            }}
+          >
+            <option value="50">50 / stranici</option>
             <option value="100">100</option>
+            <option value="1000">1000</option>
             <option value="-1">Sve</option>
           </select>
           {supplierOib && (
@@ -144,7 +169,7 @@ export default function Documents() {
                 <th onClick={() => requestSort("date")} style={{ cursor: "pointer" }}>Arhivirano</th>
                 <th onClick={() => requestSort("supplier_name_ocr")} style={{ cursor: "pointer" }}>Dobavljač</th>
                 <th onClick={() => requestSort("supplier_oib")} style={{ cursor: "pointer" }}>OIB</th>
-                <th onClick={() => requestSort("br_racuna")} style={{ cursor: "pointer" }}>Broj računa</th>
+                <th onClick={() => requestSort("doc_number")} style={{ cursor: "pointer" }}>Broj računa</th>
                 <th onClick={() => requestSort("invoice_date")} style={{ cursor: "pointer" }}>Datum računa</th>
                 <th onClick={() => requestSort("due_date")} style={{ cursor: "pointer" }}>Datum valute</th>
               </tr>
@@ -153,11 +178,16 @@ export default function Documents() {
               {paginatedDocs.map((doc) => (
                 <tr key={doc.id}>
                   <td>{doc.id}</td>
-                  <td><a href={`/documents/${doc.id}`}>{doc.filename}</a></td>
+                  <td>
+                    <a href={`/documents/${doc.id}`}>{doc.filename}</a>
+                  </td>
                   <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "-"}</td>
                   <td>
                     {doc.supplier_oib ? (
-                      <button className="btn btn-link p-0 text-decoration-underline" onClick={() => navigate(`/documents/partner/${doc.supplier_oib}`)}>
+                      <button
+                        className="btn btn-link p-0 text-decoration-underline"
+                        onClick={() => navigate(`/documents/partner/${doc.supplier_oib}`)}
+                      >
                         {doc.supplier_name_ocr || "-"}
                       </button>
                     ) : (
@@ -165,7 +195,7 @@ export default function Documents() {
                     )}
                   </td>
                   <td>{doc.supplier_oib || "-"}</td>
-                  <td>{doc.br_racuna || "-"}</td>
+                  <td>{doc.doc_number || "-"}</td>
                   <td>{doc.invoice_date ? new Date(doc.invoice_date).toLocaleDateString("hr-HR") : "-"}</td>
                   <td>{doc.due_date ? new Date(doc.due_date).toLocaleDateString("hr-HR") : "-"}</td>
                 </tr>
@@ -178,7 +208,9 @@ export default function Documents() {
               <ul className="pagination pagination-sm justify-content-end">
                 {Array.from({ length: pageCount }, (_, i) => (
                   <li key={i} className={`page-item ${i + 1 === currentPage ? "active" : ""}`}>
-                    <button className="page-link" onClick={() => setCurrentPage(i + 1)}>{i + 1}</button>
+                    <button className="page-link" onClick={() => setCurrentPage(i + 1)}>
+                      {i + 1}
+                    </button>
                   </li>
                 ))}
               </ul>

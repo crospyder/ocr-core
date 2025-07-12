@@ -28,6 +28,8 @@ class DocumentOut(DocumentBase):
     document_type: Optional[str] = None
     parsed: Optional[Dict[str, Any]] = None
 
+    doc_number: Optional[str] = None  # <-- Dodano polje za broj računa
+
     @validator('annotation', pre=True, always=True)
     def validate_annotation(cls, v):
         if v is None:

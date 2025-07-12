@@ -4,6 +4,7 @@ import fitz  # PyMuPDF
 import os
 import re
 from modules.sudreg_api.client import SudregClient
+from core.utils.regex import extract_oib, extract_invoice_date
 
 sudreg_client = SudregClient()
 
@@ -19,7 +20,7 @@ def extract_text_from_pdf_native(pdf_path) -> str:
 def perform_ocr(file_path):
     temp_images_paths = []
     if file_path.lower().endswith(".pdf"):
-        # Prvo pokušaš native tekst iz PDF-a
+        # Prvo pokušaj native tekst iz PDF-a
         native_text = extract_text_from_pdf_native(file_path)
         if native_text and len(native_text) > 100:  # prag za minimalnu dužinu
             return native_text
@@ -49,21 +50,12 @@ def perform_ocr(file_path):
     return result_text
 
 def extract_oib(text: str) -> str | None:
-    # OIB je 11 znamenki, pronalazi prvi takav niz
-    pattern = r"\b[0-9]{11}\b"
-    matches = re.findall(pattern, text)
-    if not matches:
-        return None
-    # Opcionalno možeš dodati checksum validaciju OIB-a
-    return matches[0]
+    # Proxy na regex modul
+    return extract_oib(text)
 
 def extract_invoice_date(text: str) -> str | None:
-    # Regex za pronalaženje datuma uz "VRIJEME IZDAVANJA"
-    date_pattern = r"VRIJEME IZDAVANJA:\s*(\d{2}\.\d{2}\.\d{4})"
-    match = re.search(date_pattern, text)
-    if match:
-        return match.group(1)  # Datum u formatu dd.mm.yyyy
-    return None
+    # Proxy na regex modul
+    return extract_invoice_date(text)
 
 def perform_ocr_and_get_supplier_info(file_path):
     text = perform_ocr(file_path)

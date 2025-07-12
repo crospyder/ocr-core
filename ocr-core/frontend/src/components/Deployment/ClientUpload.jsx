@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-export default function ClientUpload() {
+export default function ClientUpload({ onClientChanged }) {
   const [fileName, setFileName] = useState(null);
 
   const handleFileUpload = async (event) => {
@@ -13,8 +13,9 @@ export default function ClientUpload() {
     formData.append("file", file);
 
     try {
-      const response = await axios.post("/api/client/upload", formData);
+      await axios.post("/api/client/upload", formData);
       toast.success("Klijent uspješno uvezen!");
+      onClientChanged?.();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Greška kod uploada");
     }

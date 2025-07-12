@@ -1,0 +1,12 @@
+LOAD DATABASE
+     FROM mysql://npausic:Spineict%402025%21@localhost/SpineICT_OCR
+     INTO postgresql://npausic:Spineict%402025%21@localhost/SpineICT_OCR
+
+WITH include drop, create tables, create indexes, reset sequences, foreign keys
+
+SET work_mem to '16MB', maintenance_work_mem to '512 MB'
+
+CAST type datetime to timestamp drop default drop not null using zero-dates-to-null
+
+BEFORE LOAD DO
+    $$ create schema if not exists public; $$;

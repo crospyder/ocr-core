@@ -1,5 +1,3 @@
-// src/components/Footer.jsx
-
 import React, { useEffect, useState } from "react";
 
 export default function Footer() {
@@ -7,11 +5,14 @@ export default function Footer() {
   const [buildDate, setBuildDate] = useState("Nepoznato");
 
   useEffect(() => {
-    fetch("/core/version.json") // koristi mountano preko FastAPI: app.mount("/core", ...)
-      .then((res) => res.json())
+    fetch("/core/version.json")
+      .then((res) => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.json();
+      })
       .then((data) => {
-        setVersion(data.version || "v0.0.0");
-        setBuildDate(data.updated_at || "Nepoznato"); // <- ispravljen ključ
+        setVersion(data.verzija || "v0.0.0");
+        setBuildDate(data.zadnje_azuriranje || "Nepoznato");
       })
       .catch(() => {
         setVersion("v0.0.0");
@@ -20,29 +21,21 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer
-      className="d-flex justify-content-between align-items-center px-4 py-3 mt-auto"
-      style={{
-        backgroundColor: "#212429",
-        color: "#adb5bd",
-        fontSize: "0.875rem",
-        borderTop: "1px solid #2c2f33",
-      }}
-    >
-      <div>
+    <footer className="footer-dark px-4 py-3 mt-auto">
+      <div className="footer-left">
         © 2025{" "}
         <a
           href="https://spine-ict.hr"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: "#ffffff", textDecoration: "underline" }}
+          className="footer-link"
         >
           Spine ICT Solutions d.o.o.
         </a>{" "}
         Sva prava pridržana.
       </div>
 
-      <div style={{ textAlign: "right", fontSize: "0.75rem", color: "#6c757d" }}>
+      <div className="footer-right">
         Verzija aplikacije: <strong>{version}</strong>
         <br />
         Zadnje ažuriranje: {buildDate}
