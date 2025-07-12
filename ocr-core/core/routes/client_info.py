@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from fastapi import Body
 from core.database.connection import get_db
 from core.database.models import Client
+from core.deployment import upsert_client
 
 router = APIRouter()
 
@@ -9,7 +11,6 @@ router = APIRouter()
 def get_client_info(db: Session = Depends(get_db)):
     client = db.query(Client).first()
     if not client:
-        # Ako nema klijenta, signaliziraj potrebu za setupom
         return {
             "needs_setup": True,
             "message": (
@@ -25,8 +26,6 @@ def get_client_info(db: Session = Depends(get_db)):
                 '}'
             )
         }
-
-    # Ako postoji klijent, vrati njegove podatke
     return {
         "needs_setup": False,
         "naziv_firme": client.naziv_firme,
@@ -37,3 +36,13 @@ def get_client_info(db: Session = Depends(get_db)):
         "telefon": client.telefon,
         "broj_licenci": client.broj_licenci,
     }
+
+@router.post("/info")
+def create_client(data: dict = Body(...), db: Session = Depends(get_db)):
+    client = upsert_client(db, data)
+    return client
+
+@router.put("/info")
+def update_client(data: dict = Body(...), db: Session = Depends(get_db)):
+    client = upsert_client(db, data)
+    return client

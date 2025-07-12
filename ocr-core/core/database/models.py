@@ -33,16 +33,16 @@ class Document(Base):
     supplier_name_ocr = Column(String(255), nullable=True)
     supplier_oib = Column(String(11), nullable=True)
     date = Column(TIMESTAMP, nullable=True)
-    amount = Column(Numeric(12, 2), nullable=True)  # Decimalni iznos
+    amount = Column(Numeric(12, 2), nullable=True)
     archived_at = Column(TIMESTAMP, server_default=func.now())
     supplier = relationship("Client", backref="documents")
     annotation = relationship("DocumentAnnotation", back_populates="document", uselist=False)
     sudreg_response = Column(Text, nullable=True)
-    document_type = Column(String(50), nullable=True)  # dodana dužina
+    document_type = Column(String(50), nullable=True)
     invoice_date = Column(Date, nullable=True)
     due_date = Column(Date, nullable=True)
-    parsed = Column(JSON, nullable=True)  # Pohrana JSON direktno u bazu
-    doc_number = Column(String(255), nullable=True)  # NOVI STUPAC: broj dokumenta
+    parsed = Column(JSON, nullable=True)
+    doc_number = Column(String(255), nullable=True)  # Broj računa
 
 class User(Base):
     __tablename__ = "users"
@@ -50,7 +50,7 @@ class User(Base):
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
     username = Column(String(100), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    email = Column(String(255), nullable=True)  # dodano nullable=True
+    email = Column(String(255), nullable=True)
     role = Column(String(50), default="user")
     archived_at = Column(TIMESTAMP, server_default=func.now())
 
@@ -75,7 +75,9 @@ class Partner(Base):
     id = Column(Integer, primary_key=True, index=True)
     naziv = Column(String(255), nullable=False)
     oib = Column(String(20), nullable=False, unique=True, index=True)
-    adresa = Column(String(255), nullable=True)  # dodano nullable=True
-    kontakt_telefon = Column(String(50), nullable=True)  # dodano nullable=True
-    kontakt_email = Column(String(100), nullable=True)  # dodano nullable=True
-    kontakt_osoba = Column(String(100), nullable=True)  # dodano nullable=True
+    adresa = Column(String(255), nullable=True)
+    kontakt_telefon = Column(String(50), nullable=True)
+    kontakt_email = Column(String(100), nullable=True)
+    kontakt_osoba = Column(String(100), nullable=True)
+    vies_response = Column(JSON, nullable=True)
+

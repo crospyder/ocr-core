@@ -1,4 +1,21 @@
-# Changelog – OCR-Core
+# Changelog – Spine ICT Document management system
+## [v0.4.2] – 2025-07-12
+
+### Dodano
+- Izvučen i spremljen broj dokumenta (broj računa/ugovora) iz OCR teksta.
+- Preuređeni regex izrazi prebačeni u `core.utils.regex`.
+- Refaktoriran `upload.py` za bolju čitljivost i održivost.
+- Ažuriran `engine.py` s osnovnim OCR i parsiranjem OIB-a i datuma.
+- Frontend `Documents.jsx` prikazuje stvarni broj dokumenta.
+- Poboljšana Elasticsearch integracija i indeksiranje.
+  
+### Ispravljeno
+- Ispravljena pogrešna ekstrakcija broja računa s lošim regexima.
+- Održana kompatibilnost sa starim funkcionalnostima.
+
+### Deployment
+- Ručno dodan stupac `doc_number` u tablicu `documents`.
+- Verzija tagirana kao `v0.4.2`.
 
 ## [v0.33] – 2025-07-09
 

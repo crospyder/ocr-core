@@ -58,7 +58,6 @@ app.include_router(admin_router)
 app.include_router(documents_router, prefix="/api/documents")
 app.include_router(upload_router, prefix="/api/upload")
 app.include_router(upload_module.router, prefix="/api/upload", tags=["upload"])
-app.include_router(clients_router, prefix="/api/clients")
 app.include_router(annotations_router, prefix="/api/annotations")
 app.include_router(logs.router, prefix="/api/logs")
 app.include_router(client_info.router, prefix="/api/client")  # Jedinstvena registracija
