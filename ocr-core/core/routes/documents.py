@@ -16,7 +16,7 @@ from elasticsearch import Elasticsearch
 router = APIRouter()
 
 UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "uploads"))
-ES_INDEX = "spineict_ocr"  # promijenjeno u ispravan Elasticsearch indeks
+ES_INDEX = "spineict_ocr"
 
 @router.get("/", response_model=List[DocumentOut])
 def list_documents(
@@ -64,7 +64,7 @@ def list_documents(
             "due_date": doc.due_date.isoformat() if doc.due_date else None,
             "document_type": doc.document_type,
             "parsed": parse_parsed_field(doc),
-            "doc_number": doc.doc_number,  # Dodano polje za broj računa
+            "doc_number": doc.doc_number,
         }
         for doc in documents
     ]
@@ -123,7 +123,7 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
         "due_date": doc.due_date,
         "document_type": doc.document_type,
         "parsed": parsed_value,
-        "doc_number": doc.doc_number,  # Dodano polje za broj računa
+        "doc_number": doc.doc_number,
     }
 
     return DocumentOut.model_validate(doc_dict)
@@ -157,7 +157,7 @@ def get_documents_by_oib(oib: str, db: Session = Depends(get_db)):
             "due_date": doc.due_date.isoformat() if doc.due_date else None,
             "document_type": doc.document_type,
             "parsed": parse_parsed_field(doc),
-            "doc_number": doc.doc_number,  # Dodano polje za broj računa
+            "doc_number": doc.doc_number,
         }
         for doc in docs
     ]
@@ -196,31 +196,27 @@ def update_document_supplier(
 @router.delete("/clear-all")
 def clear_all_documents(db: Session = Depends(get_db)):
     try:
-        # briši sve iz baza
         db.query(DocumentAnnotation).delete()
         db.query(Document).delete()
         db.query(Partner).delete()
         db.commit()
 
-        # reset sekvenci
         db.execute(text("ALTER SEQUENCE document_annotations_id_seq RESTART WITH 1;"))
         db.execute(text("ALTER SEQUENCE documents_id_seq RESTART WITH 1;"))
         db.execute(text("ALTER SEQUENCE partneri_id_seq RESTART WITH 1;"))
         db.commit()
 
-        # briši datoteke iz upload foldera
         if os.path.exists(UPLOAD_DIR):
             for filename in os.listdir(UPLOAD_DIR):
                 file_path = os.path.join(UPLOAD_DIR, filename)
                 if os.path.isfile(file_path):
                     os.remove(file_path)
 
-        # briši sadržaj Elasticsearch indeksa
         try:
             es = Elasticsearch("http://localhost:9200")
             if es.indices.exists(index=ES_INDEX):
                 es.delete_by_query(index=ES_INDEX, body={"query": {"match_all": {}}})
-                es.indices.refresh(index=ES_INDEX)  # refresh nakon brisanja
+                es.indices.refresh(index=ES_INDEX)
                 logging.info(f"Elasticsearch indeks '{ES_INDEX}' očišćen i osvježen.")
         except Exception as es_exc:
             logging.warning(f"Elasticsearch clean error: {es_exc}")

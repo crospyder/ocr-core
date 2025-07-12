@@ -67,12 +67,11 @@ def perform_ocr_and_get_supplier_info(file_path):
         except Exception as e:
             print(f"Greška u Sudreg API pozivu: {e}")
     
-    # Dodajemo datum računa iz OCR-a
     invoice_date = extract_invoice_date(text)
 
     return {
         "ocr_text": text,
         "supplier_oib": oib,
         "supplier_info": supplier_info.dict() if supplier_info else None,
-        "invoice_date": invoice_date,  # Datum računa (ako postoji)
+        "invoice_date": invoice_date,
     }

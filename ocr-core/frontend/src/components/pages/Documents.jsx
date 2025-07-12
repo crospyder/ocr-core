@@ -10,7 +10,7 @@ export default function Documents() {
   const [documentType, setDocumentType] = useState("");
   const [supplierOib, setSupplierOib] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(50);  // default 50
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   const [clearLoading, setClearLoading] = useState(false);
 
   const navigate = useNavigate();

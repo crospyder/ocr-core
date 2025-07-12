@@ -15,7 +15,9 @@ from core.parsers.supplier_extractor import extract_supplier_info
 from modules.sudreg_api.client import SudregClient
 from modules.ocr_processing.workers.engine import perform_ocr
 from core.deployment import get_owner_oib
-from core.utils.regex import extract_doc_number, extract_oib, extract_invoice_date
+from core.utils.regex import extract_doc_number, extract_oib, extract_all_vats, COUNTRY_VAT_REGEX
+
+from core.vies_api.client import ViesClient
 
 from elasticsearch import Elasticsearch
 es = Elasticsearch(["http://localhost:9200"])
@@ -27,6 +29,7 @@ UPLOAD_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "uploads"))
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 sudreg_client = SudregClient()
+vies_client = ViesClient()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,7 +41,7 @@ def str_to_date(date_str):
     if not date_str:
         return None
     try:
-        return datetime.strptime(date_str, "%Y-%m-%d").date()
+        return datetime.strptime(date_str, "%d.%m.%Y").date()
     except Exception as e:
         logger.error(f"Greška pri parsiranju datuma '{date_str}': {e}")
         return None
@@ -87,7 +90,8 @@ async def upload_documents(
 
     try:
         owner_oib = get_owner_oib(db)
-        logger.info(f"Domaći OIB (owner): {owner_oib}")
+        owner_vat = f"HR{owner_oib}" if owner_oib else None
+        logger.info(f"Domaći OIB (owner): {owner_oib}, Domaći VAT (owner_vat): {owner_vat}")
 
         for file in files:
             logger.info(f"Obrađujem datoteku: {file.filename}")
@@ -124,58 +128,145 @@ async def upload_documents(
                 parsed_data = {"parser_error": str(e)}
 
             supplier_info = extract_supplier_info(text)
-            oib = extract_oib(text) or supplier_info.get("oib")
+
+            all_oibs = extract_oib(text)  # extract_oib vraća prvi ili None, ako želiš sve OIB-ove koristi extract_all_oibs
+            all_vats = extract_all_vats(text)
+
+            # Ako extract_oib vraća samo jedan, pa ga zamijeni s listom za filtriranje:
+            all_oibs_list = [all_oibs] if all_oibs else []
+            filtered_oibs = [x for x in all_oibs_list if x != owner_oib]
+            filtered_vats = [x for x in all_vats if owner_vat is None or x.upper() != owner_vat.upper()]
+
+            # Fallback: ako nema drugog validnog VAT-a, koristi vlasnički VAT
+            if not filtered_vats and owner_vat and owner_vat in all_vats:
+                filtered_vats = [owner_vat]
+
+            oib = filtered_oibs[0] if filtered_oibs else None
+            vat_number = filtered_vats[0] if filtered_vats else None
+
+            logger.info(f"Pronađeni OIB-i: {all_oibs_list}, filtrirani za obradu: {filtered_oibs}")
+            logger.info(f"Pronađeni VAT-ovi: {all_vats}, filtrirani za obradu: {filtered_vats}")
+            logger.info(f"Odabrani OIB za daljnju obradu: {oib}, VAT: {vat_number}")
+
             partner_obj = None
             sudreg_data = None
             sudreg_raw = None
             skraceni_naziv = None
+            vies_data = None
 
-            if oib and oib != owner_oib:
-                partner_obj = db.query(Partner).filter_by(oib=oib).first()
-
-                if partner_obj:
-                    logger.info(f"Partner pronađen u bazi: {partner_obj.naziv} ({partner_obj.oib})")
-                    supplier_info.update({
-                        "naziv_firme": partner_obj.naziv,
-                        "adresa": partner_obj.adresa,
-                        "oib": partner_obj.oib,
-                    })
-                    skraceni_naziv = partner_obj.naziv
-                else:
-                    try:
-                        sudreg_data, sudreg_raw = sudreg_client.get_company_by_oib(oib, db)
-                        if sudreg_data:
-                            if sudreg_raw and isinstance(sudreg_raw, dict):
-                                skracene_tvrtke = sudreg_raw.get("skracene_tvrtke")
-                                if skracene_tvrtke and isinstance(skracene_tvrtke, list):
-                                    skraceni_naziv = skracene_tvrtke[0].get("ime")
-
-                            partner_naziv = skraceni_naziv or sudreg_data.naziv
-
-                            supplier_info.update({
-                                "naziv_firme": partner_naziv,
-                                "adresa": format_address(sudreg_data.adresa),
-                                "oib": sudreg_data.oib,
-                            })
-
-                            novi_partner = Partner(
-                                naziv=partner_naziv,
-                                oib=sudreg_data.oib,
-                                adresa=format_address(sudreg_data.adresa),
-                                kontakt_email=None,
-                                kontakt_osoba=None,
-                                kontakt_telefon=None,
-                            )
-                            db.add(novi_partner)
-                            db.commit()
-                            logger.info(f"Dodan novi partner: {novi_partner.naziv} ({novi_partner.oib})")
-                    except Exception as e:
-                        sudreg_raw = {"error": str(e)}
-                        supplier_info["alert"] = f"❌ Greška u Sudreg API-ju: {e}"
-                        logger.warning(f"Greška pri dohvatu Sudreg podataka za OIB {oib}: {e}")
+            if not oib and not vat_number:
+                logger.warning(f"Nema OIB-a ni VAT broja za dokument {file.filename}, koristi se 'Nepoznat dobavljač'")
+                skraceni_naziv = "Nepoznat dobavljač"
             else:
-                supplier_info["alert"] = "❌ OIB nije pronađen ili je domaći OIB"
-                logger.warning(f"Nevalidan ili domaći OIB za dokument {file.filename}: {oib}")
+                if oib:
+                    partner_obj = db.query(Partner).filter_by(oib=oib).first()
+
+                    if partner_obj:
+                        logger.info(f"Partner pronađen u bazi: {partner_obj.naziv} ({partner_obj.oib})")
+                        supplier_info.update({
+                            "naziv_firme": partner_obj.naziv,
+                            "adresa": partner_obj.adresa,
+                            "oib": partner_obj.oib,
+                        })
+                        skraceni_naziv = partner_obj.naziv
+
+                        if not getattr(partner_obj, "vies_response", None):
+                            try:
+                                country_code = oib[:2]
+                                vat = oib[2:]
+                                vies_data = vies_client.validate_vat(country_code, vat)
+                                partner_obj.vies_response = vies_data
+                                db.commit()
+                                logger.info(f"VIES podaci spremljeni za partnera {oib}")
+                            except Exception as e:
+                                logger.warning(f"VIES validacija nije uspjela za OIB {oib}: {e}")
+                        else:
+                            vies_data = partner_obj.vies_response
+
+                    else:
+                        try:
+                            sudreg_data, sudreg_raw = sudreg_client.get_company_by_oib(oib, db)
+                            if sudreg_data:
+                                if sudreg_raw and isinstance(sudreg_raw, dict):
+                                    skracene_tvrtke = sudreg_raw.get("skracene_tvrtke")
+                                    if skracene_tvrtke and isinstance(skracene_tvrtke, list):
+                                        skraceni_naziv = skracene_tvrtke[0].get("ime")
+
+                                partner_naziv = skraceni_naziv or sudreg_data.naziv
+
+                                supplier_info.update({
+                                    "naziv_firme": partner_naziv,
+                                    "adresa": format_address(sudreg_data.adresa),
+                                    "oib": sudreg_data.oib,
+                                })
+
+                                novi_partner = Partner(
+                                    naziv=partner_naziv,
+                                    oib=sudreg_data.oib,
+                                    adresa=format_address(sudreg_data.adresa),
+                                    kontakt_email=None,
+                                    kontakt_osoba=None,
+                                    kontakt_telefon=None,
+                                    vies_response=None,
+                                )
+                                db.add(novi_partner)
+                                db.commit()
+                                logger.info(f"Dodan novi partner: {novi_partner.naziv} ({novi_partner.oib})")
+
+                                try:
+                                    country_code = oib[:2]
+                                    vat = oib[2:]
+                                    vies_data = vies_client.validate_vat(country_code, vat)
+                                    novi_partner.vies_response = vies_data
+                                    db.commit()
+                                    logger.info(f"VIES podaci spremljeni za novog partnera {oib}")
+                                except Exception as e:
+                                    logger.warning(f"VIES validacija nije uspjela za OIB {oib}: {e}")
+
+                        except Exception as e:
+                            sudreg_raw = {"error": str(e)}
+                            supplier_info["alert"] = f"❌ Greška u Sudreg API-ju: {e}"
+                            logger.warning(f"Greška pri dohvatu Sudreg podataka za OIB {oib}: {e}")
+
+                else:
+                    if vat_number:
+                        logger.info(f"EU VAT broj pronađen u OCR tekstu: {vat_number}")
+                        try:
+                            country_code = vat_number[:2]
+                            vat = vat_number[2:]
+                            vies_data = vies_client.call_vies_soap_api(country_code, vat)
+                            supplier_info.update({
+                                "naziv_firme": vies_data.get("name"),
+                                "adresa": vies_data.get("address"),
+                            })
+                            skraceni_naziv = vies_data.get("name")
+
+                            if vies_data.get("valid") and vies_data.get("name"):
+                                partner_obj = db.query(Partner).filter_by(oib=vat_number).first()
+                                if not partner_obj:
+                                    partner_obj = Partner(
+                                        naziv=vies_data.get("name"),
+                                        oib=vat_number,
+                                        adresa=vies_data.get("address"),
+                                        kontakt_email=None,
+                                        kontakt_osoba=None,
+                                        kontakt_telefon=None,
+                                        vies_response=vies_data,
+                                    )
+                                    db.add(partner_obj)
+                                    try:
+                                        db.commit()
+                                        logger.info(f"Dodan novi EU partner iz VIES podataka: {partner_obj.naziv} ({partner_obj.oib})")
+                                    except Exception as e:
+                                        db.rollback()
+                                        logger.error(f"Greška pri spremanju EU partnera u bazu: {e}")
+                                else:
+                                    logger.info(f"EU partner već postoji u bazi: {partner_obj.naziv} ({partner_obj.oib})")
+                            else:
+                                logger.warning(f"Nevalidni podaci iz VIES API-ja za VAT broj {vat_number}, partner nije spremljen.")
+
+                        except Exception as e:
+                            logger.warning(f"VIES validacija nije uspjela za VAT broj {vat_number}: {e}")
 
             if isinstance(parsed_data, dict):
                 safe_parsed = {
@@ -192,7 +283,6 @@ async def upload_documents(
             if due_date is None and invoice_date is not None:
                 due_date = invoice_date
 
-            # Extract doc number from OCR
             doc_number = extract_doc_number(text)
             logger.info(f"Broj dokumenta prepoznat iz OCR: {doc_number}")
 
@@ -242,11 +332,15 @@ async def upload_documents(
                 "status": "OK",
                 "supplier": supplier_info,
                 "sudreg_data": sudreg_data.dict() if sudreg_data else None,
+                "vies_data": vies_data,
                 "document_type": document_type,
                 "parsed": safe_parsed,
             })
 
-        logger.info(f"Upload procesa završio, ukupno obrađeno: {len(results)} datoteka")
+        if not results:
+            logger.info("Upload procesa završio, nije obrađen niti jedan dokument jer je vlasnik licence prepoznat.")
+            return {"processed": [], "message": "Nije obrađen niti jedan dokument jer je vlasnik licence prepoznat."}
+
     except Exception as e:
         logger.error(f"Neočekivana greška tijekom uploada: {e}")
         return {"error": str(e)}
