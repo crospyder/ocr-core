@@ -17,12 +17,11 @@ export default function Sidebar() {
     { to: "/partneri", label: "Partneri", icon: <Users size={18} />, end: true },
     { to: "/admin", label: "Admin Panel", icon: <Settings size={18} /> },
     { to: "/deployment", label: "Deployment", icon: <Server size={18} /> },
-    // Dodajemo link za pretragu
     { to: "/search", label: "Pretraga", icon: <FileText size={18} /> },
   ];
 
   return (
-    <aside className="sidebar bg-dark text-white px-3 py-4 d-flex flex-column">
+    <aside className="sidebar d-flex flex-column px-3 py-4">
       <div className="mb-4 text-center">
         <h4 className="fw-bold text-light">Izbornik</h4>
       </div>
@@ -38,7 +37,8 @@ export default function Sidebar() {
               }`
             }
           >
-            {icon} {label}
+            <span className="sidebar-icon">{icon}</span>
+            <span className="sidebar-label">{label}</span>
           </NavLink>
         ))}
       </nav>

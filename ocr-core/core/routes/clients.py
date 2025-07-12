@@ -1,122 +1,77 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from core.database.connection import get_db
-from core.database.models import User, Client
-from pydantic import BaseModel, ConfigDict
-from passlib.context import CryptContext
+from core.database.models import Client
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from datetime import date, datetime
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/client",
+    tags=["client"]
+)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Pydantic modeli za validaciju inputa i outputa
-class UserCreate(BaseModel):
-    client_id: int
-    username: str
-    password: str
-    email: str | None = None
-    role: str = "user"
-
-class UserUpdate(BaseModel):
-    username: str | None = None
-    password: str | None = None
-    email: str | None = None
-    role: str | None = None
-
-class ClientCreate(BaseModel):
-    name: str
+class ClientBase(BaseModel):
+    naziv_firme: str
     oib: str
     db_name: str
-    licenses: int = 1
+    broj_licenci: Optional[int] = 1
+    adresa: Optional[str] = None
+    kontakt_osoba: Optional[str] = None
+    email: Optional[EmailStr] = None
+    telefon: Optional[str] = None
+    licenca_pocetak: Optional[date] = None
+    licenca_kraj: Optional[date] = None
+    status_licence: Optional[str] = "active"
 
-# Output model za dobavljače
-class SupplierOut(BaseModel):
+class ClientUpdate(BaseModel):
+    naziv_firme: Optional[str] = None
+    oib: Optional[str] = None
+    db_name: Optional[str] = None
+    broj_licenci: Optional[int] = None
+    adresa: Optional[str] = None
+    kontakt_osoba: Optional[str] = None
+    email: Optional[EmailStr] = None
+    telefon: Optional[str] = None
+    licenca_pocetak: Optional[date] = None
+    licenca_kraj: Optional[date] = None
+    status_licence: Optional[str] = None
+
+class ClientOut(ClientBase):
     id: int
-    name: str
-    oib: str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    class Config:
+        orm_mode = True
 
-    model_config = ConfigDict(from_attributes=True)
+@router.get("/info", response_model=ClientOut | dict)
+def get_client_info(db: Session = Depends(get_db)):
+    client = db.query(Client).first()
+    if not client:
+        return {
+            "needs_setup": True,
+            "message": "Sustav nije konfiguriran. Molimo unesite podatke o klijentu."
+        }
+    return client
 
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
-
-@router.get("/users")
-def get_users(db: Session = Depends(get_db)):
-    return db.query(User).all()
-
-@router.post("/users", status_code=status.HTTP_201_CREATED)
-def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    user_exists = db.query(User).filter(User.username == user_data.username).first()
-    if user_exists:
-        raise HTTPException(status_code=400, detail="Korisničko ime već postoji")
-
-    hashed_password = get_password_hash(user_data.password)
-    user = User(
-        client_id=user_data.client_id,
-        username=user_data.username,
-        password_hash=hashed_password,
-        email=user_data.email,
-        role=user_data.role,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
-
-@router.put("/users/{user_id}")
-def update_user(user_id: int, user_data: UserUpdate, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
-
-    if user_data.username is not None:
-        user.username = user_data.username
-    if user_data.password is not None:
-        user.password_hash = get_password_hash(user_data.password)
-    if user_data.email is not None:
-        user.email = user_data.email
-    if user_data.role is not None:
-        user.role = user_data.role
-
-    db.commit()
-    db.refresh(user)
-    return user
-
-@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Korisnik nije pronađen")
-
-    db.delete(user)
-    db.commit()
-    return
-
-# Opcionalno: Rute za klijente (clients) ako ti treba
-
-@router.get("/")
-def get_clients(db: Session = Depends(get_db)):
-    return db.query(Client).all()
-
-@router.post("/", status_code=status.HTTP_201_CREATED)
-def create_client(client_data: ClientCreate, db: Session = Depends(get_db)):
-    client_exists = db.query(Client).filter(Client.db_name == client_data.db_name).first()
-    if client_exists:
-        raise HTTPException(status_code=400, detail="Client sa tim db_name već postoji")
-
-    client = Client(
-        name=client_data.name,
-        oib=client_data.oib,
-        db_name=client_data.db_name,
-        licenses=client_data.licenses,
-    )
+@router.post("/info", response_model=ClientOut, status_code=status.HTTP_201_CREATED)
+def create_client(client_data: ClientBase, db: Session = Depends(get_db)):
+    existing = db.query(Client).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Klijent je već konfiguriran")
+    client = Client(**client_data.dict())
     db.add(client)
     db.commit()
     db.refresh(client)
     return client
 
-# Ruta za dohvat dobavljača (klijenata) — frontend dropdown
-@router.get("/suppliers", response_model=list[SupplierOut])
-def list_suppliers(db: Session = Depends(get_db)):
-    return db.query(Client).order_by(Client.name).all()
-
+@router.put("/info", response_model=ClientOut)
+def update_client(client_data: ClientUpdate, db: Session = Depends(get_db)):
+    client = db.query(Client).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Klijent nije pronađen")
+    for key, value in client_data.dict(exclude_unset=True).items():
+        setattr(client, key, value)
+    db.commit()
+    db.refresh(client)
+    return client

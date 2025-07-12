@@ -9,26 +9,21 @@ export default function Upload() {
   const [modalData, setModalData] = useState(null);
 
   const handleUploadComplete = (result) => {
-    console.log("Upload result:", result);
-
     const docs = result?.documents || result?.processed;
 
     if (docs && Array.isArray(docs) && docs.length > 0) {
       toast.success("✅ Upload uspješno završen!");
 
-      // Provjeri ima li upozorenja
       docs.forEach(doc => {
         if (doc.validation_alert) {
           toast.warn(`Upozorenje za dokument ${doc.original_filename}: ${doc.validation_alert}`);
         }
       });
 
-      // Prikaži modal s podacima prvog dokumenta
       setModalData(docs[0]);
       setShowModal(true);
 
       const uploadedIds = result.uploadedIds || docs.map(d => d.id);
-
       navigate("/documents", { state: { justUploaded: true, uploadedIds } });
     } else {
       toast.error("❌ Došlo je do greške tijekom uploada!");
@@ -43,10 +38,10 @@ export default function Upload() {
   return (
     <div className="container py-5">
       <header className="mb-4 text-center">
-        <h1 className="display-5 fw-bold text-primary">
+        <h1 className="fw-bold page-title text-primary">
           Odabir dokumenata za OCR obradu
         </h1>
-        <p className="text-secondary fst-italic">
+        <p className="text-muted fst-italic">
           Pošalji nove dokumente za OCR obradu.
         </p>
       </header>
@@ -54,23 +49,40 @@ export default function Upload() {
       <DocumentsUpload onUploadComplete={handleUploadComplete} />
 
       {showModal && modalData && (
-        <div className="modal-backdrop" onClick={closeModal} style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
-          justifyContent: 'center', alignItems: 'center', zIndex: 1050,
-        }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{
-            background: "white", padding: "20px", borderRadius: "8px",
-            maxWidth: "600px", width: "90%", maxHeight: "80vh", overflowY: "auto",
-          }}>
-            <h4>Detalji dokumenta: {modalData.original_filename || modalData.filename}</h4>
-            <hr />
-            <pre style={{ whiteSpace: "pre-wrap", fontSize: "14px" }}>
-              {JSON.stringify(modalData.sudreg_data, null, 2) || "Nema podataka iz Sudreg API-ja."}
-            </pre>
-            <button className="btn btn-secondary mt-3" onClick={closeModal}>Zatvori</button>
+        <>
+          <div className="pantheon-modal-backdrop"></div>
+          <div className="pantheon-modal d-flex align-items-center justify-content-center">
+            <div className="pantheon-modal-card">
+              <div className="pantheon-modal-header d-flex justify-content-between align-items-center">
+                <div>
+                  <span className="pantheon-modal-icon">&#128196;</span>
+                  <span className="pantheon-modal-title">
+                    {modalData.original_filename || modalData.filename}
+                  </span>
+                </div>
+                <button
+                  className="pantheon-modal-close"
+                  onClick={closeModal}
+                  title="Zatvori"
+                  aria-label="Zatvori"
+                >&times;</button>
+              </div>
+              <div className="pantheon-modal-divider"></div>
+              <div className="pantheon-modal-body">
+                <pre className="pantheon-modal-pre">
+                  {modalData.sudreg_data
+                    ? JSON.stringify(modalData.sudreg_data, null, 2)
+                    : "Nema podataka iz Sudreg API-ja."}
+                </pre>
+              </div>
+              <div className="pantheon-modal-footer d-flex justify-content-end">
+                <button className="btn btn-warning px-4" onClick={closeModal}>
+                  Zatvori
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

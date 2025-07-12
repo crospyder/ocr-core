@@ -5,16 +5,18 @@ from fastapi.responses import FileResponse
 import shutil
 import os
 import logging
-import traceback
 from sqlalchemy import text, func
+import json
 
 from core.database.connection import get_db
-from core.database.models import Document, DocumentAnnotation
+from core.database.models import Document, DocumentAnnotation, Partner
 from core.schemas.documents import DocumentOut
+from elasticsearch import Elasticsearch
 
 router = APIRouter()
 
 UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "uploads"))
+ES_INDEX = "spineict_ocr"  # promijenjeno u ispravan Elasticsearch indeks
 
 @router.get("/", response_model=List[DocumentOut])
 def list_documents(
@@ -39,6 +41,14 @@ def list_documents(
     query = query.order_by(Document.date.asc() if order == "asc" else Document.date.desc())
     documents = query.limit(limit).all()
 
+    def parse_parsed_field(doc):
+        if isinstance(doc.parsed, str):
+            try:
+                return json.loads(doc.parsed)
+            except Exception:
+                return None
+        return doc.parsed
+
     return [
         {
             "id": doc.id,
@@ -53,6 +63,8 @@ def list_documents(
             "invoice_date": doc.invoice_date.isoformat() if doc.invoice_date else None,
             "due_date": doc.due_date.isoformat() if doc.due_date else None,
             "document_type": doc.document_type,
+            "parsed": parse_parsed_field(doc),
+            "doc_number": doc.doc_number,  # Dodano polje za broj računa
         }
         for doc in documents
     ]
@@ -62,7 +74,6 @@ def documents_stats(db: Session = Depends(get_db)):
     total_docs = db.query(Document).count()
     processed_docs = db.query(Document).filter(Document.ocrresult != None).count()
 
-    # Disk usage
     total_size_bytes = sum(
         os.path.getsize(os.path.join(UPLOAD_DIR, f))
         for f in os.listdir(UPLOAD_DIR)
@@ -90,40 +101,46 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    skraceni_naziv = None
-    if doc.sudreg_response:
+    parsed_value = doc.parsed
+    if isinstance(parsed_value, str):
         try:
-            import json
-            sudreg_json = json.loads(doc.sudreg_response)
-            skracene_tvrtke = sudreg_json.get("skracene_tvrtke")
-            if skracene_tvrtke and isinstance(skracene_tvrtke, list) and len(skracene_tvrtke) > 0:
-                skraceni_naziv = skracene_tvrtke[0].get("ime")
+            parsed_value = json.loads(parsed_value)
         except Exception:
-            pass
+            parsed_value = None
 
-    return {
+    doc_dict = {
         "id": doc.id,
         "filename": doc.filename,
         "ocrresult": doc.ocrresult,
-        "date": doc.date.isoformat() if doc.date else None,
+        "date": doc.date,
         "amount": doc.amount,
         "supplier_id": doc.supplier_id,
         "supplier_name_ocr": doc.supplier_name_ocr,
         "supplier_oib": doc.supplier_oib,
         "annotation": doc.annotation.annotations if doc.annotation else [],
         "sudreg_response": doc.sudreg_response,
-        "skraceni_naziv": skraceni_naziv,
-        "invoice_date": doc.invoice_date.isoformat() if doc.invoice_date else None,
-        "due_date": doc.due_date.isoformat() if doc.due_date else None,
+        "invoice_date": doc.invoice_date,
+        "due_date": doc.due_date,
         "document_type": doc.document_type,
-        "parsed": doc.parsed
+        "parsed": parsed_value,
+        "doc_number": doc.doc_number,  # Dodano polje za broj računa
     }
+
+    return DocumentOut.model_validate(doc_dict)
 
 @router.get("/by-oib/{oib}", response_model=List[DocumentOut])
 def get_documents_by_oib(oib: str, db: Session = Depends(get_db)):
     docs = db.query(Document).filter(Document.supplier_oib == oib).order_by(Document.date.desc()).all()
     if not docs:
         raise HTTPException(status_code=404, detail="Nema dokumenata za ovog partnera")
+
+    def parse_parsed_field(doc):
+        if isinstance(doc.parsed, str):
+            try:
+                return json.loads(doc.parsed)
+            except Exception:
+                return None
+        return doc.parsed
 
     return [
         {
@@ -139,6 +156,8 @@ def get_documents_by_oib(oib: str, db: Session = Depends(get_db)):
             "invoice_date": doc.invoice_date.isoformat() if doc.invoice_date else None,
             "due_date": doc.due_date.isoformat() if doc.due_date else None,
             "document_type": doc.document_type,
+            "parsed": parse_parsed_field(doc),
+            "doc_number": doc.doc_number,  # Dodano polje za broj računa
         }
         for doc in docs
     ]
@@ -177,15 +196,37 @@ def update_document_supplier(
 @router.delete("/clear-all")
 def clear_all_documents(db: Session = Depends(get_db)):
     try:
+        # briši sve iz baza
         db.query(DocumentAnnotation).delete()
         db.query(Document).delete()
+        db.query(Partner).delete()
         db.commit()
 
-        db.execute(text("ALTER TABLE document_annotations AUTO_INCREMENT = 1;"))
-        db.execute(text("ALTER TABLE documents AUTO_INCREMENT = 1;"))
+        # reset sekvenci
+        db.execute(text("ALTER SEQUENCE document_annotations_id_seq RESTART WITH 1;"))
+        db.execute(text("ALTER SEQUENCE documents_id_seq RESTART WITH 1;"))
+        db.execute(text("ALTER SEQUENCE partneri_id_seq RESTART WITH 1;"))
         db.commit()
 
-        return {"message": "Svi dokumenti i anotacije su obrisani, brojači resetirani."}
+        # briši datoteke iz upload foldera
+        if os.path.exists(UPLOAD_DIR):
+            for filename in os.listdir(UPLOAD_DIR):
+                file_path = os.path.join(UPLOAD_DIR, filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+
+        # briši sadržaj Elasticsearch indeksa
+        try:
+            es = Elasticsearch("http://localhost:9200")
+            if es.indices.exists(index=ES_INDEX):
+                es.delete_by_query(index=ES_INDEX, body={"query": {"match_all": {}}})
+                es.indices.refresh(index=ES_INDEX)  # refresh nakon brisanja
+                logging.info(f"Elasticsearch indeks '{ES_INDEX}' očišćen i osvježen.")
+        except Exception as es_exc:
+            logging.warning(f"Elasticsearch clean error: {es_exc}")
+
+        logging.info("Svi dokumenti, partneri i anotacije su obrisani, PDF-ovi i ES indeks resetirani.")
+        return {"message": "Svi dokumenti, partneri i anotacije su obrisani, PDF-ovi i ES indeks resetirani."}
     except Exception as e:
         db.rollback()
         logging.error(f"Greška: {e}")

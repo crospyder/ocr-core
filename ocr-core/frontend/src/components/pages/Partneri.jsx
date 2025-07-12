@@ -7,6 +7,8 @@ export default function Partneri() {
   const [partneri, setPartneri] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [editData, setEditData] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,21 +22,47 @@ export default function Partneri() {
       .finally(() => setLoading(false));
   }, []);
 
-  function handleInputChange(id, field, value) {
-    setPartneri((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, [field]: value } : p))
-    );
+  function handleEdit(partner) {
+    setEditId(partner.id);
+    setEditData({
+      kontakt_telefon: partner.kontakt_telefon || "",
+      kontakt_email: partner.kontakt_email || "",
+      kontakt_osoba: partner.kontakt_osoba || "",
+    });
+  }
+
+  function handleInputChange(field, value) {
+    setEditData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
+
+  function handleCancel() {
+    setEditId(null);
+    setEditData({});
   }
 
   async function handleSave(partner) {
+    const updatedPartner = {
+      ...partner,
+      kontakt_telefon: editData.kontakt_telefon,
+      kontakt_email: editData.kontakt_email,
+      kontakt_osoba: editData.kontakt_osoba,
+    };
     try {
       const res = await fetch(`/api/partneri/${partner.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(partner),
+        body: JSON.stringify(updatedPartner),
       });
       if (!res.ok) throw new Error("Greška pri spremanju partnera");
+      setPartneri((prev) =>
+        prev.map((p) => (p.id === partner.id ? updatedPartner : p))
+      );
       toast.success("✅ Partner spremljen");
+      setEditId(null);
+      setEditData({});
     } catch (err) {
       toast.error("❌ " + err.message);
     }
@@ -48,7 +76,10 @@ export default function Partneri() {
 
   return (
     <div className="container mt-4">
-      <h2 className="mb-4">📒 Partneri</h2>
+      <h2 className="mb-4">
+        <span role="img" aria-label="notebook" className="me-2">📒</span>
+        Partneri
+      </h2>
 
       <Form.Control
         type="text"
@@ -56,78 +87,147 @@ export default function Partneri() {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         className="mb-3"
+        autoFocus
       />
 
       {loading ? (
-        <div className="text-center"><Spinner animation="border" /></div>
+        <div className="text-center">
+          <Spinner animation="border" />
+        </div>
       ) : (
         <div className="card shadow-sm border rounded">
           <div className="card-body p-0">
-            <Table className="table table-hover mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th>Naziv</th>
-                  <th>OIB</th>
-                  <th>Adresa</th>
-                  <th>Telefon</th>
-                  <th>Email</th>
-                  <th>Kontakt osoba</th>
-                  <th>Akcija</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={7} className="text-center">Nema partnera za prikaz</td></tr>
-                ) : (
-                  filtered.map((partner) => (
-                    <tr key={partner.id}>
-                      <td>
-                        <button
-                          className="btn btn-link p-0 text-decoration-underline"
-                          onClick={() => navigate(`/documents/partner/${partner.oib}`)}
-                        >
-                          {partner.naziv}
-                        </button>
-                      </td>
-                      <td>{partner.oib}</td>
-                      <td>{partner.adresa}</td>
-                      <td>
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          value={partner.kontakt_telefon || ""}
-                          onChange={(e) => handleInputChange(partner.id, "kontakt_telefon", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <Form.Control
-                          size="sm"
-                          type="email"
-                          value={partner.kontakt_email || ""}
-                          onChange={(e) => handleInputChange(partner.id, "kontakt_email", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <Form.Control
-                          size="sm"
-                          type="text"
-                          value={partner.kontakt_osoba || ""}
-                          onChange={(e) => handleInputChange(partner.id, "kontakt_osoba", e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <button
-                          className="btn btn-sm btn-success"
-                          onClick={() => handleSave(partner)}
-                        >
-                          Spremi
-                        </button>
+            <div style={{ overflowX: "auto" }}>
+              <Table className="table table-hover partner-table mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th className="partner-naziv text-start">Naziv</th>
+                    <th>OIB</th>
+                    <th>Adresa</th>
+                    <th>Telefon</th>
+                    <th>Email</th>
+                    <th>Kontakt osoba</th>
+                    <th>Akcija</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center">
+                        Nema partnera za prikaz
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
+                  ) : (
+                    filtered.map((partner) => {
+                      const isEditing = editId === partner.id;
+                      return (
+                        <tr key={partner.id}>
+                          <td className="partner-naziv text-start">
+                            <button
+                              className="btn btn-link p-0 text-decoration-underline"
+                              onClick={() =>
+                                navigate(`/documents/partner/${partner.oib}`)
+                              }
+                              tabIndex={-1}
+                            >
+                              {partner.naziv}
+                            </button>
+                          </td>
+                          <td>{partner.oib}</td>
+                          <td>{partner.adresa}</td>
+                          <td>
+                            {isEditing ? (
+                              <Form.Control
+                                size="sm"
+                                type="text"
+                                value={editData.kontakt_telefon}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    "kontakt_telefon",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Telefon"
+                                autoFocus
+                              />
+                            ) : (
+                              partner.kontakt_telefon || (
+                                <span className="text-muted">-</span>
+                              )
+                            )}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <Form.Control
+                                size="sm"
+                                type="email"
+                                value={editData.kontakt_email}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    "kontakt_email",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Email"
+                              />
+                            ) : (
+                              partner.kontakt_email || (
+                                <span className="text-muted">-</span>
+                              )
+                            )}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <Form.Control
+                                size="sm"
+                                type="text"
+                                value={editData.kontakt_osoba}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    "kontakt_osoba",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Kontakt osoba"
+                              />
+                            ) : (
+                              partner.kontakt_osoba || (
+                                <span className="text-muted">-</span>
+                              )
+                            )}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <>
+                                <button
+                                  className="btn btn-sm btn-success me-2"
+                                  onClick={() => handleSave(partner)}
+                                >
+                                  💾 Spremi
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-secondary"
+                                  onClick={handleCancel}
+                                >
+                                  Odustani
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                className="btn btn-sm btn-warning"
+                                onClick={() => handleEdit(partner)}
+                              >
+                                ✏️ Uredi
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </Table>
+            </div>
           </div>
         </div>
       )}

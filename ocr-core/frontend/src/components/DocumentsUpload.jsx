@@ -18,7 +18,7 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
       toast.warn("⚠️ Nema PDF datoteka u odabranom folderu ili datoteci.");
     }
     setFiles(pdfFiles);
-    e.target.value = null; // reset input da može ponovno odabrati isti folder/file
+    e.target.value = null;
   }
 
   function handleDocTypeChange(e) {
@@ -58,7 +58,6 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
       const processedDocs = data?.processed || [];
       const uploadedIds = processedDocs.map(item => item.id);
 
-      // Upozorenja za dokumente s alertom
       processedDocs.forEach(doc => {
         if (doc.validation_alert) {
           toast.warn(`⚠️ ${doc.original_filename}: ${doc.validation_alert}`);
@@ -83,7 +82,7 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
     <>
       <LoadingModal visible={loading} message="Uploading and OCR processing..." />
 
-      <div className="card shadow p-4 mx-auto" style={{ maxWidth: "640px" }}>
+      <div className="pantheon-upload-card">
         <label className="form-label fw-semibold mb-3">Tip dokumenta:</label>
         <select
           className="form-select mb-3"
@@ -103,8 +102,7 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
           type="button"
           onClick={() => inputFolderRef.current && inputFolderRef.current.click()}
           disabled={loading}
-          className="form-control text-center p-5 border border-primary border-2 bg-light mb-3"
-          style={{ cursor: "pointer" }}
+          className="pantheon-upload-btn primary w-100 text-center"
         >
           Odaberi folder s PDF dokumentima (uključujući podfoldere)
         </button>
@@ -125,8 +123,7 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
           type="button"
           onClick={() => inputFileRef.current && inputFileRef.current.click()}
           disabled={loading}
-          className="form-control text-center p-3 border border-secondary border-2 bg-light mb-3"
-          style={{ cursor: "pointer" }}
+          className="pantheon-upload-btn secondary w-100 text-center"
         >
           Odaberi pojedinačnu PDF datoteku
         </button>
@@ -140,11 +137,11 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
         />
 
         {files.length > 0 && (
-          <div className="mb-3">
-            <h6 className="fw-bold">Odabrane PDF datoteke:</h6>
-            <ul className="list-group">
+          <div className="pantheon-upload-files-list mb-3">
+            <h6 className="fw-bold mb-2">Odabrane PDF datoteke:</h6>
+            <ul className="list-unstyled mb-0">
               {files.map((file, idx) => (
-                <li className="list-group-item" key={idx}>
+                <li key={idx}>
                   {file.webkitRelativePath || file.name} ({(file.size / 1024).toFixed(2)} KB)
                 </li>
               ))}
@@ -154,7 +151,7 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
 
         <button
           type="button"
-          className="btn btn-primary mt-3 w-100"
+          className="pantheon-upload-btn send w-100"
           onClick={handleUpload}
           disabled={loading}
         >
