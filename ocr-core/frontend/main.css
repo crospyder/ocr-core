@@ -590,3 +590,249 @@ a:hover, a:focus {
     flex-direction: column;
   }
 }
+/* Poslovni stil tablice dokumenata */
+.table.table-striped.table-hover.table-sm {
+  border-collapse: separate;
+  border-spacing: 0 0.35rem; /* malo vertikalnog razmaka između redaka */
+  font-size: 0.9rem;
+}
+
+.table.table-striped.table-hover.table-sm thead th {
+  background-color: #232d39; /* tamno siva kao sidebar */
+  color: #ffd600; /* zlatna boja teksta */
+  font-weight: 600;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  vertical-align: middle;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+.table.table-striped.table-hover.table-sm tbody tr {
+  background: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 0 6px rgba(0,0,0,0.05);
+  transition: background 0.2s ease;
+}
+
+.table.table-striped.table-hover.table-sm tbody tr:hover {
+  background: #fdfbea; /* lagana žućkasta nijansa hover */
+}
+
+.table.table-striped.table-hover.table-sm tbody td {
+  padding: 0.4rem 0.75rem;
+  vertical-align: middle;
+  border-top: none;
+  color: #23272b;
+}
+
+.table.table-striped.table-hover.table-sm tbody tr:nth-child(even) {
+  background-color: #f9fafc; /* svjetliji redci za preglednost */
+  box-shadow: none;
+}
+
+/* Veze u tablici */
+.table.table-striped.table-hover.table-sm tbody a {
+  color: #1976d2;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.table.table-striped.table-hover.table-sm tbody a:hover,
+.table.table-striped.table-hover.table-sm tbody a:focus {
+  color: #ffd600;
+  text-decoration: underline;
+}
+
+/* Gumbi za dobavljača */
+.table.table-striped.table-hover.table-sm tbody button.btn-link {
+  color: #1976d2;
+  font-weight: 500;
+  padding: 0;
+  font-size: 0.9rem;
+}
+
+.table.table-striped.table-hover.table-sm tbody button.btn-link:hover,
+.table.table-striped.table-hover.table-sm tbody button.btn-link:focus {
+  color: #ffd600;
+  text-decoration: underline;
+  background: none;
+  outline: none;
+  cursor: pointer;
+}
+/* Globalni <a> linkovi - bold i crni, osim u sidebaru, topbaru i footeru */
+body a {
+  font-weight: 700;
+  color: #000000; /* crna */
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+/* Hover efekt globalnih linkova */
+body a:hover,
+body a:focus {
+  color: #ffd600; /* zlatna */
+  text-decoration: underline;
+}
+
+/* Isključi sidebar, topbar i footer linkove iz ovih pravila */
+.sidebar a,
+.topbar-minimal a,
+.footer-dark a {
+  font-weight: normal; /* ili kako je bilo prije */
+  color: inherit;      /* zadrži postojeću boju */
+  text-decoration: none;
+  transition: none;
+}
+
+.sidebar a:hover,
+.topbar-minimal a:hover,
+.footer-dark a:hover {
+  color: inherit;
+  text-decoration: none;
+}
+/* Svi linkovi u body osim onih unutar sidebar, topbar i footer */
+body a {
+  font-weight: 700 !important;
+  color: #000000 !important;
+  text-decoration: none !important;
+  transition: color 0.2s ease !important;
+}
+
+/* Hover efekt */
+body a:hover,
+body a:focus {
+  color: #ffd600 !important;
+  text-decoration: underline !important;
+}
+
+/* Prekid stilova za linkove u sidebar, topbar, footer */
+.sidebar a,
+.topbar-minimal a,
+.footer-dark a {
+  font-weight: normal !important;
+  color: inherit !important;
+  text-decoration: none !important;
+  transition: none !important;
+}
+
+.sidebar a:hover,
+.topbar-minimal a:hover,
+.footer-dark a:hover {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+/* Globalni linkovi - bold, crni, hover zlatni s tamnosivom pozadinom */
+body a:not(.sidebar-link):not(.topbar-minimal a):not(.footer-link) {
+  font-weight: 700;
+  color: #000;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+body a:not(.sidebar-link):not(.topbar-minimal a):not(.footer-link):hover,
+body a:not(.sidebar-link):not(.topbar-minimal a):not(.footer-link):focus {
+  color: #ffd600;
+  background-color: #2c2f33;
+  text-decoration: none;
+}
+.page-title-container {
+  border-bottom: 2px solid #ffd600;
+  padding-bottom: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.page-title-container {
+  border-bottom: 2px solid #ffd600;
+  padding-bottom: 0.3rem;
+  margin-bottom: 1rem;
+  color: #000 !important;
+}
+
+.filters-row select {
+  min-width: 150px;
+  max-width: 200px;
+}
+
+.filters-row select,
+.filters-row select:focus {
+  border-color: #ffd600;
+  box-shadow: 0 0 5px #ffd600;
+}
+
+.page-title-container h2 {
+  font-weight: 700 !important;
+}
+.document-stats-widget ul.document-stats-list li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #e9ecef; /* Bootstrap border-light */
+}
+
+.document-stats-widget ul.document-stats-list li:last-child {
+  border-bottom: none;
+}
+
+.stats-summary > div {
+  min-width: 120px;
+}
+/* Stil za oznaku tipa dokumenta */
+.doc-tag {
+  background-color: #ffc107; /* zlatna boja */
+  color: #232d39; /* tamna */
+  font-weight: 600;
+  padding: 0.15em 0.6em;
+  border-radius: 0.375rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Primjer boja za specifične tipove (URA, IRA, UGOVOR, IZVOD) */
+.doc-tag.ura {
+  background-color: #28a745; /* zelena */
+  color: #fff;
+}
+
+.doc-tag.ira {
+  background-color: #007bff; /* plava */
+  color: #fff;
+}
+
+.doc-tag.ugovor {
+  background-color: #17a2b8; /* tirkizna */
+  color: #fff;
+}
+
+.doc-tag.izvod {
+  background-color: #6c757d; /* siva */
+  color: #fff;
+}
+
+/* Hover efekt na recent dokumentima */
+.recent-doc-item:hover {
+  background-color: #f1f3f7;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+.top-partners-widget {
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  color: #23272b;
+}
+
+.top-partners-widget h5 {
+  color: #23272b;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.top-partners-widget .list-group-item {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}
+
+.top-partners-widget .list-group-item span {
+  font-weight: 600;
+}
+

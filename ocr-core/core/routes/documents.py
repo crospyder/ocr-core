@@ -33,7 +33,7 @@ def list_documents(
         query = query.filter(Document.document_type == document_type)
 
     if processed:
-        query = query.filter(Document.ocrresult != None)
+        query = query.filter(Document.ocrresult.isnot(None))
 
     if supplier_oib:
         query = query.filter(Document.supplier_oib == supplier_oib)
@@ -72,17 +72,20 @@ def list_documents(
 @router.get("/stats-info")
 def documents_stats(db: Session = Depends(get_db)):
     total_docs = db.query(Document).count()
-    processed_docs = db.query(Document).filter(Document.ocrresult != None).count()
+    processed_docs = db.query(Document).filter(Document.ocrresult.isnot(None)).count()
 
-    total_size_bytes = sum(
-        os.path.getsize(os.path.join(UPLOAD_DIR, f))
-        for f in os.listdir(UPLOAD_DIR)
-        if os.path.isfile(os.path.join(UPLOAD_DIR, f))
-    ) if os.path.exists(UPLOAD_DIR) else 0
+    total_size_bytes = (
+        sum(
+            os.path.getsize(os.path.join(UPLOAD_DIR, f))
+            for f in os.listdir(UPLOAD_DIR)
+            if os.path.isfile(os.path.join(UPLOAD_DIR, f))
+        )
+        if os.path.exists(UPLOAD_DIR) else 0
+    )
 
     total_size_mb = total_size_bytes / (1024 * 1024)
-    usage = shutil.disk_usage(UPLOAD_DIR)
-    free_mb = usage.free / (1024 * 1024)
+    usage = shutil.disk_usage(UPLOAD_DIR) if os.path.exists(UPLOAD_DIR) else None
+    free_mb = usage.free / (1024 * 1024) if usage else 0
 
     by_type_query = db.query(Document.document_type, func.count()).group_by(Document.document_type).all()
     by_type = {row[0]: row[1] for row in by_type_query if row[0]}
@@ -94,6 +97,18 @@ def documents_stats(db: Session = Depends(get_db)):
         "free_space_mb": round(free_mb, 2),
         "by_type": by_type
     }
+
+@router.get("/top-partners")
+def top_partners(db: Session = Depends(get_db)):
+    results = (
+        db.query(Document.supplier_name_ocr, func.count(Document.id))
+        .group_by(Document.supplier_name_ocr)
+        .order_by(func.count(Document.id).desc())
+        .limit(5)
+        .all()
+    )
+
+    return [{"partner": r[0] or "Nepoznati dobavljač", "document_count": r[1]} for r in results]
 
 @router.get("/{document_id}", response_model=DocumentOut)
 def get_document(document_id: int, db: Session = Depends(get_db)):

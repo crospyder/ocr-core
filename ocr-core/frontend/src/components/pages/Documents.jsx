@@ -6,11 +6,17 @@ export default function Documents() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
+
   const [documentType, setDocumentType] = useState("");
   const [supplierOib, setSupplierOib] = useState("");
+  const [selectedSupplier, setSelectedSupplier] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+
   const [clearLoading, setClearLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -38,7 +44,6 @@ export default function Documents() {
       const data = await res.json();
       setDocuments(Array.isArray(data) ? data : []);
       setError(null);
-      console.log("Dokumenti dohvaćeni:", data.length);
     } catch (err) {
       toast.error(`❌ ${err.message}`);
       setDocuments([]);
@@ -52,7 +57,6 @@ export default function Documents() {
     if (!window.confirm("Jesi li siguran da želiš obrisati SVE dokumente, anotacije, partnere, PDF-ove i Elasticsearch indeks?")) return;
 
     setClearLoading(true);
-    console.log("Početak brisanja svih podataka...");
 
     try {
       const res = await fetch("/api/documents/clear-all", { method: "DELETE" });
@@ -62,7 +66,6 @@ export default function Documents() {
       }
 
       const result = await res.json();
-      console.log("Rezultat brisanja:", result.message);
       toast.success("✅ Svi dokumenti, partneri, anotacije, PDF-ovi i ES indeks su obrisani.");
       fetchDocuments();
     } catch (err) {
@@ -70,7 +73,6 @@ export default function Documents() {
       console.error("Greška pri brisanju:", err);
     } finally {
       setClearLoading(false);
-      console.log("Brisanje završeno.");
     }
   }
 
@@ -80,8 +82,31 @@ export default function Documents() {
     setSortConfig({ key, direction });
   }
 
+  const suppliers = useMemo(() => {
+    const setSuppliers = new Set(documents.map(d => d.supplier_name_ocr).filter(Boolean));
+    return Array.from(setSuppliers).sort();
+  }, [documents]);
+
+  const years = useMemo(() => {
+    const setYears = new Set(documents.map(d => {
+      if (d.invoice_date) return new Date(d.invoice_date).getFullYear();
+      return null;
+    }).filter(Boolean));
+    return Array.from(setYears).sort((a,b) => b - a);
+  }, [documents]);
+
+  const filteredDocuments = useMemo(() => {
+    return documents.filter(doc => {
+      return (
+        (!documentType || doc.document_type === documentType) &&
+        (!selectedSupplier || doc.supplier_name_ocr === selectedSupplier) &&
+        (!selectedYear || (doc.invoice_date && new Date(doc.invoice_date).getFullYear() === parseInt(selectedYear)))
+      );
+    });
+  }, [documents, documentType, selectedSupplier, selectedYear]);
+
   const sortedDocuments = useMemo(() => {
-    const docs = [...documents];
+    const docs = [...filteredDocuments];
     return docs.sort((a, b) => {
       let aVal = a[sortConfig.key];
       let bVal = b[sortConfig.key];
@@ -99,7 +124,7 @@ export default function Documents() {
       if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
       return 0;
     });
-  }, [documents, sortConfig]);
+  }, [filteredDocuments, sortConfig]);
 
   const pageCount = Math.ceil(sortedDocuments.length / itemsPerPage);
   const paginatedDocs = useMemo(() => {
@@ -110,47 +135,74 @@ export default function Documents() {
 
   return (
     <div className="container-fluid mt-4">
-      <div className="d-flex justify-content-end mb-3">
-        
+      {/* Naslov */}
+      <div className="page-title-container text-center mb-3">
+        <h2 className="h4 text-black fw-bold mb-0">OCR dokumenti</h2>
       </div>
 
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
-        <h2 className="h4 text-primary mb-0">📁 OCR dokumenti</h2>
-        <div className="d-flex gap-3 align-items-center flex-wrap">
-          <select
-            className="form-select form-select-sm"
-            value={documentType}
-            onChange={(e) => {
-              setDocumentType(e.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="">Vrsta: Sve</option>
-            <option value="URA">URA</option>
-            <option value="IRA">IRA</option>
-            <option value="UGOVOR">UGOVOR</option>
-            <option value="IZVOD">IZVOD</option>
-          </select>
-          <select
-            className="form-select form-select-sm"
-            value={itemsPerPage}
-            onChange={(e) => {
-              const val = parseInt(e.target.value);
-              setItemsPerPage(val);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="50">50 / stranici</option>
-            <option value="100">100</option>
-            <option value="1000">1000</option>
-            <option value="-1">Sve</option>
-          </select>
-          {supplierOib && (
-            <button className="btn btn-sm btn-outline-secondary" onClick={() => navigate("/documents")}>
-              Prikaži sve dobavljače
-            </button>
-          )}
-        </div>
+      {/* Horizontalni filteri */}
+      <div className="d-flex justify-content-center flex-wrap gap-3 mb-3 filters-row">
+        <select
+          className="form-select form-select-sm"
+          value={documentType}
+          onChange={(e) => {
+            setDocumentType(e.target.value);
+            setCurrentPage(1);
+          }}
+          aria-label="Vrsta dokumenta"
+        >
+          <option value="">Vrsta: Sve</option>
+          <option value="URA">URA</option>
+          <option value="IRA">IRA</option>
+          <option value="UGOVOR">UGOVOR</option>
+          <option value="IZVOD">IZVOD</option>
+        </select>
+
+        <select
+          className="form-select form-select-sm"
+          value={selectedSupplier}
+          onChange={(e) => {
+            setSelectedSupplier(e.target.value);
+            setCurrentPage(1);
+          }}
+          aria-label="Dobavljač"
+        >
+          <option value="">Dobavljač: Svi</option>
+          {suppliers.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+
+        <select
+          className="form-select form-select-sm"
+          value={selectedYear}
+          onChange={(e) => {
+            setSelectedYear(e.target.value);
+            setCurrentPage(1);
+          }}
+          aria-label="Godina"
+        >
+          <option value="">Godina: Sve</option>
+          {years.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+
+        <select
+          className="form-select form-select-sm"
+          value={itemsPerPage}
+          onChange={(e) => {
+            const val = parseInt(e.target.value);
+            setItemsPerPage(val);
+            setCurrentPage(1);
+          }}
+          aria-label="Broj dokumenata po stranici"
+        >
+          <option value="50">50 / stranici</option>
+          <option value="100">100</option>
+          <option value="1000">1000</option>
+          <option value="-1">Sve</option>
+        </select>
       </div>
 
       {loading ? (
@@ -161,47 +213,49 @@ export default function Documents() {
         <p>Nema dokumenata za prikaz.</p>
       ) : (
         <>
-          <table className="table table-striped table-hover table-sm">
-            <thead className="table-light">
-              <tr>
-                <th onClick={() => requestSort("id")} style={{ cursor: "pointer" }}>#</th>
-                <th onClick={() => requestSort("filename")} style={{ cursor: "pointer" }}>Naziv</th>
-                <th onClick={() => requestSort("date")} style={{ cursor: "pointer" }}>Arhivirano</th>
-                <th onClick={() => requestSort("supplier_name_ocr")} style={{ cursor: "pointer" }}>Dobavljač</th>
-                <th onClick={() => requestSort("supplier_oib")} style={{ cursor: "pointer" }}>OIB</th>
-                <th onClick={() => requestSort("doc_number")} style={{ cursor: "pointer" }}>Broj računa</th>
-                <th onClick={() => requestSort("invoice_date")} style={{ cursor: "pointer" }}>Datum računa</th>
-                <th onClick={() => requestSort("due_date")} style={{ cursor: "pointer" }}>Datum valute</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedDocs.map((doc) => (
-                <tr key={doc.id}>
-                  <td>{doc.id}</td>
-                  <td>
-                    <a href={`/documents/${doc.id}`}>{doc.filename}</a>
-                  </td>
-                  <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "-"}</td>
-                  <td>
-                    {doc.supplier_oib ? (
-                      <button
-                        className="btn btn-link p-0 text-decoration-underline"
-                        onClick={() => navigate(`/documents/partner/${doc.supplier_oib}`)}
-                      >
-                        {doc.supplier_name_ocr || "-"}
-                      </button>
-                    ) : (
-                      doc.supplier_name_ocr || "-"
-                    )}
-                  </td>
-                  <td>{doc.supplier_oib || "-"}</td>
-                  <td>{doc.doc_number || "-"}</td>
-                  <td>{doc.invoice_date ? new Date(doc.invoice_date).toLocaleDateString("hr-HR") : "-"}</td>
-                  <td>{doc.due_date ? new Date(doc.due_date).toLocaleDateString("hr-HR") : "-"}</td>
+          <div className="table-responsive">
+            <table className="table table-striped table-hover table-sm w-100">
+              <thead className="table-light">
+                <tr>
+                  <th onClick={() => requestSort("id")} style={{ cursor: "pointer" }}>#</th>
+                  <th onClick={() => requestSort("filename")} style={{ cursor: "pointer" }}>Naziv</th>
+                  <th onClick={() => requestSort("date")} style={{ cursor: "pointer" }}>Arhivirano</th>
+                  <th onClick={() => requestSort("supplier_name_ocr")} style={{ cursor: "pointer" }}>Dobavljač</th>
+                  <th onClick={() => requestSort("supplier_oib")} style={{ cursor: "pointer" }}>OIB</th>
+                  <th onClick={() => requestSort("doc_number")} style={{ cursor: "pointer" }}>Broj računa</th>
+                  <th onClick={() => requestSort("invoice_date")} style={{ cursor: "pointer" }}>Datum računa</th>
+                  <th onClick={() => requestSort("due_date")} style={{ cursor: "pointer" }}>Datum valute</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {paginatedDocs.map((doc) => (
+                  <tr key={doc.id}>
+                    <td>{doc.id}</td>
+                    <td>
+                      <a href={`/documents/${doc.id}`}>{doc.filename}</a>
+                    </td>
+                    <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "-"}</td>
+                    <td>
+                      {doc.supplier_oib ? (
+                        <button
+                          className="btn btn-link p-0 text-decoration-underline"
+                          onClick={() => navigate(`/documents/partner/${doc.supplier_oib}`)}
+                        >
+                          {doc.supplier_name_ocr || "-"}
+                        </button>
+                      ) : (
+                        doc.supplier_name_ocr || "-"
+                      )}
+                    </td>
+                    <td>{doc.supplier_oib || "-"}</td>
+                    <td>{doc.doc_number || "-"}</td>
+                    <td>{doc.invoice_date ? new Date(doc.invoice_date).toLocaleDateString("hr-HR") : "-"}</td>
+                    <td>{doc.due_date ? new Date(doc.due_date).toLocaleDateString("hr-HR") : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {itemsPerPage !== -1 && pageCount > 1 && (
             <nav className="mt-3">
