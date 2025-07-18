@@ -1,6 +1,8 @@
 from sqlalchemy import JSON, Column, Integer, String, ForeignKey, TIMESTAMP, Text, func, UniqueConstraint, Date, Numeric
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Boolean
 
 Base = declarative_base()
 
@@ -43,6 +45,8 @@ class Document(Base):
     due_date = Column(Date, nullable=True)
     parsed = Column(JSON, nullable=True)
     doc_number = Column(String(255), nullable=True)  # Broj računa
+    hash = Column(String(64), unique=True, index=True, nullable=True)  # <--- hash polje
+
 
 class User(Base):
     __tablename__ = "users"
@@ -75,9 +79,33 @@ class Partner(Base):
     id = Column(Integer, primary_key=True, index=True)
     naziv = Column(String(255), nullable=False)
     oib = Column(String(20), nullable=False, unique=True, index=True)
+    vat_id = Column(String(20), nullable=True)  # <--- dodano za EU VAT ID
     adresa = Column(String(255), nullable=True)
     kontakt_telefon = Column(String(50), nullable=True)
     kontakt_email = Column(String(100), nullable=True)
     kontakt_osoba = Column(String(100), nullable=True)
     vies_response = Column(JSON, nullable=True)
 
+class MailAccount(Base):
+    __tablename__ = "mail_accounts"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    provider = Column(String(50), nullable=True)
+    imap_server = Column(String(255), nullable=False)
+    imap_port = Column(Integer, nullable=False)
+    use_ssl = Column(Boolean, default=True)
+    username = Column(String(255), nullable=False)
+    password_encrypted = Column(String(255), nullable=False)
+    active = Column(Boolean, default=True)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+class MailProcessed(Base):
+    __tablename__ = "mail_processed"
+    id = Column(Integer, primary_key=True, index=True)
+    mail_account_id = Column(Integer, ForeignKey("mail_accounts.id"), nullable=False)
+    uid = Column(String(255), nullable=True, index=True)  # može ostati nullable ako želiš
+    message_uid = Column(String(255), nullable=False, index=True)  # ovo mora biti NOT NULL i indeksirano
+    processed_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    status = Column(String(50), nullable=False, default="processed")
+    mail_account = relationship("MailAccount")

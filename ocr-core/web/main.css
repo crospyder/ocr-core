@@ -1,0 +1,17 @@
+body, html, #root {
+  height: 100%;
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.nav-link {
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  color: #ffc107 !important;
+}
+
+.nav-link.fw-bold {
+  font-weight: 700 !important;
+}

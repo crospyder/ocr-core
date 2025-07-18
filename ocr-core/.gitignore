@@ -22,3 +22,6 @@ Thumbs.db
 *.log
 *.sqlite3
 *.db
+
+ocr-core/uploads/
+uploads/

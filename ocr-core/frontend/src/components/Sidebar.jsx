@@ -7,6 +7,9 @@ import {
   Settings,
   Server,
   Users,
+  CheckSquare,
+  Search,
+  Mail,            // import ikone za mail (ako koristiš lucide-react)
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -18,23 +21,24 @@ export default function Sidebar() {
     { to: "/admin", label: "Admin Panel", icon: <Settings size={18} /> },
     { to: "/deployment", label: "Deployment", icon: <Server size={18} /> },
     { to: "/search", label: "Pretraga", icon: <FileText size={18} /> },
+    { to: "/tools/manual-sudreg", label: "Sudreg ručno", icon: <Search size={18} /> },
+    { to: "/validation", label: "Validacija i klasifikacija", icon: <CheckSquare size={18} /> },
+    { to: "/mail_clients", label: "Mail klijenti", icon: <Mail size={18} /> },  // Nova stavka
   ];
 
   return (
-    <aside className="sidebar d-flex flex-column px-3 py-4">
-      <div className="mb-4 text-center">
-        <h4 className="fw-bold text-light">Izbornik</h4>
+    <aside className="sidebar">
+      <div className="sidebar-title mb-4 text-center">
+        Izbornik
       </div>
-      <nav className="nav flex-column gap-1">
+      <nav className="d-flex flex-column gap-1">
         {navItems.map(({ to, label, icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
-              `nav-link d-flex align-items-center gap-2 px-3 py-2 rounded sidebar-link ${
-                isActive ? "active-link" : "text-white"
-              }`
+              "sidebar-link" + (isActive ? " active-link" : "")
             }
           >
             <span className="sidebar-icon">{icon}</span>

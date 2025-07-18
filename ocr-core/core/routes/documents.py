@@ -104,7 +104,11 @@ def top_partners(db: Session = Depends(get_db)):
         db.query(Document.supplier_name_ocr, func.count(Document.id))
         .group_by(Document.supplier_name_ocr)
         .order_by(func.count(Document.id).desc())
+<<<<<<< HEAD
         .limit(5)
+=======
+        .limit(10)  # PROMJENA: limit je sad 10
+>>>>>>> 60dbd18 (Release verzija 0.5.0 - stabilna verzija mail_processing s rollbackom i zaštitom od duplikata)
         .all()
     )
 

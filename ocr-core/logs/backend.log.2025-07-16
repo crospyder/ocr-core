@@ -1,0 +1,310 @@
+2025-07-16 18:19:50,769 [INFO] uvicorn.error: Started server process [11752]
+2025-07-16 18:19:50,770 [INFO] uvicorn.error: Waiting for application startup.
+2025-07-16 18:19:50,817 [INFO] uvicorn.error: Application startup complete.
+2025-07-16 18:19:50,819 [INFO] uvicorn.error: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-16 18:19:52,920 [INFO] uvicorn.access: 192.168.100.252:47906 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:19:52,921 [INFO] uvicorn.access: 192.168.100.252:47918 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:19:56,905 [INFO] uvicorn.access: 192.168.100.252:47922 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:19:56,908 [INFO] uvicorn.access: 192.168.100.252:47926 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:00,908 [INFO] uvicorn.access: 192.168.100.252:35834 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:00,916 [INFO] uvicorn.access: 192.168.100.252:35848 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:04,910 [INFO] uvicorn.access: 192.168.100.252:35880 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:04,911 [INFO] uvicorn.access: 192.168.100.252:35864 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:08,907 [INFO] uvicorn.access: 192.168.100.252:35882 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:08,909 [INFO] uvicorn.access: 192.168.100.252:35898 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:12,907 [INFO] uvicorn.access: 192.168.100.252:57166 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:12,912 [INFO] uvicorn.access: 192.168.100.252:57178 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:16,911 [INFO] uvicorn.access: 192.168.100.252:57190 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:16,913 [INFO] uvicorn.access: 192.168.100.252:57198 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:20,912 [INFO] uvicorn.access: 192.168.100.252:41656 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:20,915 [INFO] uvicorn.access: 192.168.100.252:41670 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:24,904 [INFO] uvicorn.access: 192.168.100.252:41674 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:24,905 [INFO] uvicorn.access: 192.168.100.252:41690 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:28,914 [INFO] uvicorn.access: 192.168.100.252:41702 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:28,919 [INFO] uvicorn.access: 192.168.100.252:41704 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:32,903 [INFO] uvicorn.access: 192.168.100.252:38478 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:32,906 [INFO] uvicorn.access: 192.168.100.252:38494 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:36,906 [INFO] uvicorn.access: 192.168.100.252:38506 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:36,907 [INFO] uvicorn.access: 192.168.100.252:38496 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:40,906 [INFO] uvicorn.access: 192.168.100.252:60256 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:40,911 [INFO] uvicorn.access: 192.168.100.252:60266 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:44,908 [INFO] uvicorn.access: 192.168.100.252:60270 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:44,911 [INFO] uvicorn.access: 192.168.100.252:60276 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:48,911 [INFO] uvicorn.access: 192.168.100.252:60284 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:48,912 [INFO] uvicorn.access: 192.168.100.252:60292 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:52,970 [INFO] uvicorn.access: 192.168.100.252:58370 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:20:52,988 [INFO] uvicorn.access: 192.168.100.252:58378 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:56,912 [INFO] uvicorn.access: 192.168.100.252:58384 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:20:56,919 [INFO] uvicorn.access: 192.168.100.252:58390 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:00,919 [INFO] uvicorn.access: 192.168.100.252:54076 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:00,920 [INFO] uvicorn.access: 192.168.100.252:54086 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:04,913 [INFO] uvicorn.access: 192.168.100.252:54088 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:04,965 [INFO] uvicorn.access: 192.168.100.252:54094 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:08,962 [INFO] uvicorn.access: 192.168.100.252:54110 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:08,967 [INFO] uvicorn.access: 192.168.100.252:54126 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:12,912 [INFO] uvicorn.access: 192.168.100.252:34198 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:12,914 [INFO] uvicorn.access: 192.168.100.252:34206 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:16,906 [INFO] uvicorn.access: 192.168.100.252:34208 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:16,913 [INFO] uvicorn.access: 192.168.100.252:34216 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:20,916 [INFO] uvicorn.access: 192.168.100.252:44444 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:20,919 [INFO] uvicorn.access: 192.168.100.252:44454 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:24,953 [INFO] uvicorn.access: 192.168.100.252:44462 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:24,954 [INFO] uvicorn.access: 192.168.100.252:44472 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:28,952 [INFO] uvicorn.access: 192.168.100.252:44490 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:28,954 [INFO] uvicorn.access: 192.168.100.252:44488 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:32,965 [INFO] uvicorn.access: 192.168.100.252:35114 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:32,985 [INFO] uvicorn.access: 192.168.100.252:35126 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:36,918 [INFO] uvicorn.access: 192.168.100.252:35136 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:36,921 [INFO] uvicorn.access: 192.168.100.252:35142 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:40,918 [INFO] uvicorn.access: 192.168.100.252:41242 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:40,920 [INFO] uvicorn.access: 192.168.100.252:41246 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:44,917 [INFO] uvicorn.access: 192.168.100.252:41262 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:44,918 [INFO] uvicorn.access: 192.168.100.252:41256 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:48,912 [INFO] uvicorn.access: 192.168.100.252:41264 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:48,949 [INFO] uvicorn.access: 192.168.100.252:41280 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:52,913 [INFO] uvicorn.access: 192.168.100.252:55882 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:52,914 [INFO] uvicorn.access: 192.168.100.252:55866 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:21:56,918 [INFO] uvicorn.access: 192.168.100.252:55898 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:21:56,919 [INFO] uvicorn.access: 192.168.100.252:55914 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:01,283 [INFO] uvicorn.access: 192.168.100.252:52032 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:01,284 [INFO] uvicorn.access: 192.168.100.252:52024 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:05,275 [INFO] uvicorn.access: 192.168.100.252:52046 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:05,277 [INFO] uvicorn.access: 192.168.100.252:52060 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:09,281 [INFO] uvicorn.access: 192.168.100.252:52082 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:09,282 [INFO] uvicorn.access: 192.168.100.252:52068 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:13,278 [INFO] uvicorn.access: 192.168.100.252:38174 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:13,280 [INFO] uvicorn.access: 192.168.100.252:38182 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:17,279 [INFO] uvicorn.access: 192.168.100.252:38206 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:17,281 [INFO] uvicorn.access: 192.168.100.252:38196 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:21,278 [INFO] uvicorn.access: 192.168.100.252:53390 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:21,281 [INFO] uvicorn.access: 192.168.100.252:53396 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:25,282 [INFO] uvicorn.access: 192.168.100.252:53400 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:25,289 [INFO] uvicorn.access: 192.168.100.252:53416 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:29,530 [INFO] uvicorn.access: 192.168.100.252:53432 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:29,532 [INFO] uvicorn.access: 192.168.100.252:53442 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:33,290 [INFO] uvicorn.access: 192.168.100.252:58794 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:33,292 [INFO] uvicorn.access: 192.168.100.252:58778 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:37,286 [INFO] uvicorn.access: 192.168.100.252:58798 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:37,289 [INFO] uvicorn.access: 192.168.100.252:58802 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:41,280 [INFO] uvicorn.access: 192.168.100.252:60960 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:41,281 [INFO] uvicorn.access: 192.168.100.252:60948 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:45,286 [INFO] uvicorn.access: 192.168.100.252:60970 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:45,289 [INFO] uvicorn.access: 192.168.100.252:60986 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:49,276 [INFO] uvicorn.access: 192.168.100.252:60990 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:49,284 [INFO] uvicorn.access: 192.168.100.252:60998 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:53,326 [INFO] uvicorn.access: 192.168.100.252:49008 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:53,329 [INFO] uvicorn.access: 192.168.100.252:49012 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:22:57,312 [INFO] uvicorn.access: 192.168.100.252:49022 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:22:57,315 [INFO] uvicorn.access: 192.168.100.252:49038 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:23:09,305 [INFO] uvicorn.access: 192.168.100.252:35866 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:23:09,308 [INFO] uvicorn.access: 192.168.100.252:35876 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:24:09,283 [INFO] uvicorn.access: 192.168.100.252:59576 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:24:09,322 [INFO] uvicorn.access: 192.168.100.252:59584 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:25:09,289 [INFO] uvicorn.access: 192.168.100.252:50988 - "GET /api/admin/logs/ocr-core-frontend?lines=400 HTTP/1.1" 404
+2025-07-16 18:25:09,354 [INFO] uvicorn.access: 192.168.100.252:51002 - "GET /api/admin/logs/ocr-core-backend?lines=400 HTTP/1.1" 200
+2025-07-16 18:26:34,103 [INFO] uvicorn.error: Shutting down
+2025-07-16 18:26:34,204 [INFO] uvicorn.error: Waiting for application shutdown.
+2025-07-16 18:26:34,204 [INFO] uvicorn.error: Application shutdown complete.
+2025-07-16 18:26:34,204 [INFO] uvicorn.error: Finished server process [11752]
+2025-07-16 18:29:30,472 [INFO] uvicorn.error: Started server process [12559]
+2025-07-16 18:29:30,473 [INFO] uvicorn.error: Waiting for application startup.
+2025-07-16 18:29:30,510 [INFO] uvicorn.error: Application startup complete.
+2025-07-16 18:29:30,511 [INFO] uvicorn.error: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-16 18:30:28,909 [INFO] core.routes.upload: Početak procesa uploada 1 datoteka, tip dokumenta: 'URA'
+2025-07-16 18:30:28,915 [INFO] core.routes.upload: Domaći OIB (owner): 10238889600, Domaći VAT (owner_vat): HR10238889600
+2025-07-16 18:30:28,915 [INFO] core.routes.upload: Obrađujem datoteku: MyDataKnox_invoice_939-POSL1-4.pdf
+2025-07-16 18:30:28,916 [INFO] core.routes.upload: Datoteka spremljena kao f873a82ae26b4e958c017ef354f90183.pdf
+2025-07-16 18:30:28,998 [INFO] core.routes.upload: OCR uspješno izvršen za f873a82ae26b4e958c017ef354f90183.pdf
+2025-07-16 18:30:29,114 [INFO] core.routes.upload: Parsiranje uspješno za MyDataKnox_invoice_939-POSL1-4.pdf
+2025-07-16 18:30:29,116 [INFO] core.routes.upload: Pronađeni OIB-i: ['10238889600'], filtrirani za obradu: []
+2025-07-16 18:30:29,116 [INFO] core.routes.upload: Pronađeni VAT-ovi: [], filtrirani za obradu: []
+2025-07-16 18:30:29,116 [INFO] core.routes.upload: Odabrani OIB za daljnju obradu: None, VAT: None
+2025-07-16 18:30:29,116 [WARNING] core.routes.upload: Nema OIB-a ni VAT broja za dokument MyDataKnox_invoice_939-POSL1-4.pdf, koristi se 'Nepoznat dobavljač'
+2025-07-16 18:30:29,117 [ERROR] core.routes.upload: Greška pri parsiranju datuma '2025-02-13': time data '2025-02-13' does not match format '%d.%m.%Y'
+2025-07-16 18:30:29,117 [INFO] core.routes.upload: Broj dokumenta prepoznat iz OCR: 16/02/2025
+2025-07-16 18:30:29,137 [INFO] core.routes.upload: Dokument spremljen u bazu sa ID: 1 i imenom datoteke: f873a82ae26b4e958c017ef354f90183.pdf
+2025-07-16 18:30:29,229 [INFO] elastic_transport.transport: PUT http://localhost:9200/spineict_ocr/_doc/1 [status:201 duration:0.091s]
+2025-07-16 18:30:29,366 [INFO] core.routes.upload: ES: Uspješno indeksiran dokument ID: 1
+2025-07-16 18:30:29,373 [INFO] core.routes.upload: Datoteka preimenovana u 1.pdf
+2025-07-16 18:35:10,421 [INFO] uvicorn.error: Shutting down
+2025-07-16 18:35:10,523 [INFO] uvicorn.error: Waiting for application shutdown.
+2025-07-16 18:35:10,523 [INFO] uvicorn.error: Application shutdown complete.
+2025-07-16 18:35:10,523 [INFO] uvicorn.error: Finished server process [12559]
+2025-07-16 18:35:12,429 [INFO] uvicorn.error: Started server process [12716]
+2025-07-16 18:35:12,429 [INFO] uvicorn.error: Waiting for application startup.
+2025-07-16 18:35:12,466 [INFO] uvicorn.error: Application startup complete.
+2025-07-16 18:35:12,468 [INFO] uvicorn.error: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-16 18:40:11,147 [INFO] core.routes.upload: Početak procesa uploada 1 datoteka, tip dokumenta: 'URA'
+2025-07-16 18:40:11,156 [INFO] core.routes.upload: Domaći OIB (owner): 10238889600, Domaći VAT (owner_vat): HR10238889600
+2025-07-16 18:40:11,156 [INFO] core.routes.upload: Obrađujem datoteku: Microline - 006622am.pdf
+2025-07-16 18:40:11,156 [INFO] core.routes.upload: Datoteka spremljena kao 2da7f611e02942b98ffb940c713540aa.pdf
+2025-07-16 18:40:11,176 [INFO] core.routes.upload: OCR uspješno izvršen za 2da7f611e02942b98ffb940c713540aa.pdf
+2025-07-16 18:40:11,305 [INFO] core.routes.upload: Parsiranje uspješno za Microline - 006622am.pdf
+2025-07-16 18:40:11,307 [INFO] core.routes.upload: Pronađeni OIB-i: ['79072311177'], filtrirani za obradu: ['79072311177']
+2025-07-16 18:40:11,307 [INFO] core.routes.upload: Pronađeni VAT-ovi: ['HR79072311177'], filtrirani za obradu: ['HR79072311177']
+2025-07-16 18:40:11,307 [INFO] core.routes.upload: Odabrani OIB za daljnju obradu: 79072311177, VAT: HR79072311177
+2025-07-16 18:40:11,421 [INFO] core.routes.upload: Dodan novi partner: MICROLINE d.o.o. (79072311177)
+2025-07-16 18:40:11,422 [INFO] core.routes.upload: VIES podaci spremljeni za novog partnera 79072311177
+2025-07-16 18:40:11,423 [ERROR] core.routes.upload: Greška pri parsiranju datuma '2025-02-10': time data '2025-02-10' does not match format '%d.%m.%Y'
+2025-07-16 18:40:11,423 [INFO] core.routes.upload: Broj dokumenta prepoznat iz OCR: 01/2404-471
+2025-07-16 18:40:11,442 [INFO] core.routes.upload: Dokument spremljen u bazu sa ID: 2 i imenom datoteke: 2da7f611e02942b98ffb940c713540aa.pdf
+2025-07-16 18:40:11,535 [INFO] elastic_transport.transport: PUT http://localhost:9200/spineict_ocr/_doc/2 [status:201 duration:0.093s]
+2025-07-16 18:40:11,671 [INFO] core.routes.upload: ES: Uspješno indeksiran dokument ID: 2
+2025-07-16 18:40:11,677 [INFO] core.routes.upload: Datoteka preimenovana u 2.pdf
+2025-07-16 18:41:55,589 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:41:56,354 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:42:10,079 [INFO] core.routes.upload: Početak procesa uploada 1 datoteka, tip dokumenta: 'URA'
+2025-07-16 18:42:10,082 [INFO] core.routes.upload: Domaći OIB (owner): 10238889600, Domaći VAT (owner_vat): HR10238889600
+2025-07-16 18:42:10,083 [INFO] core.routes.upload: Obrađujem datoteku: MyDataKnox_invoice_763-POSL1-4.pdf
+2025-07-16 18:42:10,084 [INFO] core.routes.upload: Datoteka spremljena kao 11f5c7d35be34b8b9bc42f5b9d66ce99.pdf
+2025-07-16 18:42:10,118 [INFO] core.routes.upload: OCR uspješno izvršen za 11f5c7d35be34b8b9bc42f5b9d66ce99.pdf
+2025-07-16 18:42:10,226 [INFO] core.routes.upload: Parsiranje uspješno za MyDataKnox_invoice_763-POSL1-4.pdf
+2025-07-16 18:42:10,226 [INFO] core.routes.upload: Pronađeni OIB-i: ['10238889600'], filtrirani za obradu: []
+2025-07-16 18:42:10,227 [INFO] core.routes.upload: Pronađeni VAT-ovi: [], filtrirani za obradu: []
+2025-07-16 18:42:10,227 [INFO] core.routes.upload: Odabrani OIB za daljnju obradu: None, VAT: None
+2025-07-16 18:42:10,227 [WARNING] core.routes.upload: Nema OIB-a ni VAT broja za dokument MyDataKnox_invoice_763-POSL1-4.pdf, koristi se 'Nepoznat dobavljač'
+2025-07-16 18:42:10,227 [ERROR] core.routes.upload: Greška pri parsiranju datuma '2025-02-04': time data '2025-02-04' does not match format '%d.%m.%Y'
+2025-07-16 18:42:10,228 [INFO] core.routes.upload: Broj dokumenta prepoznat iz OCR: 04/02/2025
+2025-07-16 18:42:10,236 [INFO] core.routes.upload: Dokument spremljen u bazu sa ID: 3 i imenom datoteke: 11f5c7d35be34b8b9bc42f5b9d66ce99.pdf
+2025-07-16 18:42:10,255 [INFO] elastic_transport.transport: PUT http://localhost:9200/spineict_ocr/_doc/3 [status:201 duration:0.018s]
+2025-07-16 18:42:10,260 [INFO] core.routes.upload: ES: Uspješno indeksiran dokument ID: 3
+2025-07-16 18:42:10,264 [INFO] core.routes.upload: Datoteka preimenovana u 3.pdf
+2025-07-16 18:42:15,948 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:42:16,006 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:51:01,431 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:51:17,738 [INFO] uvicorn.error: Shutting down
+2025-07-16 18:51:17,840 [INFO] uvicorn.error: Waiting for application shutdown.
+2025-07-16 18:51:17,840 [INFO] uvicorn.error: Application shutdown complete.
+2025-07-16 18:51:17,840 [INFO] uvicorn.error: Finished server process [12716]
+2025-07-16 18:51:19,858 [INFO] uvicorn.error: Started server process [13069]
+2025-07-16 18:51:19,858 [INFO] uvicorn.error: Waiting for application startup.
+2025-07-16 18:51:19,905 [INFO] uvicorn.error: Application startup complete.
+2025-07-16 18:51:19,909 [INFO] uvicorn.error: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-16 18:51:26,605 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:51:26,678 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:51:44,492 [WARNING] passlib.handlers.bcrypt: (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "/home/npausic/ocr-core/venv/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-07-16 18:51:45,037 [INFO] root: [FRONTEND] Korisnik dodan: pero 
+2025-07-16 18:51:45,187 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:53:10,244 [INFO] uvicorn.error: Shutting down
+2025-07-16 18:53:10,346 [INFO] uvicorn.error: Waiting for application shutdown.
+2025-07-16 18:53:10,347 [INFO] uvicorn.error: Application shutdown complete.
+2025-07-16 18:53:10,347 [INFO] uvicorn.error: Finished server process [13069]
+2025-07-16 18:53:12,264 [INFO] uvicorn.error: Started server process [13299]
+2025-07-16 18:53:12,265 [INFO] uvicorn.error: Waiting for application startup.
+2025-07-16 18:53:12,307 [INFO] uvicorn.error: Application startup complete.
+2025-07-16 18:53:12,308 [INFO] uvicorn.error: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-16 18:53:45,618 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:53:46,828 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:54:05,386 [INFO] root: [FRONTEND] Korisnik dodan: miro 
+2025-07-16 18:54:05,598 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:56:59,885 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:57:07,293 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:57:07,355 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:59:36,007 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:59:52,773 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:59:55,476 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 18:59:55,536 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:05:01,981 [INFO] uvicorn.error: Shutting down
+2025-07-16 19:05:02,082 [INFO] uvicorn.error: Waiting for application shutdown.
+2025-07-16 19:05:02,082 [INFO] uvicorn.error: Application shutdown complete.
+2025-07-16 19:05:02,082 [INFO] uvicorn.error: Finished server process [13299]
+2025-07-16 19:05:04,574 [INFO] uvicorn.error: Started server process [13482]
+2025-07-16 19:05:04,575 [INFO] uvicorn.error: Waiting for application startup.
+2025-07-16 19:05:04,626 [INFO] uvicorn.error: Application startup complete.
+2025-07-16 19:05:04,627 [INFO] uvicorn.error: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-16 19:05:16,406 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:05:16,475 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:05:31,487 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:05:31,551 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:05:34,317 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:05:34,371 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:11:38,448 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:11:54,006 [INFO] uvicorn.error: Shutting down
+2025-07-16 19:11:54,107 [INFO] uvicorn.error: Waiting for application shutdown.
+2025-07-16 19:11:54,107 [INFO] uvicorn.error: Application shutdown complete.
+2025-07-16 19:11:54,107 [INFO] uvicorn.error: Finished server process [13482]
+2025-07-16 19:11:56,099 [INFO] uvicorn.error: Started server process [13676]
+2025-07-16 19:11:56,099 [INFO] uvicorn.error: Waiting for application startup.
+2025-07-16 19:11:56,138 [INFO] uvicorn.error: Application startup complete.
+2025-07-16 19:11:56,139 [INFO] uvicorn.error: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-16 19:12:10,458 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:12:10,512 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:12:37,978 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:14:07,227 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:14:51,161 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:17:15,055 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:19:36,461 [INFO] uvicorn.error: Shutting down
+2025-07-16 19:19:36,563 [INFO] uvicorn.error: Waiting for application shutdown.
+2025-07-16 19:19:36,563 [INFO] uvicorn.error: Application shutdown complete.
+2025-07-16 19:19:36,563 [INFO] uvicorn.error: Finished server process [13676]
+2025-07-16 19:19:38,814 [INFO] uvicorn.error: Started server process [13758]
+2025-07-16 19:19:38,814 [INFO] uvicorn.error: Waiting for application startup.
+2025-07-16 19:19:38,872 [INFO] uvicorn.error: Application startup complete.
+2025-07-16 19:19:38,873 [INFO] uvicorn.error: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-07-16 19:21:18,909 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:21:18,985 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:21:26,733 [INFO] root: [FRONTEND] Korisnik ažuriran, ID: 1 
+2025-07-16 19:21:26,849 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:22:02,184 [INFO] elastic_transport.transport: HEAD http://localhost:9200/spineict_ocr [status:200 duration:0.018s]
+2025-07-16 19:22:02,195 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:22:02,329 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:22:02,402 [INFO] elastic_transport.transport: POST http://localhost:9200/spineict_ocr/_delete_by_query [status:200 duration:0.068s]
+2025-07-16 19:22:02,452 [INFO] elastic_transport.transport: POST http://localhost:9200/spineict_ocr/_refresh [status:200 duration:0.042s]
+2025-07-16 19:22:02,454 [INFO] root: Elasticsearch indeks 'spineict_ocr' očišćen i osvježen.
+2025-07-16 19:22:02,454 [INFO] root: Svi dokumenti, partneri i anotacije su obrisani, PDF-ovi i ES indeks resetirani.
+2025-07-16 19:23:24,970 [INFO] core.routes.upload: Početak procesa uploada 1 datoteka, tip dokumenta: 'URA'
+2025-07-16 19:23:24,977 [INFO] core.routes.upload: Domaći OIB (owner): 10238889600, Domaći VAT (owner_vat): HR10238889600
+2025-07-16 19:23:24,977 [INFO] core.routes.upload: Obrađujem datoteku: MyDataKnox_invoice_939-POSL1-4.pdf
+2025-07-16 19:23:24,978 [INFO] core.routes.upload: Datoteka spremljena kao a257ee944d474580bed329250028efb0.pdf
+2025-07-16 19:23:25,049 [INFO] core.routes.upload: OCR uspješno izvršen za a257ee944d474580bed329250028efb0.pdf
+2025-07-16 19:23:25,171 [INFO] core.routes.upload: Parsiranje uspješno za MyDataKnox_invoice_939-POSL1-4.pdf
+2025-07-16 19:23:25,171 [INFO] core.routes.upload: Pronađeni OIB-i: ['10238889600'], filtrirani za obradu: []
+2025-07-16 19:23:25,172 [INFO] core.routes.upload: Pronađeni VAT-ovi: [], filtrirani za obradu: []
+2025-07-16 19:23:25,172 [INFO] core.routes.upload: Odabrani OIB za daljnju obradu: None, VAT: None
+2025-07-16 19:23:25,172 [WARNING] core.routes.upload: Nema OIB-a ni VAT broja za dokument MyDataKnox_invoice_939-POSL1-4.pdf, koristi se 'Nepoznat dobavljač'
+2025-07-16 19:23:25,172 [ERROR] core.routes.upload: Greška pri parsiranju datuma '2025-02-13': time data '2025-02-13' does not match format '%d.%m.%Y'
+2025-07-16 19:23:25,172 [INFO] core.routes.upload: Broj dokumenta prepoznat iz OCR: 16/02/2025
+2025-07-16 19:23:25,185 [INFO] core.routes.upload: Dokument spremljen u bazu sa ID: 1 i imenom datoteke: a257ee944d474580bed329250028efb0.pdf
+2025-07-16 19:23:25,207 [INFO] elastic_transport.transport: PUT http://localhost:9200/spineict_ocr/_doc/1 [status:201 duration:0.021s]
+2025-07-16 19:23:25,232 [INFO] core.routes.upload: ES: Uspješno indeksiran dokument ID: 1
+2025-07-16 19:23:25,238 [INFO] core.routes.upload: Datoteka preimenovana u 1.pdf
+2025-07-16 19:23:32,349 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:23:32,463 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:25:05,103 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:26:25,978 [INFO] elastic_transport.transport: HEAD http://localhost:9200/spineict_ocr [status:200 duration:0.004s]
+2025-07-16 19:26:26,146 [INFO] elastic_transport.transport: POST http://localhost:9200/spineict_ocr/_delete_by_query [status:200 duration:0.166s]
+2025-07-16 19:26:26,166 [INFO] elastic_transport.transport: POST http://localhost:9200/spineict_ocr/_refresh [status:200 duration:0.018s]
+2025-07-16 19:26:26,168 [INFO] root: Elasticsearch indeks 'spineict_ocr' očišćen i osvježen.
+2025-07-16 19:26:26,168 [INFO] root: Svi dokumenti, partneri i anotacije su obrisani, PDF-ovi i ES indeks resetirani.
+2025-07-16 19:26:30,040 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:26:30,102 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:26:37,775 [INFO] root: [FRONTEND] Korisnik obrisan, ID: 1 
+2025-07-16 19:26:37,837 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:26:40,507 [INFO] root: [FRONTEND] Korisnik obrisan, ID: 2 
+2025-07-16 19:26:40,573 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:26:42,574 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:26:42,649 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:33:37,812 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:33:38,180 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:34:57,860 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 19:34:57,862 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 20:05:43,641 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 20:05:43,709 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 20:13:05,329 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 20:13:05,400 [INFO] root: [FRONTEND] Korisnici dohvaćeni 
+2025-07-16 20:14:28,031 [INFO] uvicorn.error: Shutting down
+2025-07-16 20:14:28,132 [INFO] uvicorn.error: Waiting for application shutdown.
+2025-07-16 20:14:28,133 [INFO] uvicorn.error: Application shutdown complete.
+2025-07-16 20:14:28,134 [INFO] uvicorn.error: Finished server process [13758]
+2025-07-16 20:17:20,912 [INFO] uvicorn.error: Started server process [14794]
+2025-07-16 20:17:20,912 [INFO] uvicorn.error: Waiting for application startup.
+2025-07-16 20:17:20,964 [INFO] uvicorn.error: Application startup complete.
+2025-07-16 20:20:44,807 [INFO] uvicorn.error: Shutting down
+2025-07-16 20:20:44,915 [INFO] uvicorn.error: Waiting for application shutdown.
+2025-07-16 20:20:44,917 [INFO] uvicorn.error: Application shutdown complete.
+2025-07-16 20:20:44,917 [INFO] uvicorn.error: Finished server process [14794]

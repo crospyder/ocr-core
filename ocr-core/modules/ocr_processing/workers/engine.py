@@ -2,14 +2,13 @@ import pytesseract
 from PIL import Image
 import fitz  # PyMuPDF
 import os
-import re
 from modules.sudreg_api.client import SudregClient
-from core.utils.regex import extract_oib, extract_invoice_date
+from core.utils.regex import extract_oib, extract_invoice_date, extract_dates
 
 sudreg_client = SudregClient()
 
 def extract_text_from_pdf_native(pdf_path) -> str:
-    """Pokušaj izdvojiti native tekst iz PDF-a."""
+    """Pokuaj izdvojiti native tekst iz PDF-a."""
     doc = fitz.open(pdf_path)
     full_text = ""
     for page in doc:
@@ -20,12 +19,10 @@ def extract_text_from_pdf_native(pdf_path) -> str:
 def perform_ocr(file_path):
     temp_images_paths = []
     if file_path.lower().endswith(".pdf"):
-        # Prvo pokušaj native tekst iz PDF-a
         native_text = extract_text_from_pdf_native(file_path)
-        if native_text and len(native_text) > 100:  # prag za minimalnu dužinu
+        if native_text and len(native_text) > 100:
             return native_text
-        
-        # fallback: OCR nad slikama iz PDF-a
+
         images = []
         doc = fitz.open(file_path)
         for page in doc:
@@ -42,7 +39,6 @@ def perform_ocr(file_path):
         text = pytesseract.image_to_string(img, lang="hrv", config="--oem 1 --psm 6")
         result_text += text + "\n"
 
-    # Briši privremene slike
     for temp_img_path in temp_images_paths:
         if os.path.exists(temp_img_path):
             os.remove(temp_img_path)
@@ -50,11 +46,9 @@ def perform_ocr(file_path):
     return result_text
 
 def extract_oib(text: str) -> str | None:
-    # Proxy na regex modul
     return extract_oib(text)
 
 def extract_invoice_date(text: str) -> str | None:
-    # Proxy na regex modul
     return extract_invoice_date(text)
 
 def perform_ocr_and_get_supplier_info(file_path):
@@ -65,8 +59,8 @@ def perform_ocr_and_get_supplier_info(file_path):
         try:
             supplier_info = sudreg_client.get_company_by_oib(oib)
         except Exception as e:
-            print(f"Greška u Sudreg API pozivu: {e}")
-    
+            print(f"Greka u Sudreg API pozivu: {e}")
+
     invoice_date = extract_invoice_date(text)
 
     return {

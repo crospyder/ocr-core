@@ -3,19 +3,24 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# --- DOC NUMBER REGEX ---
 DOC_NUMBER_PATTERNS = [
-    r"\b\d{1,5}[-/]\w+[-/]\d{1,5}\b",  # npr. 98/4505-2 ili 1345/MP1/100
-    r"\bBR[-\s]?(\d{1,10})\b",
-    r"\bUG[-\s]?(\d{1,10})\b",
-    r"\bRAČUN[-\s]?(\d{1,10})\b",
-    r"\bBROJ[-\s]?(\d{1,10})\b",
+    r"\bRA[CĆ]UN\s*(br\.?|broj\.?|[-:\s])?\s*([A-Z0-9\-\/]+)",
+    r"\bR1\s*RA[CĆ]UN.*?br\.?\s*([A-Z0-9\-\/]+)",
+    r"\bOTP.?BR\.?\s*([A-Z0-9\-\/]+)",
+    r"\bBROJ\s*[:\-]?\s*([A-Z0-9\-\/]+)",
+    r"\bINVOICE\s*(NO\.?|#)?[:\s]*([A-Z0-9\-\/]+)",
+    r"\b([0-9]{3,6}/[A-Z0-9]{2,6}/[0-9]{1,6})\b",
+    r"\b([A-Z]{2,4}-[0-9]{4}-[0-9]{3,})\b",
+    r"\b([0-9]{6,})\b",
 ]
 
 def extract_doc_number(text: str) -> str | None:
     for pattern in DOC_NUMBER_PATTERNS:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            return match.group(0).strip()
+            # Uzimamo zadnju grupu koja je najčešće broj računa
+            return match.group(match.lastindex or 0).strip()
     return None
 
 OIB_PATTERN = r"\b[0-9]{11}\b"
@@ -26,8 +31,8 @@ def extract_oib(text: str) -> str | None:
         return None
     return matches[0]
 
-# Pravila za VAT brojeve po zemljama, patterni za validaciju
 COUNTRY_VAT_REGEX = {
+    "EU": r"EU\d{8,12}",
     "AT": r"ATU\d{8}",
     "BE": r"BE0\d{9}",
     "BG": r"BG\d{9,10}",
@@ -39,7 +44,7 @@ COUNTRY_VAT_REGEX = {
     "FR": r"FR[A-Z0-9]{2}\d{9}",
     "EL": r"EL\d{9}",
     "HR": r"HR\d{11}",
-    "IE": r"IE\d{7}[A-W]|IE\d[A-Z0-9]\d{5}[A-W]",  # složeno za irsku
+    "IE": r"IE\d{7}[A-W]|IE\d[A-Z0-9]\d{5}[A-W]",
     "IT": r"IT\d{11}",
     "LV": r"LV\d{11}",
     "LT": r"LT(\d{9}|\d{12})",
@@ -57,8 +62,7 @@ COUNTRY_VAT_REGEX = {
     "SE": r"SE\d{12}",
 }
 
-# Modificirani pattern koji može prepoznati razmake između country code, brojeva i sufiksa
-VAT_CANDIDATE_PATTERN = r"\b([A-Z]{2})\s*(\d+)\s*([A-Z]?)\b"
+VAT_CANDIDATE_PATTERN = r"\b(EU|AT|BE|BG|CY|CZ|DK|EE|FI|FR|EL|HR|IE|IT|LV|LT|LU|HU|MT|NL|DE|PL|PT|RO|SK|SI|ES|SE)\s*(\d+)\s*([A-Z]?)\b"
 
 def extract_vat_number(text: str) -> str | None:
     candidates = re.findall(VAT_CANDIDATE_PATTERN, text.upper())
@@ -81,10 +85,6 @@ def extract_vat_number(text: str) -> str | None:
     return None
 
 def extract_all_vats(text: str) -> list[str]:
-    """
-    Izvlači sve validne VAT brojeve iz teksta (lista),
-    koristi isti pattern i pravila kao extract_vat_number.
-    """
     raw_candidates = re.findall(VAT_CANDIDATE_PATTERN, text.upper())
     vats = []
     for country_code, number, suffix in raw_candidates:
@@ -94,10 +94,24 @@ def extract_all_vats(text: str) -> list[str]:
             vats.append(candidate)
     return vats
 
-# Datum računa, primjer: "VRIJEME IZDAVANJA: 12.02.2025"
+# --- NOVI DATUM PATTERNI ---
+DATE_PATTERNS = [
+    (r"(vrijeme izdavanja|datum izdavanja|račun izdan|datum računa|datum i mjesto|vrijeme i mjesto izdavanja)[:\s]*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})", "invoice_date"),
+    (r"(rok pla[cć]anja|datum dospijeća|valuta|datum valute)[:\s]*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})", "due_date"),
+    (r"(datum isporuke|isporuka)[:\s]*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})", "delivery_date"),
+    (r"(datum unosa)[:\s]*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})", "entry_date"),
+    (r"\b([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})\b", "any_date"),
+]
+
+def extract_dates(text: str) -> dict:
+    result = {}
+    for pat, label in DATE_PATTERNS:
+        for match in re.finditer(pat, text, re.IGNORECASE):
+            value = match.group(2 if match.lastindex and match.lastindex > 1 else 1)
+            if label not in result:
+                result[label] = value
+    return result
+
 def extract_invoice_date(text: str) -> str | None:
-    date_pattern = r"VRIJEME IZDAVANJA:\s*(\d{2}\.\d{2}\.\d{4})"
-    match = re.search(date_pattern, text)
-    if match:
-        return match.group(1)
-    return None
+    dates = extract_dates(text)
+    return dates.get("invoice_date")
