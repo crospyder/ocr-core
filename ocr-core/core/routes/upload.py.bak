@@ -15,9 +15,7 @@ from core.parsers.supplier_extractor import extract_supplier_info
 from modules.sudreg_api.client import SudregClient
 from modules.ocr_processing.workers.engine import perform_ocr
 from core.deployment import get_owner_oib
-from core.utils.regex import extract_doc_number
-from core.utils.regex import COUNTRY_VAT_REGEX
-
+from core.utils.regex import extract_doc_number, extract_oib, extract_all_vats, COUNTRY_VAT_REGEX, extract_dates
 
 from core.vies_api.client import ViesClient
 
@@ -45,7 +43,7 @@ def str_to_date(date_str):
     try:
         return datetime.strptime(date_str, "%d.%m.%Y").date()
     except Exception as e:
-        logger.error(f"Gre≈°ka pri parsiranju datuma '{date_str}': {e}")
+        logger.error(f"Greöka pri parsiranju datuma '{date_str}': {e}")
         return None
 
 def slugify(text):
@@ -77,42 +75,26 @@ def index_to_elasticsearch(doc):
                 "archived_at": str(doc.archived_at),
             }
         )
-        logger.info(f"ES: Uspje≈°no indeksiran dokument ID: {doc.id}")
+        logger.info(f"ES: Uspjeöno indeksiran dokument ID: {doc.id}")
     except Exception as e:
         logger.error(f"ES: Indeksiranje nije uspjelo za dokument ID {doc.id}: {e}")
-
-def extract_all_oibs(text: str) -> List[str]:
-    return re.findall(r"\b[0-9]{11}\b", text) or []
-
-def extract_all_vats(text: str) -> List[str]:
-    # Izvlaƒçi potencijalne VAT brojeve s opcionalnim jednim razmakom izmeƒëu prefiksa i broja
-    pattern = r"\b([A-Z]{2})\s*([0-9]{7,12}[A-Z]?)\b"
-    raw_candidates = re.findall(pattern, text.upper())
-
-    vats = []
-    for country_code, number in raw_candidates:
-        candidate = country_code + number
-        regex = COUNTRY_VAT_REGEX.get(country_code)
-        if regex and re.fullmatch(regex, candidate):
-            vats.append(candidate)
-    return vats
 
 @router.post("/documents")
 async def upload_documents(
     files: List[UploadFile] = File(...),
     document_type: str = Form(...)
 ):
-    logger.info(f"Poƒçetak procesa uploada {len(files)} datoteka, tip dokumenta: '{document_type}'")
+    logger.info(f"PoËetak procesa uploada {len(files)} datoteka, tip dokumenta: '{document_type}'")
     results = []
     db = SessionMain()
 
     try:
         owner_oib = get_owner_oib(db)
         owner_vat = f"HR{owner_oib}" if owner_oib else None
-        logger.info(f"Domaƒái OIB (owner): {owner_oib}, Domaƒái VAT (owner_vat): {owner_vat}")
+        logger.info(f"DomaÊi OIB (owner): {owner_oib}, DomaÊi VAT (owner_vat): {owner_vat}")
 
         for file in files:
-            logger.info(f"Obraƒëujem datoteku: {file.filename}")
+            logger.info(f"Obraujem datoteku: {file.filename}")
             ext = os.path.splitext(file.filename)[1]
             unique_name = f"{uuid.uuid4().hex}{ext}"
             file_path = os.path.join(UPLOAD_DIR, unique_name)
@@ -123,7 +105,7 @@ async def upload_documents(
                     f.write(content)
                 logger.info(f"Datoteka spremljena kao {unique_name}")
             except Exception as e:
-                logger.error(f"Gre≈°ka pri spremanju datoteke {file.filename}: {e}")
+                logger.error(f"Greöka pri spremanju datoteke {file.filename}: {e}")
                 results.append({"filename": file.filename, "status": "FAILED", "error": str(e)})
                 continue
 
@@ -131,33 +113,37 @@ async def upload_documents(
 
             try:
                 text = perform_ocr(file_path)
-                logger.info(f"OCR uspje≈°no izvr≈°en za {unique_name}")
+                logger.info(f"OCR uspjeöno izvröen za {unique_name}")
             except Exception as e:
-                logger.error(f"OCR gre≈°ka za {file.filename}: {e}")
+                logger.error(f"OCR greöka za {file.filename}: {e}")
                 results.append({"filename": file.filename, "status": "FAILED", "error": f"OCR error: {str(e)}"})
                 continue
 
             try:
                 parser_func = dispatch_parser(document_type)
                 parsed_data = parser_func(text)
-                logger.info(f"Parsiranje uspje≈°no za {file.filename}")
+                logger.info(f"Parsiranje uspjeöno za {file.filename}")
             except Exception as e:
                 logger.warning(f"Parsiranje nije uspjelo za {file.filename}: {e}")
                 parsed_data = {"parser_error": str(e)}
 
             supplier_info = extract_supplier_info(text)
 
-            all_oibs = extract_all_oibs(text)
+            all_oibs = extract_oib(text)
             all_vats = extract_all_vats(text)
 
-            filtered_oibs = [x for x in all_oibs if x != owner_oib]
+            all_oibs_list = [all_oibs] if all_oibs else []
+            filtered_oibs = [x for x in all_oibs_list if x != owner_oib]
             filtered_vats = [x for x in all_vats if owner_vat is None or x.upper() != owner_vat.upper()]
+
+            if not filtered_vats and owner_vat and owner_vat in all_vats:
+                filtered_vats = [owner_vat]
 
             oib = filtered_oibs[0] if filtered_oibs else None
             vat_number = filtered_vats[0] if filtered_vats else None
 
-            logger.info(f"Pronaƒëeni OIB-i: {all_oibs}, filtrirani za obradu: {filtered_oibs}")
-            logger.info(f"Pronaƒëeni VAT-ovi: {all_vats}, filtrirani za obradu: {filtered_vats}")
+            logger.info(f"Pronaeni OIB-i: {all_oibs_list}, filtrirani za obradu: {filtered_oibs}")
+            logger.info(f"Pronaeni VAT-ovi: {all_vats}, filtrirani za obradu: {filtered_vats}")
             logger.info(f"Odabrani OIB za daljnju obradu: {oib}, VAT: {vat_number}")
 
             partner_obj = None
@@ -166,17 +152,15 @@ async def upload_documents(
             skraceni_naziv = None
             vies_data = None
 
-            # Provjera validnosti dobavljaƒça - ako nema ni OIB ni VAT, spremi kao Nepoznat dobavljaƒç
             if not oib and not vat_number:
-                logger.warning(f"Nema OIB-a ni VAT broja za dokument {file.filename}, koristi se 'Nepoznat dobavljaƒç'")
-                skraceni_naziv = "Nepoznat dobavljaƒç"
+                logger.warning(f"Nema OIB-a ni VAT broja za dokument {file.filename}, koristi se 'Nepoznat dobavljaË'")
+                skraceni_naziv = "Nepoznat dobavljaË"
             else:
-                # Prvo poku≈°aj s OIB-om (domaƒái ili strani)
                 if oib:
                     partner_obj = db.query(Partner).filter_by(oib=oib).first()
 
                     if partner_obj:
-                        logger.info(f"Partner pronaƒëen u bazi: {partner_obj.naziv} ({partner_obj.oib})")
+                        logger.info(f"Partner pronaen u bazi: {partner_obj.naziv} ({partner_obj.oib})")
                         supplier_info.update({
                             "naziv_firme": partner_obj.naziv,
                             "adresa": partner_obj.adresa,
@@ -239,13 +223,12 @@ async def upload_documents(
 
                         except Exception as e:
                             sudreg_raw = {"error": str(e)}
-                            supplier_info["alert"] = f"‚ùå Gre≈°ka u Sudreg API-ju: {e}"
-                            logger.warning(f"Gre≈°ka pri dohvatu Sudreg podataka za OIB {oib}: {e}")
+                            supplier_info["alert"] = f"? Greöka u Sudreg API-ju: {e}"
+                            logger.warning(f"Greöka pri dohvatu Sudreg podataka za OIB {oib}: {e}")
 
                 else:
-                    # Ako nema OIB-a, a imamo VAT broj, probaj SOAP VIES API
                     if vat_number:
-                        logger.info(f"EU VAT broj pronaƒëen u OCR tekstu: {vat_number}")
+                        logger.info(f"EU VAT broj pronaen u OCR tekstu: {vat_number}")
                         try:
                             country_code = vat_number[:2]
                             vat = vat_number[2:]
@@ -256,7 +239,6 @@ async def upload_documents(
                             })
                             skraceni_naziv = vies_data.get("name")
 
-                            # Dodaj partnera u bazu ako je validan i ne postoji
                             if vies_data.get("valid") and vies_data.get("name"):
                                 partner_obj = db.query(Partner).filter_by(oib=vat_number).first()
                                 if not partner_obj:
@@ -275,41 +257,32 @@ async def upload_documents(
                                         logger.info(f"Dodan novi EU partner iz VIES podataka: {partner_obj.naziv} ({partner_obj.oib})")
                                     except Exception as e:
                                         db.rollback()
-                                        logger.error(f"Gre≈°ka pri spremanju EU partnera u bazu: {e}")
+                                        logger.error(f"Greöka pri spremanju EU partnera u bazu: {e}")
                                 else:
-                                    logger.info(f"EU partner veƒá postoji u bazi: {partner_obj.naziv} ({partner_obj.oib})")
+                                    logger.info(f"EU partner veÊ postoji u bazi: {partner_obj.naziv} ({partner_obj.oib})")
                             else:
                                 logger.warning(f"Nevalidni podaci iz VIES API-ja za VAT broj {vat_number}, partner nije spremljen.")
-                                if not skraceni_naziv:
-                                    skraceni_naziv = "Nepoznat dobavljaƒç"
 
                         except Exception as e:
                             logger.warning(f"VIES validacija nije uspjela za VAT broj {vat_number}: {e}")
 
-            if isinstance(parsed_data, dict):
-                safe_parsed = {
-                    k: v.dict() if isinstance(v, BaseModel) else v
-                    for k, v in parsed_data.items()
-                }
-            elif isinstance(parsed_data, BaseModel):
-                safe_parsed = parsed_data.dict()
-            else:
-                safe_parsed = parsed_data
-
-            invoice_date = str_to_date(safe_parsed.get("invoice_date"))
-            due_date = str_to_date(safe_parsed.get("due_date"))
-            if due_date is None and invoice_date is not None:
-                due_date = invoice_date
+            # ---- NOVO: Ekstrakcija DATUMA i BROJA DOKUMENTA ----
+            dates_found = extract_dates(text)
+            invoice_date = str_to_date(dates_found.get("invoice_date") or dates_found.get("any_date"))
+            due_date = str_to_date(dates_found.get("due_date"))
+            delivery_date = str_to_date(dates_found.get("delivery_date"))
+            entry_date = str_to_date(dates_found.get("entry_date"))
 
             doc_number = extract_doc_number(text)
             logger.info(f"Broj dokumenta prepoznat iz OCR: {doc_number}")
+            # -----------------------------------------------------
 
             try:
                 doc = Document(
                     filename=unique_name,
                     ocrresult=text,
                     supplier_id=None,
-                    supplier_name_ocr=skraceni_naziv or supplier_info.get("naziv_firme") or "Nepoznat dobavljaƒç",
+                    supplier_name_ocr=skraceni_naziv or supplier_info.get("naziv_firme") or "Nepoznat dobavljaË",
                     supplier_oib=oib,
                     archived_at=upload_time,
                     date=upload_time,
@@ -318,7 +291,7 @@ async def upload_documents(
                     due_date=due_date,
                     doc_number=doc_number,
                     sudreg_response=json.dumps(sudreg_raw, ensure_ascii=False) if sudreg_raw else None,
-                    parsed=json.dumps(safe_parsed, ensure_ascii=False),
+                    parsed=json.dumps(parsed_data, ensure_ascii=False),
                 )
                 db.add(doc)
                 db.commit()
@@ -339,7 +312,7 @@ async def upload_documents(
 
             except Exception as e:
                 db.rollback()
-                logger.error(f"Gre≈°ka pri spremanju dokumenta u bazu: {e}")
+                logger.error(f"Greöka pri spremanju dokumenta u bazu: {e}")
                 results.append({"filename": file.filename, "status": "FAILED", "error": f"DB error: {str(e)}"})
                 continue
 
@@ -352,15 +325,15 @@ async def upload_documents(
                 "sudreg_data": sudreg_data.dict() if sudreg_data else None,
                 "vies_data": vies_data,
                 "document_type": document_type,
-                "parsed": safe_parsed,
+                "parsed": parsed_data,
             })
 
         if not results:
-            logger.info("Upload procesa zavr≈°io, nije obraƒëen niti jedan dokument jer je vlasnik licence prepoznat.")
-            return {"processed": [], "message": "Nije obraƒëen niti jedan dokument jer je vlasnik licence prepoznat."}
+            logger.info("Upload procesa zavröio, nije obraen niti jedan dokument jer je vlasnik licence prepoznat.")
+            return {"processed": [], "message": "Nije obraen niti jedan dokument jer je vlasnik licence prepoznat."}
 
     except Exception as e:
-        logger.error(f"Neoƒçekivana gre≈°ka tijekom uploada: {e}")
+        logger.error(f"NeoËekivana greöka tijekom uploada: {e}")
         return {"error": str(e)}
     finally:
         db.close()

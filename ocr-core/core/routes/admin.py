@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from core.database.connection import SessionMain
 from core.database.models import User
 from passlib.context import CryptContext
 from pydantic import BaseModel
+import os
 
 router = APIRouter(prefix="/api/admin")
 
@@ -28,7 +29,7 @@ class UserUpdate(BaseModel):
     role: str | None = None
     password: str | None = None
 
-# === Rute ===
+# === Rute za korisnike ===
 
 @router.get("/users")
 def get_users(db: Session = Depends(get_db)):
@@ -79,3 +80,41 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.delete(user)
     db.commit()
     return {"message": "Korisnik obrisan"}
+
+# === LOG API: /api/admin/logs/{service} ===
+
+LOG_FILES = {
+    "ocr-core-backend": "./logs/backend.log",
+    "ocr-core-frontend": "./logs/frontend.log"   # Ako frontend logira u file, inače makni ovu liniju
+}
+
+@router.get("/logs/{service}")
+def get_logs(
+    service: str,
+    lines: int = Query(400, ge=1, le=2000)
+):
+    """
+    Dohvati zadnjih X linija iz log file-a za zadani service.
+    service = 'ocr-core-backend' ili 'ocr-core-frontend'
+    """
+    log_path = LOG_FILES.get(service)
+    if not log_path or not os.path.isfile(log_path):
+        raise HTTPException(status_code=404, detail=f"Log file za servis '{service}' ne postoji.")
+
+    def tail(file, n):
+        with open(file, 'rb') as f:
+            f.seek(0, os.SEEK_END)
+            filesize = f.tell()
+            block = 2048
+            data = b''
+            while n > 0 and filesize > 0:
+                jump = min(block, filesize)
+                f.seek(filesize - jump)
+                chunk = f.read(jump)
+                data = chunk + data
+                filesize -= jump
+                n -= chunk.count(b'\n')
+            return b'\n'.join(data.splitlines()[-lines:]).decode('utf-8', errors='replace')
+
+    logs = tail(log_path, lines)
+    return {"logs": logs}

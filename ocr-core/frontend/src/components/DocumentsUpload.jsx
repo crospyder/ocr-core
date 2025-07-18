@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
 import LoadingModal from "./LoadingModal.jsx";
 import { toast } from "react-toastify";
+import { FileText } from "lucide-react";
 
-export default function DocumentsUpload({ onUploadComplete, onDebug }) {
+export default function DocumentsUpload({ onFilesSelected, onDebug }) {
   const [files, setFiles] = useState([]);
   const [docType, setDocType] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,73 +20,30 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
     }
     setFiles(pdfFiles);
     e.target.value = null;
+
+    // Proslijedi datoteke prema roditelju
+    if (onFilesSelected) {
+      onFilesSelected(pdfFiles);
+    }
   }
 
   function handleDocTypeChange(e) {
     setDocType(e.target.value);
   }
 
-  async function handleUpload() {
-    if (!docType) {
-      toast.warn("⚠️ Molim odaberite tip dokumenta.");
-      return;
-    }
-
-    if (files.length === 0) {
-      toast.warn("⚠️ Odaberi barem jednu PDF datoteku.");
-      return;
-    }
-
-    const formData = new FormData();
-    files.forEach(file => formData.append("files", file));
-    formData.append("document_type", docType);
-
-    try {
-      setLoading(true);
-      onDebug?.(`📤 Počinjem upload ${files.length} PDF datoteka...`);
-
-      const response = await fetch("/api/upload/documents", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error("Greška kod slanja datoteka: " + text);
-      }
-
-      const data = await response.json();
-      const processedDocs = data?.processed || [];
-      const uploadedIds = processedDocs.map(item => item.id);
-
-      processedDocs.forEach(doc => {
-        if (doc.validation_alert) {
-          toast.warn(`⚠️ ${doc.original_filename}: ${doc.validation_alert}`);
-        }
-      });
-
-      onDebug?.(`✅ Upload uspješan: ${uploadedIds.length} datoteka poslano.`);
-      setFiles([]);
-      setDocType("");
-
-      onUploadComplete?.({ success: true, uploadedIds, documents: processedDocs });
-    } catch (error) {
-      onDebug?.(`❌ Upload greška: ${error.message}`);
-      toast.error("❌ Greška: " + error.message);
-      onUploadComplete?.({ success: false });
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // Ukloni gumb za upload - upload radimo u BatchUploadModal
   return (
     <>
       <LoadingModal visible={loading} message="Uploading and OCR processing..." />
-
-      <div className="pantheon-upload-card">
-        <label className="form-label fw-semibold mb-3">Tip dokumenta:</label>
+      <div className="pantheon-upload-card shadow-lg p-4 mb-4">
+        <h2 className="fw-bold mb-2 text-center page-title" style={{color:'#232d39'}}>Odaberi dokumente za OCR obradu</h2>
+        <p className="text-muted text-center mb-4 fst-italic">Pošalji nove PDF dokumente za OCR obradu.<br/>Sve datoteke su sigurno pohranjene na serveru.</p>
+        
+        {/* Tip dokumenta */}
+        <label className="form-label fw-semibold mb-2" htmlFor="doctype">Tip dokumenta</label>
         <select
-          className="form-select mb-3"
+          id="doctype"
+          className="form-select mb-4"
           value={docType}
           onChange={handleDocTypeChange}
           disabled={loading}
@@ -97,14 +55,15 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
           <option value="UGOVOR">UGOVOR</option>
         </select>
 
-        <label className="form-label fw-semibold mb-1">Upload foldera (PDF dokumenti)</label>
+        {/* Odabir foldera */}
         <button
           type="button"
           onClick={() => inputFolderRef.current && inputFolderRef.current.click()}
           disabled={loading}
-          className="pantheon-upload-btn primary w-100 text-center"
+          className="pantheon-upload-btn primary w-100 mb-2 d-flex align-items-center justify-content-center"
+          style={{fontWeight:600, fontSize:'1.08rem'}}
         >
-          Odaberi folder s PDF dokumentima (uključujući podfoldere)
+          <FileText size={22} className="me-2" /> Odaberi folder s PDF dokumentima
         </button>
         <input
           type="file"
@@ -118,14 +77,15 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
           accept=".pdf"
         />
 
-        <label className="form-label fw-semibold mb-1">Ili odaberi pojedinačnu datoteku (PDF)</label>
+        {/* Odabir pojedinačnih */}
         <button
           type="button"
           onClick={() => inputFileRef.current && inputFileRef.current.click()}
           disabled={loading}
-          className="pantheon-upload-btn secondary w-100 text-center"
+          className="pantheon-upload-btn secondary w-100 mb-3 d-flex align-items-center justify-content-center"
+          style={{fontWeight:600, fontSize:'1.08rem'}}
         >
-          Odaberi pojedinačnu PDF datoteku
+          <FileText size={22} className="me-2" /> Odaberi PDF datoteku
         </button>
         <input
           type="file"
@@ -136,27 +96,23 @@ export default function DocumentsUpload({ onUploadComplete, onDebug }) {
           accept=".pdf"
         />
 
+        {/* Pregled odabranih */}
         {files.length > 0 && (
           <div className="pantheon-upload-files-list mb-3">
-            <h6 className="fw-bold mb-2">Odabrane PDF datoteke:</h6>
-            <ul className="list-unstyled mb-0">
+            <h6 className="fw-bold mb-2">
+              <FileText size={17} className="me-1" /> Odabrane PDF datoteke:
+            </h6>
+            <ul className="list-unstyled mb-0" style={{fontSize:'0.97em'}}>
               {files.map((file, idx) => (
-                <li key={idx}>
-                  {file.webkitRelativePath || file.name} ({(file.size / 1024).toFixed(2)} KB)
+                <li key={idx} className="d-flex align-items-center">
+                  <FileText size={14} className="me-1" /> 
+                  <span className="me-2">{file.webkitRelativePath || file.name}</span>
+                  <span className="text-secondary">({(file.size/1024).toFixed(2)} KB)</span>
                 </li>
               ))}
             </ul>
           </div>
         )}
-
-        <button
-          type="button"
-          className="pantheon-upload-btn send w-100"
-          onClick={handleUpload}
-          disabled={loading}
-        >
-          Pošalji PDF datoteke
-        </button>
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 import os
 import requests
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 from .schemas import SudregCompany
 from core.database.models import Client, ParsedOIB
@@ -104,3 +104,21 @@ class SudregClient:
             }
 
         return SudregCompany(**mapped_data), data
+
+    def get_company_raw_by_oib(self, oib: str) -> dict:
+        url = f"{LEGACY_BASE_URL}/subjekt_detalji"
+        headers = self.get_headers()
+        params = {"identifikator": oib, "tipIdentifikatora": "oib"}
+
+        response = requests.get(url, headers=headers, params=params)
+
+        if response.status_code == 404:
+            return {
+                "error": "Dobavljač nije pronađen u Sudregu",
+                "oib": oib,
+                "status_code": 404
+            }
+
+        response.raise_for_status()
+        data = response.json()
+        return data

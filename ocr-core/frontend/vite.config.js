@@ -13,6 +13,11 @@ export default defineConfig({
   server: {
     port: 5173,
     host: "0.0.0.0",
+    allowedHosts: [
+      "dms.spine-ict.hr",
+      "localhost",
+      "127.0.0.1"
+    ],
     watch: {
       ignored: ['**/venv/**'],
     },

@@ -4,143 +4,129 @@ body {
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
   font-size: 1rem;
   color: #23272b;
+  margin: 0;
+  padding: 0;
 }
 h1, h2, h3, h4, h5, h6, .page-title {
   color: #23272b;
   font-weight: 700;
   letter-spacing: 0.01em;
+  margin-bottom: 0.6em;
 }
-a {
-  color: #0d6efd;
+a:not(.sidebar-link):not(.topbar-link):not(.footer-link) {
+  font-weight: 700;
+  color: #000;
   text-decoration: none;
+  transition: color 0.18s, background 0.18s;
+  border-radius: 4px;
+  padding: 0.1em 0.25em;
 }
-a:hover, a:focus {
-  color: #ffc107;
-  text-decoration: underline;
+a:not(.sidebar-link):not(.topbar-link):not(.footer-link):hover,
+a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
+  color: #ffd600;
+  background: #232d39;
 }
+.text-muted { color: #b0b7be !important; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb { background: #d2d6dc; border-radius: 4px; }
 
-/* ========== NOVI TOPBAR (HEADER) ========== */
-.topbar-minimal {
+/* ========== TOPBAR ========== */
+.topbar {
   background: #232d39;
   height: 54px;
   display: flex;
   align-items: center;
-  padding: 0 2.2rem 0 1.2rem;
+  padding: 0 1rem; /* smanjen padding za više prostora */
   color: #fff;
-  user-select: none;
   border-bottom: none;
-  box-shadow: none;
+  box-shadow: 0 1px 0 0 #1d212a;
+  z-index: 101;
 }
-.topbar-minimal-logo {
+.topbar-logo {
   height: 36px;
   width: auto;
-  margin-right: 1.1rem;
+  margin-right: 1rem;
 }
-.topbar-minimal-txt {
+.topbar-title {
   font-size: 1.36rem;
   font-weight: 700;
-  letter-spacing: 0.01em;
   color: #fff;
-  margin-right: 0.9rem;
+  margin-right: 0.8rem;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
-.topbar-minimal-desc {
+.topbar-desc {
   font-size: 1.07rem;
   font-weight: 400;
   color: #fff;
   opacity: 0.78;
-  margin-left: 0.65rem;
+  margin-left: 0.5rem;
   letter-spacing: 0.04em;
 }
 
-/* ========== HORIZONTALNI MENI ========== */
+/* ========== HORIZONTAL MENU ========== */
 .menu-horizontal {
   background: #232d39;
   min-height: 44px;
   display: flex;
   align-items: center;
-  padding: 0 1.5rem;
   gap: 0.7rem;
+  padding: 0 1rem; /* smanjen padding */
   border-bottom: 1px solid #232d39;
-  box-shadow: 0 1px 0 0 #1d212a;
 }
 .menu-link {
   color: #f6f6f8;
   font-weight: 500;
   font-size: 1rem;
-  padding: 0.44rem 1.1rem 0.44rem 0.85rem;
+  padding: 0.44rem 1rem 0.44rem 0.85rem;
   border-radius: 6px 6px 0 0;
-  transition: background .13s, color .13s, box-shadow .18s;
+  transition: background 0.13s, color 0.13s;
   text-decoration: none;
-  position: relative;
   display: flex;
   align-items: center;
   gap: 0.45rem;
 }
-.menu-link:hover {
-  color: #ffd600;
-  background: #262d39;
-  text-decoration: none;
-}
+.menu-link:hover,
 .menu-link.active {
   color: #ffd600;
   background: #232d39;
-  border-bottom: 2.5px solid #ffd600;
   font-weight: 700;
-}
-
-/* Responsive za horizontalni meni */
-@media (max-width: 900px) {
-  .topbar-minimal {
-    padding: 0 0.6rem 0 0.6rem;
-    height: 46px;
-  }
-  .topbar-minimal-logo {
-    height: 26px;
-    margin-right: 0.7rem;
-  }
-  .menu-horizontal {
-    padding: 0 0.3rem;
-    gap: 0.15rem;
-    font-size: 0.95rem;
-  }
-  .menu-link {
-    font-size: 0.93rem;
-    padding: 0.36rem 0.45rem 0.36rem 0.6rem;
-  }
 }
 
 /* ========== SIDEBAR ========== */
 .sidebar {
-  width: 260px;
-  height: calc(100vh - 100px);
-  position: sticky;
-  top: 100px;
-  overflow-y: auto;
-  background-color: #232d39 !important;
+  width: 250px;
+  min-width: 220px;
+  background: #232d39;
   color: #f1f3f9;
   border-right: 1px solid #1d232a;
-  padding: 1.5rem 1rem;
+  padding: 1rem 0.8rem 1rem 0.8rem; /* malo manji padding */
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  z-index: 100;
 }
-.sidebar > div > h4 {
-  font-size: 1.18rem;
+.sidebar-title {
+  font-size: 1.15rem;
   color: #ffd600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  margin-bottom: 1rem;
 }
 .sidebar-link {
   color: #e6e8ed;
   font-weight: 500;
   font-size: 1rem;
   border-radius: 5px;
-  padding: 0.5rem 1rem;
+  padding: 0.45rem 0.9rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.2rem;
-  transition: background .13s, color .13s;
+  gap: 0.7rem;
+  margin-bottom: 0.15rem;
+  transition: background 0.13s, color 0.13s;
 }
 .sidebar-link:hover, .sidebar-link.active-link {
   background-color: #313e4d;
@@ -155,7 +141,7 @@ a:hover, a:focus {
   color: #ffd600;
 }
 .sidebar::-webkit-scrollbar {
-  width: 7px;
+  width: 6px;
 }
 .sidebar::-webkit-scrollbar-thumb {
   background: #35404b;
@@ -164,23 +150,24 @@ a:hover, a:focus {
 
 /* ========== LAYOUT ========== */
 .layout-container {
-  height: 100vh;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 .layout-content {
-  height: calc(100vh - 88px);
+  flex: 1;
   display: flex;
-  overflow: hidden;
-  background: #f4f6f9 !important;
+  min-height: 0;
+  background: #f4f6f9;
 }
 .main-content {
   width: 100%;
   display: flex;
   flex-direction: column;
+  padding: 1.5rem 1rem; /* smanjen padding za maksimalnu širinu */
 }
 
-/* ========== MINIMALNI PAGE HEADER & BREADCRUMBS ========== */
+/* ========== PAGE HEADER & BREADCRUMBS ========== */
 .page-header {
   background: #232d39;
   color: #e6e8ed;
@@ -189,8 +176,8 @@ a:hover, a:focus {
   box-shadow: 0 2px 8px 0 rgba(33,45,57,0.09);
 }
 .page-title {
-  font-size: 1.04rem;
-  font-weight: 600;
+  font-size: 1.17rem;
+  font-weight: 700;
   color: #f4f6f9;
   margin-bottom: 0;
   letter-spacing: 0.01em;
@@ -202,13 +189,12 @@ a:hover, a:focus {
   gap: 0.6rem;
   margin-left: 0.8rem;
 }
-.breadcrumb-item, .breadcrumb-item.active {
+.breadcrumb-item {
   color: #b8bbc3;
-  font-size: 0.97rem;
+  font-size: 0.98rem;
   font-weight: 400;
-  text-decoration: none;
-  background: none !important;
   margin-right: 0.18rem;
+  text-decoration: none;
 }
 .breadcrumb-item.active {
   color: #ffd600;
@@ -216,24 +202,8 @@ a:hover, a:focus {
 }
 .breadcrumb-separator {
   color: #b8bbc3;
-  font-size: 0.98em;
+  font-size: 1em;
   margin: 0 0.1em;
-}
-.pantheon-back-btn {
-  background: #ffd600;
-  color: #232d39;
-  border: none;
-  font-weight: 500;
-  border-radius: 8px;
-  padding: 0.18rem 1.2rem 0.18rem 1rem;
-  font-size: 0.98rem;
-  box-shadow: 0 2px 8px 0 rgba(33,45,57,0.08);
-  transition: background .15s, color .14s;
-  margin-left: auto;
-}
-.pantheon-back-btn:hover, .pantheon-back-btn:focus {
-  background: #ffe066;
-  color: #232d39;
 }
 
 /* ========== CARD ========== */
@@ -242,106 +212,67 @@ a:hover, a:focus {
   border-radius: 11px;
   box-shadow: 0 2px 8px rgba(60,60,60,0.08);
   background: #fff;
+  margin-bottom: 1.2rem; /* malo manji razmak */
 }
 .card-body {
-  padding: 1.15rem 1.5rem;
+  padding: 1rem 1.2rem; /* malo manji padding */
 }
 
-/* ========== PARTNERI TABLICA ========== */
-.partner-table {
-  font-size: 1rem;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fff;
-}
-.partner-table th, .partner-table td {
+/* ========== TABLICE (partneri i dokumenti) ========== */
+.table-custom th,
+.table-custom td {
   vertical-align: middle !important;
-  padding: 0.67rem 1.05rem;
+  padding: 0.6rem 1rem;
 }
-.partner-table th {
+.table-custom th {
   background: #f6f8fa;
   color: #232d39;
-  font-size: 1.07rem;
   font-weight: 700;
   border-bottom: 2px solid #e3e6e8;
 }
-.partner-table tr {
+.table-custom tbody tr {
   border-bottom: 1px solid #e9ecef;
 }
-.partner-table tbody tr:nth-child(even) {
+.table-custom tbody tr:nth-child(even) {
   background: #f9fafc;
 }
-.partner-table tbody tr:hover {
-  background: #f1f3f7 !important;
+.table-custom tbody tr:hover {
+  background: #f1f3f7;
   transition: background 0.13s;
 }
-.partner-naziv {
-  text-align: left !important;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  min-width: 180px;
-}
-.partner-table .btn-link {
+.table-custom .btn-link {
   color: #1976d2;
   font-weight: 500;
-  padding-left: 0;
-  padding-right: 0;
   font-size: 1rem;
+  padding: 0;
+  background: none;
 }
-.partner-table .btn-link:hover, .partner-table .btn-link:focus {
+.table-custom .btn-link:hover {
   color: #ffd600;
   text-decoration: underline;
-  background: none;
-  outline: none;
-}
-.partner-table .btn-warning {
-  background: #ffd600;
-  color: #222;
-  border: none;
-  font-weight: 600;
-  box-shadow: none;
-}
-.partner-table .btn-warning:hover, .partner-table .btn-warning:focus {
-  background: #ffe066;
-  color: #222;
-}
-.partner-table .btn-success {
-  background: #2dc98a;
-  border: none;
-}
-.partner-table .btn-success:hover, .partner-table .btn-success:focus {
-  background: #26b57b;
-}
-.partner-table .btn-secondary {
-  background: #d1d7df;
-  color: #222;
-  border: none;
 }
 
-/* ========== FORME & INPUTI ========== */
+/* ========== FORM & INPUT ========== */
 .form-control, .form-select {
   border-radius: 8px;
   border: 1px solid #e1e7ef;
   font-size: 1rem;
-  padding: 0.49rem 0.87rem;
+  padding: 0.45rem 0.8rem;
   background: #fff;
 }
 .form-control:focus, .form-select:focus {
-  border-color: #a8b9d0;
-  box-shadow: 0 0 0 2px #e5ecf8;
-}
-.text-muted {
-  color: #b0b7be !important;
+  border-color: #ffd600;
+  box-shadow: 0 0 0 2px #ffd60033;
 }
 
 /* ========== FOOTER ========== */
-.footer-dark {
-  background-color: #232d39;
+.footer {
+  background: #232d39;
   color: #d8dbdf;
   border-top: 1px solid #28303a;
-  font-size: 0.95rem;
+  font-size: 0.97rem;
   text-align: left;
-  padding: 1rem 1rem;
+  padding: 1rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -349,39 +280,29 @@ a:hover, a:focus {
 .footer-link {
   color: #ffd600;
   text-decoration: underline;
+  font-weight: 500;
 }
-.footer-link:hover, .footer-link:focus {
+.footer-link:hover {
   color: #1976d2;
   text-decoration: none;
 }
 
-/* ========== MODAL PANTHEON STYLE ========== */
-.pantheon-modal-backdrop {
+/* ========== MODAL ========== */
+.modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 1050;
   background: radial-gradient(ellipse at 50% 50%, #232d3988 60%, #222d391a 100%);
   opacity: 1 !important;
 }
-.pantheon-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1051;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.pantheon-modal-card {
+.modal-card {
   background: #fff;
   border-radius: 18px;
   box-shadow: 0 8px 40px 0 rgba(33,45,57,0.20), 0 1.5px 10px 0 rgba(33,45,57,0.12);
   min-width: 320px;
   max-width: 540px;
-  width: 95vw;
+  width: 96vw;
   padding: 0;
-  pointer-events: auto;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   animation: modalPopIn 0.17s cubic-bezier(.42,1.05,.69,1.11);
@@ -390,203 +311,167 @@ a:hover, a:focus {
   from { opacity: 0; transform: translateY(28px) scale(0.96);}
   to   { opacity: 1; transform: none;}
 }
-.pantheon-modal-header {
-  padding: 1.05rem 1.55rem 0.6rem 1.35rem;
+.modal-header, .modal-footer {
   background: #fff;
-  font-size: 1.09rem;
+  border-radius: 18px 18px 0 0;
+  padding: 1rem 1.4rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #232d39;
-  border-radius: 18px 18px 0 0;
 }
-.pantheon-modal-icon {
-  font-size: 1.24em;
-  margin-right: 0.67em;
-  vertical-align: middle;
-  opacity: 0.83;
-}
-.pantheon-modal-title {
-  font-weight: 700;
-  font-size: 1.13em;
-  vertical-align: middle;
-}
-.pantheon-modal-close {
-  background: none;
-  border: none;
-  font-size: 2rem;
-  line-height: 1;
-  color: #adb5bd;
-  cursor: pointer;
-  margin-left: 0.6rem;
-  margin-right: -0.6rem;
-  transition: color 0.17s;
-}
-.pantheon-modal-close:hover {
-  color: #dc3545;
-}
-.pantheon-modal-divider {
-  height: 1px;
-  background: linear-gradient(90deg, #f4f4f8 70%, #ffd600 100%);
-  opacity: 0.60;
-  margin: 0 1.25rem;
-}
-.pantheon-modal-body {
-  padding: 1rem 1.55rem;
+.modal-body {
+  padding: 1rem 1.4rem;
   font-size: 1.04rem;
   color: #232d39;
   background: #fff;
 }
-.pantheon-modal-pre {
-  background: #f8f9fb;
-  padding: 1.1rem 0.6rem;
-  border-radius: 7px;
-  font-size: 0.97em;
-  color: #566176;
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-x: auto;
-}
-.pantheon-modal-footer {
-  padding: 0.9rem 1.3rem 1.2rem 1.3rem;
-  background: #fff;
-  border-radius: 0 0 18px 18px;
-}
 
-/* ========== UPLOAD PANTHEON STYLE ========== */
-.pantheon-upload-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 3px 24px 0 rgba(33,45,57,0.13);
-  padding: 2.2rem 2.3rem 2.2rem 2.3rem;
-  max-width: 560px;
-  margin: 2.5rem auto 0 auto;
-  border: 1px solid #f3f4f8;
+/* ========== DOKUMENT TAGOVI ========== */
+.doc-tag { background: #ffc107; color: #232d39; font-weight: 600; padding: 0.15em 0.6em; border-radius: 0.375rem; font-size: 0.86rem; white-space: nowrap; }
+.doc-tag.ura { background: #28a745; color: #fff; }
+.doc-tag.ira { background: #007bff; color: #fff; }
+.doc-tag.ugovor { background: #17a2b8; color: #fff; }
+.doc-tag.izvod { background: #6c757d; color: #fff; }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 900px) {
+  .topbar { padding: 0 0.6rem; height: 46px; }
+  .topbar-logo { height: 26px; margin-right: 0.7rem; }
+  .menu-horizontal { padding: 0 0.3rem; gap: 0.13rem; font-size: 0.95rem; }
+  .sidebar { width: 100vw; position: relative; top: 0; height: auto; padding: 1rem 0.6rem; }
+  .main-content { padding: 1rem 0.5rem; }
 }
 @media (max-width: 700px) {
-  .pantheon-upload-card {
-    padding: 1.1rem 0.6rem;
-    max-width: 98vw;
-  }
-}
-.pantheon-upload-btn {
-  border-radius: 10px;
-  border: 2px dashed #e7eaf4;
-  background: #f8f9fc;
-  color: #232d39;
-  font-weight: 500;
-  transition: border 0.13s, background 0.13s, color 0.14s;
-  min-height: 65px;
-  cursor: pointer;
-  box-shadow: none;
-  margin-bottom: 1.1rem;
-}
-.pantheon-upload-btn.primary {
-  border-color: #1976d2;
-  background: #f1f6fb;
-}
-.pantheon-upload-btn.secondary {
-  border-color: #b8bbc3;
-  background: #f6f8fa;
-}
-.pantheon-upload-btn:disabled,
-.pantheon-upload-btn[aria-disabled='true'] {
-  background: #f8f9fa;
-  color: #b0b7be;
-  border-color: #e7eaf4;
-  cursor: not-allowed;
-}
-.pantheon-upload-btn:hover:not(:disabled) {
-  background: #f7fbff;
-  border-color: #ffd600;
-  color: #0d6efd;
-}
-.pantheon-upload-btn.send {
-  background: #ffd600;
-  border: none;
-  color: #232d39;
-  font-weight: 600;
-  box-shadow: none;
-  transition: background .13s, color .13s;
-}
-.pantheon-upload-btn.send:hover {
-  background: #ffe066;
-  color: #232d39;
-}
-.pantheon-upload-files-list {
-  background: #f7f9fc;
-  border-radius: 9px;
-  border: 1px solid #e5e8f0;
-  padding: 0.7rem 1.1rem 0.6rem 1.1rem;
-  margin-bottom: 1.1rem;
-}
-.pantheon-upload-files-list li {
-  border: none !important;
-  background: transparent !important;
-  color: #566176;
-  font-size: 0.98em;
-  padding: 0.25em 0;
+  .modal-card { max-width: 98vw; }
 }
 
-/* ========== SEARCH / CARD PANTHEON ========== */
-.pantheon-card {
-  background: #fff;
-  border-radius: 15px;
-  box-shadow: 0 2px 10px 0 rgba(33,45,57,0.09);
-  border: 1px solid #f3f4f8;
-  padding: 1.25rem 1.4rem 1.2rem 1.4rem;
-  margin-bottom: 2rem;
-  margin-top: 12px;
-}
-.pantheon-result-item {
-  transition: box-shadow 0.11s, border 0.12s, background 0.10s;
-}
-.pantheon-result-item:hover {
-  box-shadow: 0 3px 14px 0 rgba(33,45,57,0.13);
-  background: #fdfbea;
-  border-color: #ffd600;
-}
-.pantheon-search-input:focus {
-  border-color: #ffd600;
-  box-shadow: 0 0 0 2px #ffe066;
-}
-.pantheon-search-container {
-  max-width: 1200px;
+/* ========== OSTALE KOMPONENTE (custom prema potrebi) ========== */
+/* Dodaj posebne klase za widgete, filtre, upload, search, po potrebi */
+
+/* DASHBOARD */
+.dashboard-container {
+  max-width: 100%; /* koristimo cijelu širinu */
   margin: 0 auto;
-  margin-top: 38px;
-  margin-bottom: 32px;
-  padding: 32px 18px 24px 18px;
-  background: transparent;
+  padding: 0 0.5rem; /* minimalni padding s lijeve i desne strane */
 }
-.pantheon-search-header {
-  margin-bottom: 18px;
-  padding-left: 4px;
-  padding-right: 4px;
+
+.dashboard-grid {
+  display: flex;
+  flex-wrap: nowrap; /* sprječavamo wrap, kolone će biti u jednom redu */
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  overflow-x: auto; /* dodano za horizontalni scroll ako treba */
+  padding-bottom: 0.5rem;
 }
-@media (max-width: 800px) {
-  .pantheon-search-container {
+
+.dashboard-col {
+  flex: 1 0 33.33%; /* tri jednaka stupca */
+  min-width: 300px;
+  max-width: 33.33%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(60,60,60,0.08);
+  box-sizing: border-box;
+}
+
+/* Responsive za dashboard */
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    flex-wrap: wrap; /* na manje ekrane stavljamo wrap */
+  }
+  .dashboard-col {
+    min-width: 100%;
+    max-width: 100%;
+  }
+}
+
+.recent-documents-widget {
+  min-height: 340px;
+}
+
+.recent-doc-item {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #f0f0f4;
+  transition: background 0.17s;
+}
+.recent-doc-item:last-child {
+  border-bottom: none;
+}
+.recent-doc-item:hover {
+  background: #f1f3f7;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+.doc-link {
+  font-weight: 600;
+  text-decoration: none;
+}
+.doc-link:hover,
+.doc-link:focus {
+  color: #ffd600;
+  text-decoration: underline;
+}
+
+.top-partners-widget .page-title {
+  margin-bottom: 1rem;
+}
+
+.top-partners-widget ul {
+  margin-bottom: 0;
+}
+
+.top-partners-widget li {
+  border-bottom: 1px solid #e9ecef;
+  padding: 0.2rem 0.1rem;
+}
+.top-partners-widget li:last-child {
+  border-bottom: none;
+}
+.top-partners-widget .badge {
+  background: #007bff;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 0.15rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+/* UPLOAD */
+.upload-container {
+  max-width: 590px;
+  margin: 2.2rem auto 0 auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 28px 0 rgba(33,45,57,0.11);
+  padding: 2.5rem 2.2rem 2.3rem 2.2rem;
+}
+@media (max-width: 700px) {
+  .upload-container {
+    padding: 1.1rem 0.4rem;
     max-width: 98vw;
-    padding: 13px 2vw 10px 2vw;
-    margin-top: 18px;
   }
 }
 
-/* ========== OSTALO ========== */
-::-webkit-scrollbar {
-  width: 9px;
+/* Modal klase su već u tvojem main.css (modal-backdrop, modal, modal-card, modal-header, modal-close, modal-divider, modal-body, modal-footer, modal-pre) */
+
+/* Ukloni margine i paddinge sa središnjeg kontejnera main.main-content */
+main.main-content {
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100%;
+  min-height: 0; /* ako je potrebno za flex layout */
 }
-::-webkit-scrollbar-thumb {
-  background: #d2d6dc;
-  border-radius: 4px;
+/* Ako je potrebno, ukloni i dodatni margin/padding na roditeljskim elementima */
+.layout-content {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
-/* ========== RESPONSIVE: SIDEBAR/LAYOUT ========== */
-@media (max-width: 900px) {
-  .sidebar {
-    width: 100vw;
-    position: relative;
-    top: 0;
-    height: auto;
-  }
-  .layout-content {
-    flex-direction: column;
-  }
-}

@@ -21,8 +21,8 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer className="footer-dark px-4 py-3 mt-auto">
-      <div className="footer-left">
+    <footer className="footer">
+      <div>
         © 2025{" "}
         <a
           href="https://spine-ict.hr"
@@ -31,14 +31,13 @@ export default function Footer() {
           className="footer-link"
         >
           Spine ICT Solutions d.o.o.
-        </a>{" "}
-        Sva prava pridržana.
+        </a>
+        {" "} Sva prava pridržana.
       </div>
-
-      <div className="footer-right">
-        Verzija aplikacije: <strong>{version}</strong>
-        <br />
-        Zadnje ažuriranje: {buildDate}
+      <div>
+        Verzija: <strong>{version}</strong>
+        {" · "}
+        Ažurirano: {buildDate}
       </div>
     </footer>
   );

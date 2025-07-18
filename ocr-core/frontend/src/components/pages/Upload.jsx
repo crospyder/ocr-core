@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import DocumentsUpload from "../DocumentsUpload.jsx";
+import BatchUploadModal from "./BatchUploadModal.jsx";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
 export default function Upload() {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+  const [filesToUpload, setFilesToUpload] = useState([]);
   const [modalData, setModalData] = useState(null);
 
   const handleUploadComplete = (result) => {
@@ -21,24 +23,30 @@ export default function Upload() {
       });
 
       setModalData(docs[0]);
-      setShowModal(true);
+      setShowModal(false); // zatvori stari modal (ako ima)
 
-      const uploadedIds = result.uploadedIds || docs.map(d => d.id);
-      navigate("/documents", { state: { justUploaded: true, uploadedIds } });
+      // Kad upload završi, otvori batch modal da prikaže izvještaj (ako ima)
+      // ili možeš držati batch modal otvoren dok traje upload u njoj
     } else {
       toast.error("❌ Došlo je do greške tijekom uploada!");
     }
   };
 
+  // Ova funkcija prima datoteke iz DocumentsUpload i otvara batch modal
+  const handleFilesSelected = (files) => {
+    setFilesToUpload(files);
+    setShowModal(true);
+  };
+
   const closeModal = () => {
     setShowModal(false);
-    setModalData(null);
+    setFilesToUpload([]);
   };
 
   return (
-    <div className="container py-5">
+    <div className="upload-container">
       <header className="mb-4 text-center">
-        <h1 className="fw-bold page-title text-primary">
+        <h1 className="page-title" style={{ color: "#232d39", fontWeight: 700 }}>
           Odabir dokumenata za OCR obradu
         </h1>
         <p className="text-muted fst-italic">
@@ -46,43 +54,15 @@ export default function Upload() {
         </p>
       </header>
 
-      <DocumentsUpload onUploadComplete={handleUploadComplete} />
+      {/* Promijeni DocumentsUpload da šalje datoteke ovdje */}
+      <DocumentsUpload onFilesSelected={handleFilesSelected} />
 
-      {showModal && modalData && (
-        <>
-          <div className="pantheon-modal-backdrop"></div>
-          <div className="pantheon-modal d-flex align-items-center justify-content-center">
-            <div className="pantheon-modal-card">
-              <div className="pantheon-modal-header d-flex justify-content-between align-items-center">
-                <div>
-                  <span className="pantheon-modal-icon">&#128196;</span>
-                  <span className="pantheon-modal-title">
-                    {modalData.original_filename || modalData.filename}
-                  </span>
-                </div>
-                <button
-                  className="pantheon-modal-close"
-                  onClick={closeModal}
-                  title="Zatvori"
-                  aria-label="Zatvori"
-                >&times;</button>
-              </div>
-              <div className="pantheon-modal-divider"></div>
-              <div className="pantheon-modal-body">
-                <pre className="pantheon-modal-pre">
-                  {modalData.sudreg_data
-                    ? JSON.stringify(modalData.sudreg_data, null, 2)
-                    : "Nema podataka iz Sudreg API-ja."}
-                </pre>
-              </div>
-              <div className="pantheon-modal-footer d-flex justify-content-end">
-                <button className="btn btn-warning px-4" onClick={closeModal}>
-                  Zatvori
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
+      {showModal && (
+        <BatchUploadModal
+          files={filesToUpload}
+          onClose={closeModal}
+          onComplete={handleUploadComplete}
+        />
       )}
     </div>
   );

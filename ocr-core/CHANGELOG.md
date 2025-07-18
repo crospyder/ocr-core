@@ -1,4 +1,50 @@
 # Changelog – Spine ICT Document management system
+
+# Changelog – OCR-Core
+
+## [v0.4.3] – 2025-07-12
+
+### Dodano
+- Implementiran API endpoint `/api/documents/top-partners` koji vraća top 5 partnera s najviše dokumenata.
+- Dodan FastAPI ruta za dohvat top partnera s brojem dokumenata u `documents.py`.
+- Frontend komponenta `TopPartners.jsx` za prikaz top 5 partnera na dashboardu.
+- Poboljšan Dashboard layout, integrirane komponente RecentDocuments, DocumentStats i TopPartners.
+- Uklonjen problem s HTTP 422 greškom na `/api/documents/top-partners` endpointu.
+- Poboljšana paginacija u dokumentima, ispravljena logika za prikaz svih stranica.
+
+### Ispravljeno
+- Ispravljene greške u API-u prilikom dohvaćanja top partnera (nepodudaranje ruta i importi).
+- Ispravljena provjera polja `ocrresult` u SQLAlchemy filterima (`isnot(None)`).
+- Uklonjene duple i konfliktne rute za dokumente.
+- Popravljena deklaracija rute i imports u `documents.py`.
+
+### Ostalo
+- Dodan početni koncept OAuth2 autentifikacije (plan i smjernice, nije implementirano).
+- U CSS-u i UI komponentama dashboarda napravljene manje vizualne dorade.
+
+---
+
+# Sažetak za novi razgovor
+
+### Trenutno stanje OCR-Core projekta
+
+- Backend:
+  - API `documents.py` sa svim ključnim funkcijama za rad s dokumentima.
+  - Implementiran endpoint `/api/documents/top-partners` za dohvat top 5 partnera prema broju dokumenata.
+  - FastAPI konfiguracija u `main.py` registrira sve potrebne rute.
+- Frontend:
+  - React dashboard koristi komponente `RecentDocuments`, `DocumentStats` i novu `TopPartners`.
+  - Komponente komuniciraju s backendom putem REST API poziva.
+- Pagination radi kako treba, problemi s nepostojećim API endpointima riješeni.
+- Sljedeći veliki zadatak: implementacija OAuth2 autentifikacije s Microsoft i Google loginom (planirano, nije započeto).
+
+---
+
+Ako želiš, spremi ovo za početak novog razgovora, tako da nastavimo odavde s bilo kojim novim zadatkom bez gubitka konteksta.
+
+Javi ako treba dodatno formatirati ili dodati detalje!
+
+
 ## [v0.4.2] – 2025-07-12
 
 ### Dodano
