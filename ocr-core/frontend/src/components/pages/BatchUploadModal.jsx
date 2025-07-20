@@ -3,6 +3,7 @@ import axios from "axios";
 
 export default function BatchUploadModal({ files, onClose }) {
   const [fileList, setFileList] = useState(files);
+  const [documentType, setDocumentType] = useState(""); // NOVO: tip dokumenta za sve
   const [uploading, setUploading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState([]);
@@ -18,7 +19,7 @@ export default function BatchUploadModal({ files, onClose }) {
   const uploadSingleFile = async (file) => {
     const formData = new FormData();
     formData.append("files", file);
-    formData.append("document_type", "batch"); // ili prilagodi prema potrebi
+    formData.append("document_type", documentType || "OSTALO"); // koristi state
 
     try {
       const response = await axios.post("/api/upload/documents", formData, {
@@ -30,7 +31,7 @@ export default function BatchUploadModal({ files, onClose }) {
     }
   };
 
-  // Funkcija za pokretanje batch uploada
+  // Pokretanje batch uploada
   const startUpload = async () => {
     setUploading(true);
     setResults([]);
@@ -49,13 +50,11 @@ export default function BatchUploadModal({ files, onClose }) {
           }
         });
       }
-
       setResults(r => [...r, { filename: file.name, response: res }]);
     }
 
     setUploading(false);
     setCurrentIndex(-1);
-    // Modal ostaje otvoren, korisnik zatvara gumbom OK
   };
 
   // Format progres teksta
@@ -82,6 +81,26 @@ export default function BatchUploadModal({ files, onClose }) {
           </div>
 
           <div className="modal-body" style={{ maxHeight: "50vh", overflowY: "auto" }}>
+            {/* DODANO: Izbor vrste dokumenta */}
+            {!uploading && (
+              <div className="mb-3">
+                <label>Vrsta dokumenta za sve dokumente:</label>
+                <select
+                  className="form-select"
+                  value={documentType}
+                  onChange={e => setDocumentType(e.target.value)}
+                  disabled={uploading}
+                >
+                  <option value="">-- odaberi tip --</option>
+                  <option value="URA">Ulazni račun (URA)</option>
+                  <option value="IRA">Izlazni račun (IRA)</option>
+                  <option value="IZVOD">Izvod</option>
+                  <option value="UGOVOR">Ugovor</option>
+                  <option value="OSTALO">Ostalo</option>
+                </select>
+              </div>
+            )}
+
             {!uploading && (
               <>
                 <p>Pregled odabranih dokumenata:</p>
@@ -141,7 +160,7 @@ export default function BatchUploadModal({ files, onClose }) {
                 <button
                   className="btn btn-primary"
                   onClick={startUpload}
-                  disabled={fileList.length === 0}
+                  disabled={fileList.length === 0 || !documentType}
                 >
                   Pokreni upload
                 </button>

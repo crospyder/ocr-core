@@ -1,3 +1,5 @@
+// src/pages/DocumentDetail.jsx
+
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import OcrTextTagger from "./OcrTextTagger";
@@ -7,7 +9,8 @@ export default function DocumentDetail() {
   const { id } = useParams();
   const [document, setDocument] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [initialTags, setInitialTags] = useState([]);
+  const [initialTags, setInitialTags] = useState({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     async function fetchDocument() {
@@ -17,10 +20,15 @@ export default function DocumentDetail() {
         if (!res.ok) throw new Error("Ne mogu dohvatiti dokument");
         const data = await res.json();
         setDocument(data);
-        if (data.annotation && Array.isArray(data.annotation)) {
-          setInitialTags(data.annotation);
+        // fetch annotations
+        const ares = await fetch(`/api/annotations/${id}`);
+        if (ares.ok) {
+          const ann = await ares.json();
+          setInitialTags(ann.annotations || {});
+          console.log("📥 Dohvaćene oznake:", ann.annotations || {});
         } else {
-          setInitialTags([]);
+          setInitialTags({});
+          console.log("ℹ️ Nema oznaka za dokument.");
         }
       } catch (e) {
         alert(e.message);
@@ -32,6 +40,7 @@ export default function DocumentDetail() {
   }, [id]);
 
   async function handleSaveTags(tags) {
+    setSaving(true);
     try {
       const res = await fetch(`/api/annotations/${id}`, {
         method: "POST",
@@ -40,8 +49,13 @@ export default function DocumentDetail() {
       });
       if (!res.ok) throw new Error("Greška pri spremanju oznaka");
       alert("Oznake su spremljene!");
+      setInitialTags(tags);
+      console.log("💾 Oznake spremljene:", tags);
     } catch (e) {
       alert(e.message);
+      console.error("❌ Spremanje oznaka nije uspjelo:", e);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -78,8 +92,15 @@ export default function DocumentDetail() {
                 text={document.ocrresult || ""}
                 onSave={handleSaveTags}
                 initialTags={initialTags}
+                loading={saving}
                 style={{ flexGrow: 1, overflowY: "auto", minHeight: 280 }}
               />
+              <div className="mt-2 small">
+                <b>Trenutne oznake:</b>
+                <pre style={{ background: "#f8f9fa", border: "1px solid #ececec", borderRadius: 4, padding: 8, minHeight: 56 }}>
+                  {JSON.stringify(initialTags, null, 2)}
+                </pre>
+              </div>
             </div>
           </div>
         </div>

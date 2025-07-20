@@ -104,11 +104,7 @@ def top_partners(db: Session = Depends(get_db)):
         db.query(Document.supplier_name_ocr, func.count(Document.id))
         .group_by(Document.supplier_name_ocr)
         .order_by(func.count(Document.id).desc())
-<<<<<<< HEAD
-        .limit(5)
-=======
-        .limit(10)  # PROMJENA: limit je sad 10
->>>>>>> 60dbd18 (Release verzija 0.5.0 - stabilna verzija mail_processing s rollbackom i zaštitom od duplikata)
+        .limit(10)
         .all()
     )
 
@@ -215,33 +211,59 @@ def update_document_supplier(
 @router.delete("/clear-all")
 def clear_all_documents(db: Session = Depends(get_db)):
     try:
-        db.query(DocumentAnnotation).delete()
-        db.query(Document).delete()
-        db.query(Partner).delete()
+        # Statistika prije brisanja (za toaster info)
+        doc_count = db.query(Document).count()
+        ann_count = db.query(DocumentAnnotation).count()
+        partner_count = db.query(Partner).count()
+
+        # FULL OBLITERATE (osim accounts)
+        db.execute(text("""
+            TRUNCATE TABLE 
+                alembic_version,
+                clients,
+                document_annotations,
+                documents,
+                mail_accounts,
+                mail_processed,
+                parsed_oib,
+                partneri,
+                software_info,
+                users
+            RESTART IDENTITY CASCADE;
+        """))
         db.commit()
 
-        db.execute(text("ALTER SEQUENCE document_annotations_id_seq RESTART WITH 1;"))
-        db.execute(text("ALTER SEQUENCE documents_id_seq RESTART WITH 1;"))
-        db.execute(text("ALTER SEQUENCE partneri_id_seq RESTART WITH 1;"))
-        db.commit()
-
+        # PDF-ovi
+        deleted_files = 0
         if os.path.exists(UPLOAD_DIR):
             for filename in os.listdir(UPLOAD_DIR):
                 file_path = os.path.join(UPLOAD_DIR, filename)
                 if os.path.isfile(file_path):
                     os.remove(file_path)
+                    deleted_files += 1
 
+        # Elasticsearch
+        es_deleted = 0
         try:
             es = Elasticsearch("http://localhost:9200")
             if es.indices.exists(index=ES_INDEX):
-                es.delete_by_query(index=ES_INDEX, body={"query": {"match_all": {}}})
+                res = es.delete_by_query(index=ES_INDEX, body={"query": {"match_all": {}}}, refresh=True, wait_for_completion=True)
                 es.indices.refresh(index=ES_INDEX)
-                logging.info(f"Elasticsearch indeks '{ES_INDEX}' očišćen i osvježen.")
+                es_deleted = res.get('deleted', 0)
         except Exception as es_exc:
             logging.warning(f"Elasticsearch clean error: {es_exc}")
 
-        logging.info("Svi dokumenti, partneri i anotacije su obrisani, PDF-ovi i ES indeks resetirani.")
-        return {"message": "Svi dokumenti, partneri i anotacije su obrisani, PDF-ovi i ES indeks resetirani."}
+        msg = (
+            f"Obrisano: {doc_count} dokumenata, "
+            f"{ann_count} anotacija, "
+            f"{partner_count} partnera, "
+            f"{deleted_files} PDF-ova, "
+            f"{es_deleted} ES dokumenata.\n"
+            "Sve tablice su resetirane osim accounts."
+        )
+
+        logging.info(msg)
+        return {"message": msg}
     except Exception as e:
         db.rollback()
         logging.error(f"Greška: {e}")

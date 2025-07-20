@@ -36,7 +36,7 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   height: 54px;
   display: flex;
   align-items: center;
-  padding: 0 1rem; /* smanjen padding za više prostora */
+  padding: 0 1rem;
   color: #fff;
   border-bottom: none;
   box-shadow: 0 1px 0 0 #1d212a;
@@ -71,7 +71,7 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  padding: 0 1rem; /* smanjen padding */
+  padding: 0 1rem;
   border-bottom: 1px solid #232d39;
 }
 .menu-link {
@@ -100,7 +100,7 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   background: #232d39;
   color: #f1f3f9;
   border-right: 1px solid #1d232a;
-  padding: 1rem 0.8rem 1rem 0.8rem; /* malo manji padding */
+  padding: 1rem 0.8rem;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -128,7 +128,8 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   margin-bottom: 0.15rem;
   transition: background 0.13s, color 0.13s;
 }
-.sidebar-link:hover, .sidebar-link.active-link {
+.sidebar-link:hover,
+.sidebar-link.active-link {
   background-color: #313e4d;
   color: #ffd600 !important;
   font-weight: 600;
@@ -164,7 +165,7 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   width: 100%;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1rem; /* smanjen padding za maksimalnu širinu */
+  padding: 1.5rem 1rem;
 }
 
 /* ========== PAGE HEADER & BREADCRUMBS ========== */
@@ -212,13 +213,13 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   border-radius: 11px;
   box-shadow: 0 2px 8px rgba(60,60,60,0.08);
   background: #fff;
-  margin-bottom: 1.2rem; /* malo manji razmak */
+  margin-bottom: 1.2rem;
 }
 .card-body {
-  padding: 1rem 1.2rem; /* malo manji padding */
+  padding: 1rem 1.2rem;
 }
 
-/* ========== TABLICE (partneri i dokumenti) ========== */
+/* ========== TABLES ========== */
 .table-custom th,
 .table-custom td {
   vertical-align: middle !important;
@@ -326,46 +327,84 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   background: #fff;
 }
 
-/* ========== DOKUMENT TAGOVI ========== */
-.doc-tag { background: #ffc107; color: #232d39; font-weight: 600; padding: 0.15em 0.6em; border-radius: 0.375rem; font-size: 0.86rem; white-space: nowrap; }
-.doc-tag.ura { background: #28a745; color: #fff; }
-.doc-tag.ira { background: #007bff; color: #fff; }
-.doc-tag.ugovor { background: #17a2b8; color: #fff; }
-.doc-tag.izvod { background: #6c757d; color: #fff; }
+/* ========== DOCUMENT TAGS ========== */
+.doc-tag {
+  background-color: #ffc107;
+  color: #232d39;
+  font-weight: 600;
+  padding: 0.15em 0.6em;
+  border-radius: 0.375rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.doc-tag.ura {
+  background-color: #28a745;
+  color: #fff;
+}
+.doc-tag.ira {
+  background-color: #007bff;
+  color: #fff;
+}
+.doc-tag.ugovor {
+  background-color: #17a2b8;
+  color: #fff;
+}
+.doc-tag.izvod {
+  background-color: #6c757d;
+  color: #fff;
+}
 
 /* ========== RESPONSIVE ========== */
 @media (max-width: 900px) {
-  .topbar { padding: 0 0.6rem; height: 46px; }
-  .topbar-logo { height: 26px; margin-right: 0.7rem; }
-  .menu-horizontal { padding: 0 0.3rem; gap: 0.13rem; font-size: 0.95rem; }
-  .sidebar { width: 100vw; position: relative; top: 0; height: auto; padding: 1rem 0.6rem; }
-  .main-content { padding: 1rem 0.5rem; }
+  .topbar {
+    padding: 0 0.6rem;
+    height: 46px;
+  }
+  .topbar-logo {
+    height: 26px;
+    margin-right: 0.7rem;
+  }
+  .menu-horizontal {
+    padding: 0 0.3rem;
+    gap: 0.13rem;
+    font-size: 0.95rem;
+  }
+  .sidebar {
+    width: 100vw;
+    position: relative;
+    top: 0;
+    height: auto;
+    padding: 1rem 0.6rem;
+  }
+  .main-content {
+    padding: 1rem 0.5rem;
+  }
+  .layout-content {
+    flex-direction: column;
+  }
 }
 @media (max-width: 700px) {
-  .modal-card { max-width: 98vw; }
+  .modal-card {
+    max-width: 98vw;
+  }
 }
 
-/* ========== OSTALE KOMPONENTE (custom prema potrebi) ========== */
-/* Dodaj posebne klase za widgete, filtre, upload, search, po potrebi */
-
-/* DASHBOARD */
+/* ========== DASHBOARD ========== */
 .dashboard-container {
-  max-width: 100%; /* koristimo cijelu širinu */
+  max-width: 100%;
   margin: 0 auto;
-  padding: 0 0.5rem; /* minimalni padding s lijeve i desne strane */
+  padding: 0 0.5rem;
 }
-
 .dashboard-grid {
   display: flex;
-  flex-wrap: nowrap; /* sprječavamo wrap, kolone će biti u jednom redu */
+  flex-wrap: nowrap;
   gap: 1.5rem;
   margin-top: 1.5rem;
-  overflow-x: auto; /* dodano za horizontalni scroll ako treba */
+  overflow-x: auto;
   padding-bottom: 0.5rem;
 }
-
 .dashboard-col {
-  flex: 1 0 33.33%; /* tri jednaka stupca */
+  flex: 1 0 33.33%;
   min-width: 300px;
   max-width: 33.33%;
   display: flex;
@@ -377,11 +416,9 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   box-shadow: 0 2px 8px rgba(60,60,60,0.08);
   box-sizing: border-box;
 }
-
-/* Responsive za dashboard */
 @media (max-width: 1100px) {
   .dashboard-grid {
-    flex-wrap: wrap; /* na manje ekrane stavljamo wrap */
+    flex-wrap: wrap;
   }
   .dashboard-col {
     min-width: 100%;
@@ -389,10 +426,10 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   }
 }
 
+/* ========== RECENT DOCUMENTS ========== */
 .recent-documents-widget {
   min-height: 340px;
 }
-
 .recent-doc-item {
   padding: 0.3rem 0;
   border-bottom: 1px solid #f0f0f4;
@@ -416,14 +453,19 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   text-decoration: underline;
 }
 
-.top-partners-widget .page-title {
-  margin-bottom: 1rem;
+/* ========== TOP PARTNERS ========== */
+.top-partners-widget {
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  color: #23272b;
 }
-
+.top-partners-widget h5 {
+  color: #23272b;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
 .top-partners-widget ul {
   margin-bottom: 0;
 }
-
 .top-partners-widget li {
   border-bottom: 1px solid #e9ecef;
   padding: 0.2rem 0.1rem;
@@ -440,7 +482,7 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
   font-size: 0.85rem;
 }
 
-/* UPLOAD */
+/* ========== UPLOAD ========== */
 .upload-container {
   max-width: 590px;
   margin: 2.2rem auto 0 auto;
@@ -455,284 +497,3 @@ a:not(.sidebar-link):not(.topbar-link):not(.footer-link):focus {
     max-width: 98vw;
   }
 }
-
-/* Modal klase su već u tvojem main.css (modal-backdrop, modal, modal-card, modal-header, modal-close, modal-divider, modal-body, modal-footer, modal-pre) */
-
-/* Ukloni margine i paddinge sa središnjeg kontejnera main.main-content */
-main.main-content {
-  padding: 0 !important;
-  margin: 0 !important;
-  width: 100%;
-  min-height: 0; /* ako je potrebno za flex layout */
-}
-/* Ako je potrebno, ukloni i dodatni margin/padding na roditeljskim elementima */
-.layout-content {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-<<<<<<< HEAD
-/* ========== RESPONSIVE: SIDEBAR/LAYOUT ========== */
-@media (max-width: 900px) {
-  .sidebar {
-    width: 100vw;
-    position: relative;
-    top: 0;
-    height: auto;
-  }
-  .layout-content {
-    flex-direction: column;
-  }
-}
-/* Poslovni stil tablice dokumenata */
-.table.table-striped.table-hover.table-sm {
-  border-collapse: separate;
-  border-spacing: 0 0.35rem; /* malo vertikalnog razmaka između redaka */
-  font-size: 0.9rem;
-}
-
-.table.table-striped.table-hover.table-sm thead th {
-  background-color: #232d39; /* tamno siva kao sidebar */
-  color: #ffd600; /* zlatna boja teksta */
-  font-weight: 600;
-  border: none;
-  padding: 0.5rem 0.75rem;
-  vertical-align: middle;
-  letter-spacing: 0.05em;
-  user-select: none;
-}
-
-.table.table-striped.table-hover.table-sm tbody tr {
-  background: #ffffff;
-  border-radius: 6px;
-  box-shadow: 0 0 6px rgba(0,0,0,0.05);
-  transition: background 0.2s ease;
-}
-
-.table.table-striped.table-hover.table-sm tbody tr:hover {
-  background: #fdfbea; /* lagana žućkasta nijansa hover */
-}
-
-.table.table-striped.table-hover.table-sm tbody td {
-  padding: 0.4rem 0.75rem;
-  vertical-align: middle;
-  border-top: none;
-  color: #23272b;
-}
-
-.table.table-striped.table-hover.table-sm tbody tr:nth-child(even) {
-  background-color: #f9fafc; /* svjetliji redci za preglednost */
-  box-shadow: none;
-}
-
-/* Veze u tablici */
-.table.table-striped.table-hover.table-sm tbody a {
-  color: #1976d2;
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.table.table-striped.table-hover.table-sm tbody a:hover,
-.table.table-striped.table-hover.table-sm tbody a:focus {
-  color: #ffd600;
-  text-decoration: underline;
-}
-
-/* Gumbi za dobavljača */
-.table.table-striped.table-hover.table-sm tbody button.btn-link {
-  color: #1976d2;
-  font-weight: 500;
-  padding: 0;
-  font-size: 0.9rem;
-}
-
-.table.table-striped.table-hover.table-sm tbody button.btn-link:hover,
-.table.table-striped.table-hover.table-sm tbody button.btn-link:focus {
-  color: #ffd600;
-  text-decoration: underline;
-  background: none;
-  outline: none;
-  cursor: pointer;
-}
-/* Globalni <a> linkovi - bold i crni, osim u sidebaru, topbaru i footeru */
-body a {
-  font-weight: 700;
-  color: #000000; /* crna */
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-/* Hover efekt globalnih linkova */
-body a:hover,
-body a:focus {
-  color: #ffd600; /* zlatna */
-  text-decoration: underline;
-}
-
-/* Isključi sidebar, topbar i footer linkove iz ovih pravila */
-.sidebar a,
-.topbar-minimal a,
-.footer-dark a {
-  font-weight: normal; /* ili kako je bilo prije */
-  color: inherit;      /* zadrži postojeću boju */
-  text-decoration: none;
-  transition: none;
-}
-
-.sidebar a:hover,
-.topbar-minimal a:hover,
-.footer-dark a:hover {
-  color: inherit;
-  text-decoration: none;
-}
-/* Svi linkovi u body osim onih unutar sidebar, topbar i footer */
-body a {
-  font-weight: 700 !important;
-  color: #000000 !important;
-  text-decoration: none !important;
-  transition: color 0.2s ease !important;
-}
-
-/* Hover efekt */
-body a:hover,
-body a:focus {
-  color: #ffd600 !important;
-  text-decoration: underline !important;
-}
-
-/* Prekid stilova za linkove u sidebar, topbar, footer */
-.sidebar a,
-.topbar-minimal a,
-.footer-dark a {
-  font-weight: normal !important;
-  color: inherit !important;
-  text-decoration: none !important;
-  transition: none !important;
-}
-
-.sidebar a:hover,
-.topbar-minimal a:hover,
-.footer-dark a:hover {
-  color: inherit !important;
-  text-decoration: none !important;
-}
-/* Globalni linkovi - bold, crni, hover zlatni s tamnosivom pozadinom */
-body a:not(.sidebar-link):not(.topbar-minimal a):not(.footer-link) {
-  font-weight: 700;
-  color: #000;
-  transition: color 0.15s ease, background-color 0.15s ease;
-  padding: 0.1em 0.3em;
-  border-radius: 4px;
-  text-decoration: none;
-}
-
-body a:not(.sidebar-link):not(.topbar-minimal a):not(.footer-link):hover,
-body a:not(.sidebar-link):not(.topbar-minimal a):not(.footer-link):focus {
-  color: #ffd600;
-  background-color: #2c2f33;
-  text-decoration: none;
-}
-.page-title-container {
-  border-bottom: 2px solid #ffd600;
-  padding-bottom: 0.3rem;
-  margin-bottom: 1rem;
-}
-
-.page-title-container {
-  border-bottom: 2px solid #ffd600;
-  padding-bottom: 0.3rem;
-  margin-bottom: 1rem;
-  color: #000 !important;
-}
-
-.filters-row select {
-  min-width: 150px;
-  max-width: 200px;
-}
-
-.filters-row select,
-.filters-row select:focus {
-  border-color: #ffd600;
-  box-shadow: 0 0 5px #ffd600;
-}
-
-.page-title-container h2 {
-  font-weight: 700 !important;
-}
-.document-stats-widget ul.document-stats-list li {
-  padding: 0.3rem 0;
-  border-bottom: 1px solid #e9ecef; /* Bootstrap border-light */
-}
-
-.document-stats-widget ul.document-stats-list li:last-child {
-  border-bottom: none;
-}
-
-.stats-summary > div {
-  min-width: 120px;
-}
-/* Stil za oznaku tipa dokumenta */
-.doc-tag {
-  background-color: #ffc107; /* zlatna boja */
-  color: #232d39; /* tamna */
-  font-weight: 600;
-  padding: 0.15em 0.6em;
-  border-radius: 0.375rem;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-/* Primjer boja za specifične tipove (URA, IRA, UGOVOR, IZVOD) */
-.doc-tag.ura {
-  background-color: #28a745; /* zelena */
-  color: #fff;
-}
-
-.doc-tag.ira {
-  background-color: #007bff; /* plava */
-  color: #fff;
-}
-
-.doc-tag.ugovor {
-  background-color: #17a2b8; /* tirkizna */
-  color: #fff;
-}
-
-.doc-tag.izvod {
-  background-color: #6c757d; /* siva */
-  color: #fff;
-}
-
-/* Hover efekt na recent dokumentima */
-.recent-doc-item:hover {
-  background-color: #f1f3f7;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
-}
-.top-partners-widget {
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-  color: #23272b;
-}
-
-.top-partners-widget h5 {
-  color: #23272b;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-.top-partners-widget .list-group-item {
-  font-size: 1rem;
-  padding: 0.5rem 1rem;
-}
-
-.top-partners-widget .list-group-item span {
-  font-weight: 600;
-}
-
-=======
->>>>>>> 60dbd18 (Release verzija 0.5.0 - stabilna verzija mail_processing s rollbackom i zaštitom od duplikata)

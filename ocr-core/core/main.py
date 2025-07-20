@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import logging
+#import core.ml.classifier  # ovo će učitati model pri startu
 from logging.handlers import TimedRotatingFileHandler
 import os
 import sys
@@ -12,12 +13,10 @@ from fastapi.staticfiles import StaticFiles
 from elasticsearch import Elasticsearch
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-
 from core.database.connection import engine_main
 from core.database.models import Document, Base
 from core.init_app import load_module_routers
 from core.database.session import get_db
-
 from core.routes.admin import router as admin_router
 from core.routes.documents import router as documents_router
 from core.routes.upload import router as upload_router

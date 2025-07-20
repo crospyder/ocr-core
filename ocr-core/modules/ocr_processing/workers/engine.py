@@ -1,14 +1,17 @@
+import os
 import pytesseract
 from PIL import Image
 import fitz  # PyMuPDF
-import os
-from modules.sudreg_api.client import SudregClient
-from core.utils.regex import extract_oib, extract_invoice_date, extract_dates
 
-sudreg_client = SudregClient()
+# Ako trebaš još engine-a, importaj ovdje:
+try:
+    from .engine_azure import perform_ocr_azure
+except ImportError:
+    perform_ocr_azure = None  # fallback ako netko obriše file
 
+# ---------- DEFAULT ENGINE (native + Tesseract) ----------
 def extract_text_from_pdf_native(pdf_path) -> str:
-    """Pokuaj izdvojiti native tekst iz PDF-a."""
+    """Pokušaj izdvojiti native tekst iz PDF-a."""
     doc = fitz.open(pdf_path)
     full_text = ""
     for page in doc:
@@ -16,7 +19,7 @@ def extract_text_from_pdf_native(pdf_path) -> str:
         full_text += text + "\n"
     return full_text.strip()
 
-def perform_ocr(file_path):
+def perform_ocr_default(file_path):
     temp_images_paths = []
     if file_path.lower().endswith(".pdf"):
         native_text = extract_text_from_pdf_native(file_path)
@@ -45,21 +48,50 @@ def perform_ocr(file_path):
 
     return result_text
 
+# ---------- MODULAR ENGINE WRAPPER ----------
+def perform_ocr(file_path, engine=None):
+    """
+    Plug&Play wrapper: biraj OCR engine ("azure", "default", ...)
+    engine: string ili None (ako None, čita iz ENV var OCR_ENGINE)
+    """
+    if engine is None:
+        engine = os.environ.get("OCR_ENGINE", "default")
+
+    if engine == "azure":
+        if perform_ocr_azure is not None:
+            return perform_ocr_azure(file_path)
+        else:
+            print("Azure OCR engine not available, falling back to default.")
+            return perform_ocr_default(file_path)
+    # Add more engines here (easyocr, google, aws, ...)
+    # elif engine == "easyocr":
+    #     return perform_ocr_easyocr(file_path)
+    else:
+        # fallback na lokalni (default)
+        return perform_ocr_default(file_path)
+
+# ---------- BACKWARD-COMPATIBLE EKSTRAKCIJE ----------
+# Helperi mogu ostati kakvi jesu ili modularizirati (po želji)
+from modules.sudreg_api.client import SudregClient
+from core.utils.regex import extract_oib, extract_invoice_date, extract_dates
+
+sudreg_client = SudregClient()
+
 def extract_oib(text: str) -> str | None:
     return extract_oib(text)
 
 def extract_invoice_date(text: str) -> str | None:
     return extract_invoice_date(text)
 
-def perform_ocr_and_get_supplier_info(file_path):
-    text = perform_ocr(file_path)
+def perform_ocr_and_get_supplier_info(file_path, engine=None):
+    text = perform_ocr(file_path, engine=engine)
     oib = extract_oib(text)
     supplier_info = None
     if oib:
         try:
             supplier_info = sudreg_client.get_company_by_oib(oib)
         except Exception as e:
-            print(f"Greka u Sudreg API pozivu: {e}")
+            print(f"Greška u Sudreg API pozivu: {e}")
 
     invoice_date = extract_invoice_date(text)
 

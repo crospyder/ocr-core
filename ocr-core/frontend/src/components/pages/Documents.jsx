@@ -219,6 +219,7 @@ export default function Documents() {
                 <tr>
                   <th onClick={() => requestSort("id")} style={{ cursor: "pointer" }}>#</th>
                   <th onClick={() => requestSort("filename")} style={{ cursor: "pointer" }}>Naziv</th>
+                  <th onClick={() => requestSort("document_type")} style={{ cursor: "pointer" }}>Vrsta dokumenta</th>
                   <th onClick={() => requestSort("date")} style={{ cursor: "pointer" }}>Arhivirano</th>
                   <th onClick={() => requestSort("supplier_name_ocr")} style={{ cursor: "pointer" }}>Dobavljač</th>
                   <th onClick={() => requestSort("supplier_oib")} style={{ cursor: "pointer" }}>OIB</th>
@@ -233,6 +234,15 @@ export default function Documents() {
                     <td>{doc.id}</td>
                     <td>
                       <a href={`/documents/${doc.id}`}>{doc.filename}</a>
+                    </td>
+                    <td>
+                      {doc.document_type ? (
+                        <span className="badge bg-info" style={{ fontSize: "0.9em" }}>
+                          {doc.document_type}
+                        </span>
+                      ) : (
+                        <span className="text-muted">-</span>
+                      )}
                     </td>
                     <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "-"}</td>
                     <td>

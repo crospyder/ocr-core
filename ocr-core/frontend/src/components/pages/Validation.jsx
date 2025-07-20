@@ -1,24 +1,41 @@
-import React, { useState } from "react";
-import { toast } from "react-toastify";
+import React, { useState, useEffect, useRef } from "react";
 
 export default function Validation() {
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const wsRef = useRef(null);
 
-  async function handleValidate() {
-    setLoading(true);
-    setResult(null);
-    try {
-      const res = await fetch("/api/documents/validation/validate-classify", { method: "POST" });
-      if (!res.ok) throw new Error("Greška u pozivu API-ja.");
-      const data = await res.json();
-      setResult(data.message);
-      toast.success(data.message);
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
+  useEffect(() => {
+    if (!loading) return;
+
+    wsRef.current = new WebSocket("ws://192.168.100.252:8000/api/documents/validation/ws/validate-progress");
+
+    wsRef.current.onopen = () => {
+      setLogs((logs) => [...logs, "WebSocket connected, validacija pokrenuta..."]);
+    };
+
+    wsRef.current.onmessage = (event) => {
+      setLogs((logs) => [...logs, event.data]);
+    };
+
+    wsRef.current.onclose = () => {
+      setLogs((logs) => [...logs, "WebSocket disconnected."]);
       setLoading(false);
-    }
+    };
+
+    wsRef.current.onerror = (error) => {
+      setLogs((logs) => [...logs, "WebSocket error: " + error.message]);
+      setLoading(false);
+    };
+
+    return () => {
+      wsRef.current.close();
+    };
+  }, [loading]);
+
+  function handleValidate() {
+    setLogs([]);
+    setLoading(true);
   }
 
   return (
@@ -27,7 +44,20 @@ export default function Validation() {
       <button className="btn btn-primary" onClick={handleValidate} disabled={loading}>
         {loading ? "Obrada..." : "Pokreni validaciju i klasifikaciju"}
       </button>
-      {result && <p className="mt-3">{result}</p>}
+      <div
+        style={{
+          marginTop: 20,
+          padding: 10,
+          backgroundColor: "#f0f0f0",
+          height: 300,
+          overflowY: "scroll",
+          fontFamily: "monospace",
+          whiteSpace: "pre-wrap",
+          border: "1px solid #ccc",
+        }}
+      >
+        {logs.length === 0 ? "Nema poruka..." : logs.join("\n")}
+      </div>
     </div>
   );
 }

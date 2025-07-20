@@ -31,6 +31,9 @@ def extract_oib(text: str) -> str | None:
         return None
     return matches[0]
 
+def extract_all_oibs(text: str) -> list[str]:
+    return re.findall(OIB_PATTERN, text)
+
 COUNTRY_VAT_REGEX = {
     "EU": r"EU\d{8,12}",
     "AT": r"ATU\d{8}",
@@ -94,7 +97,8 @@ def extract_all_vats(text: str) -> list[str]:
             vats.append(candidate)
     return vats
 
-# --- NOVI DATUM PATTERNI ---
+# --- DATUMI ---
+
 DATE_PATTERNS = [
     (r"(vrijeme izdavanja|datum izdavanja|račun izdan|datum računa|datum i mjesto|vrijeme i mjesto izdavanja)[:\s]*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})", "invoice_date"),
     (r"(rok pla[cć]anja|datum dospijeća|valuta|datum valute)[:\s]*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})", "due_date"),
