@@ -1,6 +1,7 @@
 from pydantic import BaseModel, validator, ConfigDict
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, date
+from decimal import Decimal
 import json
 
 class SupplierOut(BaseModel):
@@ -14,7 +15,7 @@ class DocumentBase(BaseModel):
     filename: str
     ocrresult: Optional[str] = None
     date: Optional[datetime] = None
-    amount: Optional[int] = None
+    amount: Optional[Decimal] = None  # Promijenjeno u Decimal
     supplier_name_ocr: Optional[str] = None
 
 class DocumentOut(DocumentBase):
@@ -59,4 +60,14 @@ class DocumentOut(DocumentBase):
                 return v
         return v
 
-    model_config = ConfigDict(from_attributes=True)
+    # Dodan validator za amount
+    @validator('amount', pre=True, always=True)
+    def validate_amount(cls, v):
+        if isinstance(v, str):
+            v = v.replace(",", ".")  # Osiguranje da se koristi točka umjesto zareza
+            return Decimal(v) if v else None
+        if isinstance(v, (float, int, Decimal)):
+            return Decimal(v)
+        return None
+
+    model_config = ConfigDict(from_attributes=True)  # Samo jednom na kraju klase

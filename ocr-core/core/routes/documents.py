@@ -18,13 +18,63 @@ router = APIRouter()
 UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "uploads"))
 ES_INDEX = "spineict_ocr"
 
-@router.get("/", response_model=List[DocumentOut])
+# Tablice koje se brišu u clear-all (izostavljene invoices, invoice_items, products, services)
+CLEAR_ALL_TABLES = [
+    "accounts",
+    "clients",
+    "document_annotations",
+    "documents",
+    "mail_accounts",
+    "mail_processed",
+    "parsed_oib",
+    "partneri",
+    "software_info",
+    "users",
+]
+
+@router.delete("/clear-all")
+def clear_all_data(db: Session = Depends(get_db)):
+    try:
+        # Isključi foreign key provjere da ne smetaju
+        db.execute(text("SET session_replication_role = replica;"))
+
+        # Brisanje tablica i reset sekvenci s kaskadom
+        for table in CLEAR_ALL_TABLES:
+            db.execute(text(f'TRUNCATE TABLE spineict_ocr."{table}" RESTART IDENTITY CASCADE;'))
+
+        db.commit()
+
+        # Vrati FK provjere na normalu
+        db.execute(text("SET session_replication_role = DEFAULT;"))
+
+        # Obrisi uploadane datoteke
+        if os.path.exists(UPLOAD_DIR):
+            for filename in os.listdir(UPLOAD_DIR):
+                file_path = os.path.join(UPLOAD_DIR, filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+
+        # Obriši Elasticsearch indeks
+        es = Elasticsearch("http://localhost:9200")
+        if es.indices.exists(index=ES_INDEX):
+            es.indices.delete(index=ES_INDEX)
+
+        return {"message": "Podaci uspješno obrisani, sekvence resetirane."}
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Greška prilikom brisanja podataka: {e}")
+        raise HTTPException(status_code=500, detail="Greška prilikom brisanja podataka.")
+
+
+@router.get("/", response_model=dict)
 def list_documents(
     document_type: str | None = Query(None),
     processed: bool = Query(default=False),
-    limit: int = Query(default=100, ge=1, le=1000),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=1000),
     order: str = Query(default="desc", regex="^(asc|desc)$"),
     supplier_oib: str | None = Query(None),
+    include_deleted: bool = Query(default=False),
     db: Session = Depends(get_db)
 ):
     query = db.query(Document)
@@ -32,14 +82,20 @@ def list_documents(
     if document_type:
         query = query.filter(Document.document_type == document_type)
 
+    if not include_deleted:
+        query = query.filter(Document.document_type != "OBRISANI DOKUMENT")
+
     if processed:
         query = query.filter(Document.ocrresult.isnot(None))
 
     if supplier_oib:
         query = query.filter(Document.supplier_oib == supplier_oib)
 
+    total = query.count()
+
     query = query.order_by(Document.date.asc() if order == "asc" else Document.date.desc())
-    documents = query.limit(limit).all()
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    documents = query.all()
 
     def parse_parsed_field(doc):
         if isinstance(doc.parsed, str):
@@ -49,7 +105,7 @@ def list_documents(
                 return None
         return doc.parsed
 
-    return [
+    items = [
         {
             "id": doc.id,
             "filename": doc.filename,
@@ -69,10 +125,12 @@ def list_documents(
         for doc in documents
     ]
 
+    return {"items": items, "total": total}
+
 @router.get("/stats-info")
 def documents_stats(db: Session = Depends(get_db)):
-    total_docs = db.query(Document).count()
-    processed_docs = db.query(Document).filter(Document.ocrresult.isnot(None)).count()
+    total_docs = db.query(Document).filter(Document.document_type != "OBRISANI DOKUMENT").count()
+    processed_docs = db.query(Document).filter(Document.ocrresult.isnot(None), Document.document_type != "OBRISANI DOKUMENT").count()
 
     total_size_bytes = (
         sum(
@@ -87,7 +145,7 @@ def documents_stats(db: Session = Depends(get_db)):
     usage = shutil.disk_usage(UPLOAD_DIR) if os.path.exists(UPLOAD_DIR) else None
     free_mb = usage.free / (1024 * 1024) if usage else 0
 
-    by_type_query = db.query(Document.document_type, func.count()).group_by(Document.document_type).all()
+    by_type_query = db.query(Document.document_type, func.count()).filter(Document.document_type != "OBRISANI DOKUMENT").group_by(Document.document_type).all()
     by_type = {row[0]: row[1] for row in by_type_query if row[0]}
 
     return {
@@ -102,6 +160,7 @@ def documents_stats(db: Session = Depends(get_db)):
 def top_partners(db: Session = Depends(get_db)):
     results = (
         db.query(Document.supplier_name_ocr, func.count(Document.id))
+        .filter(Document.document_type != "OBRISANI DOKUMENT")
         .group_by(Document.supplier_name_ocr)
         .order_by(func.count(Document.id).desc())
         .limit(10)
@@ -190,81 +249,103 @@ def get_document_file(document_id: int = Path(...), db: Session = Depends(get_db
     headers = {"Content-Disposition": f"inline; filename={doc.filename}"}
     return FileResponse(path=file_path, media_type="application/pdf", headers=headers)
 
-@router.patch("/{document_id}")
-def update_document_supplier(
+@router.put("/{document_id}/update_type")
+def update_document_type(
     document_id: int,
     payload: dict = Body(...),
     db: Session = Depends(get_db)
 ):
-    supplier_id = payload.get("supplier_id")
-    if supplier_id is None:
-        raise HTTPException(status_code=400, detail="supplier_id je obavezan")
+    new_type = payload.get("new_type")
+    if not new_type:
+        raise HTTPException(status_code=400, detail="Missing new_type in payload")
 
     doc = db.query(Document).filter(Document.id == document_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    doc.supplier_id = supplier_id
+    doc.document_type = new_type
     db.commit()
-    return {"message": "Dobavljač ažuriran", "document_id": doc.id}
 
-@router.delete("/clear-all")
-def clear_all_documents(db: Session = Depends(get_db)):
+    return {"message": f"Document {document_id} type updated to {new_type}"}
+
+@router.patch("/{document_id}")
+def update_document(
+    document_id: int,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Podržana polja za update
+    updatable_fields = [
+        "document_type",
+        "invoice_number",
+        "date_invoice",
+        "date_valute",
+        "amount",
+        "oib",
+        "supplier_name_ocr",
+        "supplier_oib",
+        "partner_name",
+        "supplier_id"
+    ]
+
+    for field in updatable_fields:
+        if field in payload:
+            setattr(doc, field, payload[field])
+
+    db.commit()
+    return {"message": "Dokument ažuriran", "document_id": doc.id}
+
+@router.delete("/{document_id}")
+def delete_document(document_id: int = Path(...), db: Session = Depends(get_db)):
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
     try:
-        # Statistika prije brisanja (za toaster info)
-        doc_count = db.query(Document).count()
-        ann_count = db.query(DocumentAnnotation).count()
-        partner_count = db.query(Partner).count()
+        # Obriši povezane anotacije prvo
+        annotations = db.query(DocumentAnnotation).filter(DocumentAnnotation.document_id == document_id).all()
+        for ann in annotations:
+            db.delete(ann)
 
-        # FULL OBLITERATE (osim accounts)
-        db.execute(text("""
-            TRUNCATE TABLE 
-                alembic_version,
-                clients,
-                document_annotations,
-                documents,
-                mail_accounts,
-                mail_processed,
-                parsed_oib,
-                partneri,
-                software_info,
-                users
-            RESTART IDENTITY CASCADE;
-        """))
+        # Obrisi fajl s diska
+        if doc.filename:
+            file_path = os.path.join(UPLOAD_DIR, doc.filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
+        # Update document_type i dodaj info u anotacije
+        doc.document_type = "OBRISANI DOKUMENT"
+
+        if not doc.annotation:
+            doc.annotation = DocumentAnnotation(document_id=doc.id, annotations={})
+            db.add(doc.annotation)
+
+        annotations_data = doc.annotation.annotations or {}
+        annotations_data["deleted_info"] = "Obrisao korisnik"
+        doc.annotation.annotations = annotations_data
+
         db.commit()
 
-        # PDF-ovi
-        deleted_files = 0
-        if os.path.exists(UPLOAD_DIR):
-            for filename in os.listdir(UPLOAD_DIR):
-                file_path = os.path.join(UPLOAD_DIR, filename)
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-                    deleted_files += 1
-
-        # Elasticsearch
-        es_deleted = 0
+        # Obrisi iz Elasticsearcha
         try:
             es = Elasticsearch("http://localhost:9200")
             if es.indices.exists(index=ES_INDEX):
-                res = es.delete_by_query(index=ES_INDEX, body={"query": {"match_all": {}}}, refresh=True, wait_for_completion=True)
+                es.delete_by_query(
+                    index=ES_INDEX,
+                    body={"query": {"match": {"id": document_id}}},
+                    refresh=True,
+                    wait_for_completion=True
+                )
                 es.indices.refresh(index=ES_INDEX)
-                es_deleted = res.get('deleted', 0)
         except Exception as es_exc:
-            logging.warning(f"Elasticsearch clean error: {es_exc}")
+            logging.warning(f"Elasticsearch delete error: {es_exc}")
 
-        msg = (
-            f"Obrisano: {doc_count} dokumenata, "
-            f"{ann_count} anotacija, "
-            f"{partner_count} partnera, "
-            f"{deleted_files} PDF-ova, "
-            f"{es_deleted} ES dokumenata.\n"
-            "Sve tablice su resetirane osim accounts."
-        )
-
-        logging.info(msg)
-        return {"message": msg}
+        return {"message": f"Document {document_id} marked as deleted, PDF removed."}
     except Exception as e:
         db.rollback()
-        logging.error(f"Greška: {e}")
-        raise HTTPException(status_code=500, detail=f"Greška: {e}")
+        logging.error(f"Error deleting document {document_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error deleting document: {e}")

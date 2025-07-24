@@ -33,7 +33,7 @@ export default function MailSettingsView() {
             imap_port: mail.imap_port || 993,
             use_ssl: mail.use_ssl !== undefined ? mail.use_ssl : true,
             username: mail.username || "",
-            password: "", // Lozinka se ne vraća iz sigurnosnih razloga
+            password: "",
             active: mail.active === undefined ? true : mail.active,
           });
         }
@@ -85,75 +85,34 @@ export default function MailSettingsView() {
   };
 
   return (
-    <div className="card mt-4 p-4">
-      <h4>Mail postavke - IMAP</h4>
+    <div className="card card-compact shadow p-4 mt-2">
+      <h4 className="fw-bold mb-3">Mail postavke - IMAP</h4>
       <form onSubmit={handleSubmit} className="row g-3">
-
-        <div className="col-md-6">
-          <label className="form-label">Ime računa *</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="form-control"
-            required
-            disabled={loading || testing}
-          />
-        </div>
-
-        <div className="col-md-6">
-          <label className="form-label">Provider (npr. Gmail, Office365)</label>
-          <input
-            type="text"
-            name="provider"
-            value={formData.provider}
-            onChange={handleChange}
-            className="form-control"
-            disabled={loading || testing}
-          />
-        </div>
-
-        <div className="col-md-6">
-          <label className="form-label">Email adresa *</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="form-control"
-            required
-            disabled={loading || testing}
-          />
-        </div>
-
-        <div className="col-md-6">
-          <label className="form-label">IMAP Server *</label>
-          <input
-            type="text"
-            name="imap_server"
-            value={formData.imap_server}
-            onChange={handleChange}
-            className="form-control"
-            required
-            disabled={loading || testing}
-          />
-        </div>
-
-        <div className="col-md-3">
-          <label className="form-label">IMAP Port *</label>
-          <input
-            type="number"
-            name="imap_port"
-            value={formData.imap_port}
-            onChange={handleChange}
-            className="form-control"
-            required
-            min={1}
-            max={65535}
-            disabled={loading || testing}
-          />
-        </div>
+        {[
+          { label: "Ime računa *", name: "name", type: "text", required: true, col: "col-md-6" },
+          { label: "Provider (npr. Gmail, Office365)", name: "provider", type: "text", col: "col-md-6" },
+          { label: "Email adresa *", name: "email", type: "email", required: true, col: "col-md-6" },
+          { label: "IMAP Server *", name: "imap_server", type: "text", required: true, col: "col-md-6" },
+          { label: "IMAP Port *", name: "imap_port", type: "number", required: true, col: "col-md-3", min: 1, max: 65535 },
+          { label: "Korisničko ime *", name: "username", type: "text", required: true, col: "col-md-6" },
+          { label: "Lozinka *", name: "password", type: "password", required: true, col: "col-md-6" },
+        ].map(({ label, name, type, required, col, min, max }) => (
+          <div key={name} className={col}>
+            <label className="form-label">{label}</label>
+            <input
+              type={type}
+              name={name}
+              value={formData[name]}
+              onChange={handleChange}
+              className="form-control"
+              required={required}
+              min={min}
+              max={max}
+              disabled={loading || testing}
+              autoComplete={name === "password" ? "new-password" : undefined}
+            />
+          </div>
+        ))}
 
         <div className="col-md-3 d-flex align-items-center mt-4">
           <div className="form-check">
@@ -170,34 +129,7 @@ export default function MailSettingsView() {
           </div>
         </div>
 
-        <div className="col-md-6">
-          <label className="form-label">Korisničko ime *</label>
-          <input
-            type="text"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            className="form-control"
-            required
-            disabled={loading || testing}
-          />
-        </div>
-
-        <div className="col-md-6">
-          <label className="form-label">Lozinka *</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className="form-control"
-            required
-            disabled={loading || testing}
-            autoComplete="new-password"
-          />
-        </div>
-
-        <div className="col-md-6 d-flex align-items-center mt-4">
+        <div className="col-md-3 d-flex align-items-center mt-4">
           <div className="form-check">
             <input
               className="form-check-input"

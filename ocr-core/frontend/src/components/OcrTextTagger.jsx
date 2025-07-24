@@ -1,3 +1,4 @@
+// #OcrTextTagger.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Info } from "lucide-react";
 import { toast } from "react-toastify";
@@ -18,16 +19,16 @@ const TAG_TYPES = [
   { key: "vat", label: "VAT (Strani dobavljač)" },
   { key: "invoice_number", label: "Broj računa" },
   { key: "date_invoice", label: "Datum računa" },
-  { key: "amount_total", label: "Iznos" },
+  { key: "amount", label: "Iznos" },
   { key: "supplier_name", label: "Naziv dobavljača" },
   { key: "partner_name", label: "Naziv partnera" },
 ];
 
 // Koja polja prikazati za tip dokumenta
 const fieldsForType = {
-  URA: ["supplier_name", "amount_total", "date_invoice", "invoice_number", "oib", "euvat", "vat"],
-  IRA: ["partner_name", "amount_total", "date_invoice", "invoice_number", "oib", "euvat", "vat"],
-  IZVOD: ["amount_total", "date_invoice", "oib", "euvat", "vat"],
+  URA: ["supplier_name", "amount", "date_invoice", "invoice_number", "oib", "euvat", "vat"],
+  IRA: ["partner_name", "amount", "date_invoice", "invoice_number", "oib", "euvat", "vat"],
+  IZVOD: ["amount", "date_invoice", "oib", "euvat", "vat"],
   UGOVOR: ["partner_name", "date_invoice", "oib", "euvat", "vat"],
   OSTALO: ["oib", "euvat", "vat"],
 };
@@ -36,16 +37,13 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
   const [tags, setTags] = useState(initialTags);
   const textRef = useRef(null);
 
-  // Sync s propom (za editanje dokumenata!)
   useEffect(() => {
     setTags(initialTags || {});
   }, [initialTags]);
 
-  // Uvijek radi controlled dropdown/inpute
   const documentType = tags.document_type || "OSTALO";
   const activeFields = fieldsForType[documentType] || [];
 
-  // Helper za selektiranje iz OCR tekst prikaza
   function getSelectedText() {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return "";
@@ -54,7 +52,6 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
     return selection.toString();
   }
 
-  // Autofill polja iz selekcije
   function handleQuickTag(key) {
     const selected = getSelectedText();
     if (!selected) {
@@ -68,7 +65,6 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
     window.getSelection().removeAllRanges();
   }
 
-  // Ručno editiranje
   function handleInputChange(key, value) {
     setTags(prev => ({
       ...prev,
@@ -76,7 +72,6 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
     }));
   }
 
-  // Obriši polje
   function handleRemove(key) {
     setTags(prev => {
       const c = { ...prev };
@@ -85,11 +80,9 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
     });
   }
 
-  // Tip dokumenta - kad promjeniš, resetiraj i polja koja nisu dio tog tipa
   function handleTypeChange(e) {
     const value = e.target.value;
     setTags(prev => {
-      // Resetiraj stare fieldove koji nisu u activeFields novog tipa
       const cleaned = { document_type: value };
       for (const key of fieldsForType[value] || []) {
         if (prev[key]) cleaned[key] = prev[key];
@@ -98,7 +91,6 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
     });
   }
 
-  // Save
   function handleSave() {
     if (onSave) onSave(tags);
   }
@@ -106,16 +98,20 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
   return (
     <div>
       {/* Info */}
-      <div className="alert alert-info d-flex align-items-center" style={{ fontSize: "0.9rem" }}>
-        <Info size={18} className="me-2" />
-        Prvo odaberite tip dokumenta. Ovisno o tipu, označite ili upišite važne elemente (OIB, EU VAT, VAT, iznos...) u prikazana polja.
+      <div className="card card-compact shadow p-2 mb-3" style={{ background: "#eaf1fb" }}>
+        <div className="d-flex align-center gap-1" style={{ fontSize: "0.96rem", color: "#1976d2" }}>
+          <Info size={18} />
+          <span>
+            Prvo odaberite tip dokumenta. Ovisno o tipu, označite ili upišite važne elemente (OIB, EU VAT, VAT, iznos...) u prikazana polja.
+          </span>
+        </div>
       </div>
 
       {/* Tip dokumenta */}
-      <div className="mb-3 d-flex align-items-center">
+      <div className="mb-3 d-flex align-center gap-2">
         <label style={{ minWidth: 120, fontWeight: 600 }}>Tip dokumenta:</label>
         <select
-          className="form-select form-select-sm mx-2"
+          className="form-select"
           style={{ maxWidth: 240, display: "inline-block" }}
           value={documentType}
           onChange={handleTypeChange}
@@ -130,20 +126,20 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
       {/* OCR tekst */}
       <div
         ref={textRef}
+        className="mb-3"
         style={{
           whiteSpace: "pre-wrap",
-          border: "1px solid #ddd",
-          padding: "12px",
+          border: "1.3px solid #eaf1fb",
+          padding: "1.1rem",
           minHeight: "160px",
           maxHeight: "300px",
           overflowY: "auto",
           userSelect: "text",
           fontFamily: "monospace",
-          fontSize: "16px",
-          lineHeight: "1.4",
-          backgroundColor: "#fff",
-          borderRadius: "6px",
-          marginBottom: "18px"
+          fontSize: "1.06rem",
+          lineHeight: "1.45",
+          background: "#fff",
+          borderRadius: "10px",
         }}
         tabIndex={0}
       >
@@ -151,12 +147,12 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
       </div>
 
       {/* Dinamička forma */}
-      <div className="row">
+      <div className="d-flex flex-column gap-2 mb-3">
         {TAG_TYPES.filter(t => activeFields.includes(t.key)).map(({ key, label }) => (
-          <div className="col-12 mb-2 d-flex align-items-center" key={key}>
+          <div className="d-flex align-center gap-1" key={key}>
             <label style={{ minWidth: 150 }}>{label}:</label>
             <input
-              className="form-control form-control-sm mx-2"
+              className="form-control"
               style={{ maxWidth: 240 }}
               value={tags[key] || ""}
               onChange={e => handleInputChange(key, e.target.value)}
@@ -164,9 +160,9 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
               disabled={loading}
             />
             <button
-              className="btn btn-outline-secondary btn-sm"
+              className="btn btn-secondary btn-xs"
               type="button"
-              style={{ minWidth: 110 }}
+              style={{ minWidth: 102 }}
               onClick={() => handleQuickTag(key)}
               disabled={loading}
             >
@@ -174,7 +170,7 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
             </button>
             {tags[key] && (
               <button
-                className="btn btn-outline-danger btn-sm ms-2"
+                className="btn btn-danger btn-xs"
                 type="button"
                 title="Obriši polje"
                 onClick={() => handleRemove(key)}
@@ -188,7 +184,7 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
       </div>
 
       <button
-        className="btn btn-primary mt-4"
+        className="btn btn-primary mt-2"
         style={{ minWidth: 130 }}
         onClick={handleSave}
         disabled={loading || !tags.document_type}

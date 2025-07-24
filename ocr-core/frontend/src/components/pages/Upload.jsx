@@ -1,3 +1,4 @@
+// #Upload.jsx
 import React, { useState } from "react";
 import DocumentsUpload from "../DocumentsUpload.jsx";
 import BatchUploadModal from "./BatchUploadModal.jsx";
@@ -23,16 +24,12 @@ export default function Upload() {
       });
 
       setModalData(docs[0]);
-      setShowModal(false); // zatvori stari modal (ako ima)
-
-      // Kad upload završi, otvori batch modal da prikaže izvještaj (ako ima)
-      // ili možeš držati batch modal otvoren dok traje upload u njoj
+      setShowModal(false);
     } else {
       toast.error("❌ Došlo je do greške tijekom uploada!");
     }
   };
 
-  // Ova funkcija prima datoteke iz DocumentsUpload i otvara batch modal
   const handleFilesSelected = (files) => {
     setFilesToUpload(files);
     setShowModal(true);
@@ -46,7 +43,7 @@ export default function Upload() {
   return (
     <div className="upload-container">
       <header className="mb-4 text-center">
-        <h1 className="page-title" style={{ color: "#232d39", fontWeight: 700 }}>
+        <h1 className="page-title fw-bold">
           Odabir dokumenata za OCR obradu
         </h1>
         <p className="text-muted fst-italic">
@@ -54,7 +51,6 @@ export default function Upload() {
         </p>
       </header>
 
-      {/* Promijeni DocumentsUpload da šalje datoteke ovdje */}
       <DocumentsUpload onFilesSelected={handleFilesSelected} />
 
       {showModal && (

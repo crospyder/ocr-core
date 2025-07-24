@@ -1,6 +1,5 @@
-// src/components/dashboard/BarChart.jsx
+// #BarChart.jsx
 import React from "react";
-import { Card } from "react-bootstrap";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -21,7 +20,9 @@ const BarChart = () => {
       {
         label: "Dokumenti",
         data: [12, 19, 3, 5, 2, 3, 7],
-        backgroundColor: "rgba(54, 162, 235, 0.6)",
+        backgroundColor: "rgba(26, 130, 226, 0.6)",
+        borderRadius: 8,
+        maxBarThickness: 48,
       },
     ],
   };
@@ -31,15 +32,27 @@ const BarChart = () => {
     plugins: {
       legend: { position: "top" },
       title: { display: true, text: "Broj dokumenata po danima" },
+      tooltip: { enabled: true },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        title: { display: false },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: { stepSize: 1 },
+        grid: { color: "#e8ecf1" },
+      },
     },
   };
 
   return (
-    <Card className="shadow-sm mb-4">
-      <Card.Body>
+    <div className="card shadow mb-4">
+      <div className="card-body">
         <Bar data={data} options={options} />
-      </Card.Body>
-    </Card>
+      </div>
+    </div>
   );
 };
 

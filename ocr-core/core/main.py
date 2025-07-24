@@ -2,14 +2,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import logging
-#import core.ml.classifier  # ovo će učitati model pri startu
+#from core.ml.classifier import *  # Uncomment if needed to load model on startup
 from logging.handlers import TimedRotatingFileHandler
 import os
 import sys
-
-from fastapi import FastAPI, Query, Depends
+from core.routes import settings
+from fastapi import FastAPI, Query, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from fastapi.exception_handlers import RequestValidationError
 from elasticsearch import Elasticsearch
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -26,6 +28,8 @@ from core.routes import logs, client_info, partneri, clients, mail_accounts, mai
 from core.routes.doc_classandvalid import router as doc_class_router
 from modules.ocr_processing.routes import upload as upload_module
 from modules.sudreg_manual import router as sudreg_manual_router
+from core.routes.settings import router as settings_router
+from core.billing import api as billing_api
 
 LOG_DIR = "./logs"
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -64,6 +68,7 @@ app.add_middleware(
 app.mount("/core", StaticFiles(directory="core"), name="core")
 
 app.include_router(admin_router)
+app.include_router(settings.router, prefix="/api")
 app.include_router(documents_router, prefix="/api/documents")
 app.include_router(upload_router, prefix="/api/upload")
 app.include_router(upload_module.router, prefix="/api/upload", tags=["upload"])
@@ -72,10 +77,11 @@ app.include_router(logs.router, prefix="/api/logs")
 app.include_router(client_info.router, prefix="/api/client")
 app.include_router(partneri.router, prefix="/api")
 app.include_router(clients.router, prefix="/api/client")
-app.include_router(doc_class_router, prefix="/api/documents/validation", tags=["validation"])
+app.include_router(doc_class_router, prefix="/api/documents", tags=["validation"])
 app.include_router(sudreg_manual_router, prefix="/api/tools", tags=["tools"])
 app.include_router(mail_accounts.router, prefix="/api/mail_accounts")
-app.include_router(mail_processing.router)  # router ima prefix u sebi!
+app.include_router(mail_processing.router)  # router has prefix internally
+app.include_router(billing_api.router, prefix="/billing", tags=["billing"])
 
 load_module_routers(app)
 
@@ -135,3 +141,11 @@ def search_in_elasticsearch(query: str, page: int, size: int):
     )
     hits = res["hits"]["hits"]
     return [hit["_source"] for hit in hits]
+
+# Exception handler for validation errors to get detailed error messages on client side
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body},
+    )

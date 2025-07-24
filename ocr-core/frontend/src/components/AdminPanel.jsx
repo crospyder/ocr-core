@@ -1,97 +1,28 @@
+// #AdminPanel.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 
-// Helper za slanje logova na backend
-async function backendLog({ message, level = "info", extra = "" }) {
-  try {
-    await fetch("/api/logs/frontend-log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, level, extra }),
-    });
-  } catch (e) {
-    console.warn("Neuspješno slanje loga na backend:", e);
-  }
-}
-
-// LogViewer komponenta – automatski scrolla na dno i ima moderan prikaz s bojama
-function LogViewer({ service, title }) {
+// --- LIVE AI trening log widget (WebSocket direktno na inference server) ---
+function TrainingLogWidget() {
   const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const logRef = useRef(null);
+  const wsRef = useRef(null);
 
   useEffect(() => {
-    let mounted = true;
-    const fetchLogs = () => {
-      fetch(`/api/admin/logs/${service}?lines=400`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (mounted) {
-            const lines = data.logs ? data.logs.split("\n") : [];
-            setLogs(lines);
-            setLoading(false);
-          }
-        });
+    // PAZI: prilagodi IP/port svom inference serveru!
+    wsRef.current = new window.WebSocket("ws://192.168.100.53:9000/ws/training-logs");
+    wsRef.current.onmessage = (e) => {
+      setLogs((prev) => [...prev, e.data]);
     };
-    fetchLogs();
-    const interval = setInterval(fetchLogs, 4000);
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
-  }, [service]);
-
-  useEffect(() => {
-    if (logRef.current) {
-      logRef.current.scrollTop = logRef.current.scrollHeight;
-    }
-  }, [logs]);
-
-  // Bojanje linija prema sadržaju i vrsti servisa
-  const getLineStyle = (line) => {
-    if (/error/i.test(line)) return { color: "red" };
-    if (/warn/i.test(line)) return { color: "orange" };
-    if (service === "ocr-core-frontend") return { color: "white" };
-    // Backend logovi svijetlosivi
-    return { color: "#ccc" };
-  };
+    return () => wsRef.current && wsRef.current.close();
+  }, []);
 
   return (
-    <div className="card shadow border-0 my-4" style={{ background: "#181f2b" }}>
-      <div
-        className="card-header text-white fw-bold"
-        style={{
-          background: "linear-gradient(90deg, #2841a5 0%, #111d4a 100%)",
-          fontSize: 17,
-          letterSpacing: 0.3,
-        }}
-      >
-        <i className="bi bi-terminal me-2"></i> {title}
-      </div>
-      <div
-        ref={logRef}
-        style={{
-          background: "#151c26",
-          fontFamily: "JetBrains Mono, Fira Mono, Menlo, monospace",
-          height: 340,
-          overflowY: "auto",
-          fontSize: 14,
-          padding: 16,
-          borderRadius: "0 0 12px 12px",
-          letterSpacing: 0.1,
-          borderBottom: "2px solid #334",
-          whiteSpace: "pre-wrap",
-        }}
-      >
-        {loading
-          ? "Učitavanje logova..."
-          : logs.length === 0
-          ? <em>Nema logova.</em>
-          : logs.map((line, idx) => (
-              <div key={idx} style={getLineStyle(line)}>
-                {line}
-              </div>
-            ))
+    <div className="card p-2 mb-2" style={{ maxHeight: 300, overflowY: "auto", fontFamily: "monospace", fontSize: 13 }}>
+      <b>Trening log:</b>
+      <div>
+        {logs.length === 0
+          ? <em style={{ color: "#888" }}>Nema logova...</em>
+          : logs.map((log, i) => <div key={i}>{log}</div>)
         }
       </div>
     </div>
@@ -104,8 +35,13 @@ export default function AdminPanel() {
   const [newUser, setNewUser] = useState({ username: "", role: "user" });
   const [editingUser, setEditingUser] = useState(null);
 
+  // --- Train Model button state
+  const [trainLoading, setTrainLoading] = useState(false);
+  const [trainMsg, setTrainMsg] = useState("");
+
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line
   }, []);
 
   async function fetchUsers() {
@@ -115,10 +51,8 @@ export default function AdminPanel() {
       if (!res.ok) throw new Error("Greška pri dohvatu korisnika");
       const data = await res.json();
       setUsers(data);
-      await backendLog({ message: "Korisnici dohvaćeni", level: "info" });
     } catch (err) {
       toast.error(err.message);
-      await backendLog({ message: "Greška pri dohvatu korisnika", level: "error", extra: err.message });
     } finally {
       setLoading(false);
     }
@@ -127,7 +61,6 @@ export default function AdminPanel() {
   async function handleAddUser() {
     if (!newUser.username) {
       toast.warning("Unesi korisničko ime");
-      await backendLog({ message: "Pokušaj dodavanja korisnika bez imena", level: "warning" });
       return;
     }
     try {
@@ -140,10 +73,8 @@ export default function AdminPanel() {
       setNewUser({ username: "", role: "user" });
       fetchUsers();
       toast.success("Korisnik uspješno dodan");
-      await backendLog({ message: `Korisnik dodan: ${newUser.username}`, level: "info" });
     } catch (err) {
       toast.error(err.message);
-      await backendLog({ message: "Greška pri dodavanju korisnika", level: "error", extra: err.message });
     }
   }
 
@@ -154,17 +85,14 @@ export default function AdminPanel() {
       if (!res.ok) throw new Error("Greška pri brisanju korisnika");
       fetchUsers();
       toast.success("Korisnik obrisan");
-      await backendLog({ message: `Korisnik obrisan, ID: ${id}`, level: "info" });
     } catch (err) {
       toast.error(err.message);
-      await backendLog({ message: "Greška pri brisanju korisnika", level: "error", extra: err.message });
     }
   }
 
   async function handleUpdateUser() {
     if (!editingUser.username) {
       toast.warning("Unesi korisničko ime");
-      await backendLog({ message: "Pokušaj ažuriranja korisnika bez imena", level: "warning" });
       return;
     }
     try {
@@ -177,48 +105,68 @@ export default function AdminPanel() {
       setEditingUser(null);
       fetchUsers();
       toast.success("Korisnik ažuriran");
-      await backendLog({ message: `Korisnik ažuriran, ID: ${editingUser.id}`, level: "info" });
     } catch (err) {
       toast.error(err.message);
-      await backendLog({ message: "Greška pri ažuriranju korisnika", level: "error", extra: err.message });
+    }
+  }
+
+  // --- Treniranje modela AI tipka ---
+  async function handleTrainModel() {
+    setTrainLoading(true);
+    setTrainMsg("");
+    try {
+      // ADAPT URL ako inference nije na backend serveru!
+      const res = await fetch("http://192.168.100.53:9000/api/train_model", {
+        method: "POST",
+      });
+      const data = await res.json();
+      setTrainMsg(data.message || "Treniranje pokrenuto!");
+    } catch (err) {
+      setTrainMsg("Greška pri treniranju: " + err.message);
+    } finally {
+      setTrainLoading(false);
     }
   }
 
   return (
-    <div className="container-fluid">
-      <div className="document-stats-widget mb-4">
-        <h5>Dodaj novog korisnika</h5>
-        <div className="d-flex flex-wrap gap-2">
+    <div className="container mt-2">
+      {/* --- Novi korisnik --- */}
+      <div className="card card-compact mb-2">
+        <div className="card-header">Dodaj novog korisnika</div>
+        <div className="d-flex gap-2 align-center flex-wrap">
           <input
             type="text"
             placeholder="Korisničko ime"
             value={newUser.username}
             onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-            className="form-control form-control-sm w-auto"
+            className="form-control w-auto"
+            style={{ minWidth: 180, marginBottom: 0 }}
           />
           <select
             value={newUser.role}
             onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-            className="form-select form-select-sm w-auto"
+            className="form-select w-auto"
+            style={{ minWidth: 120, marginBottom: 0 }}
           >
             <option value="user">User</option>
             <option value="admin">Admin</option>
             <option value="master">Master</option>
           </select>
-          <button className="btn btn-sm btn-success" onClick={handleAddUser}>
+          <button className="btn btn-success btn-sm" onClick={handleAddUser}>
             Dodaj korisnika
           </button>
         </div>
       </div>
 
-      <div className="recent-documents-widget">
-        <h5>Popis korisnika</h5>
+      {/* --- Popis korisnika --- */}
+      <div className="card card-compact mb-2">
+        <div className="card-header">Popis korisnika</div>
         {loading ? (
-          <p>Učitavanje...</p>
+          <div className="p-2 text-muted">Učitavanje...</div>
         ) : (
           <div className="table-responsive">
-            <table className="table table-bordered table-sm">
-              <thead className="table-light">
+            <table className="table table-hover table-striped">
+              <thead>
                 <tr>
                   <th>ID</th>
                   <th>Korisničko ime</th>
@@ -233,11 +181,12 @@ export default function AdminPanel() {
                     <td>
                       {editingUser?.id === user.id ? (
                         <input
-                          className="form-control form-control-sm"
+                          className="form-control"
                           value={editingUser.username}
                           onChange={(e) =>
                             setEditingUser({ ...editingUser, username: e.target.value })
                           }
+                          style={{ minWidth: 110, marginBottom: 0 }}
                         />
                       ) : (
                         user.username
@@ -246,31 +195,34 @@ export default function AdminPanel() {
                     <td>
                       {editingUser?.id === user.id ? (
                         <select
-                          className="form-select form-select-sm"
+                          className="form-select"
                           value={editingUser.role}
                           onChange={(e) =>
                             setEditingUser({ ...editingUser, role: e.target.value })
                           }
+                          style={{ minWidth: 80, marginBottom: 0 }}
                         >
                           <option value="user">User</option>
                           <option value="admin">Admin</option>
                           <option value="master">Master</option>
                         </select>
                       ) : (
-                        user.role
+                        <span className={`badge badge-${user.role === "master" ? "danger" : user.role === "admin" ? "success" : "secondary"}`}>
+                          {user.role}
+                        </span>
                       )}
                     </td>
                     <td>
                       {editingUser?.id === user.id ? (
                         <>
                           <button
-                            className="btn btn-sm btn-primary me-2"
+                            className="btn btn-success btn-xs me-2"
                             onClick={handleUpdateUser}
                           >
                             Spremi
                           </button>
                           <button
-                            className="btn btn-sm btn-secondary"
+                            className="btn btn-secondary btn-xs"
                             onClick={() => setEditingUser(null)}
                           >
                             Odustani
@@ -279,13 +231,13 @@ export default function AdminPanel() {
                       ) : (
                         <>
                           <button
-                            className="btn btn-sm btn-warning me-2"
+                            className="btn btn-warning btn-xs me-2"
                             onClick={() => setEditingUser(user)}
                           >
                             Uredi
                           </button>
                           <button
-                            className="btn btn-sm btn-danger"
+                            className="btn btn-danger btn-xs"
                             onClick={() => handleDeleteUser(user.id)}
                           >
                             Obriši
@@ -301,8 +253,23 @@ export default function AdminPanel() {
         )}
       </div>
 
-      {/* === MODERNI LOG VIEWER SAMO JEDAN === */}
-      <LogViewer service="ocr-core-backend" title="Syslogs" />
+      {/* --- Pokreni treniranje AI modela --- */}
+      <div className="card card-compact mb-3 p-3" style={{background: "#20294a"}}>
+        <button
+          className="btn btn-primary"
+          onClick={handleTrainModel}
+          disabled={trainLoading}
+          style={{ minWidth: 180 }}
+        >
+          {trainLoading ? "Treniranje..." : "Pokreni treniranje AI modela"}
+        </button>
+        {trainMsg && (
+          <div style={{ color: "#8cf", marginTop: 8, fontSize: 15 }}>{trainMsg}</div>
+        )}
+      </div>
+
+      {/* --- Live AI trening log --- */}
+      <TrainingLogWidget />
     </div>
   );
 }

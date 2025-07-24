@@ -2,35 +2,50 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
+
 export default function Documents() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const query = useQuery();
+
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
-
-  const [documentType, setDocumentType] = useState("");
-  const [supplierOib, setSupplierOib] = useState("");
-  const [selectedSupplier, setSelectedSupplier] = useState("");
-  const [selectedYear, setSelectedYear] = useState("");
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(50);
-
-  const [clearLoading, setClearLoading] = useState(false);
-
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [documentType, setDocumentType] = useState(query.get("document_type") || "");
+  const [supplierOib, setSupplierOib] = useState(query.get("supplier_oib") || "");
+  const [selectedSupplier, setSelectedSupplier] = useState(query.get("selected_supplier") || "");
+  const [selectedYear, setSelectedYear] = useState(query.get("selected_year") || "");
+  const [currentPage, setCurrentPage] = useState(parseInt(query.get("page") || "1", 10));
+  const [itemsPerPage, setItemsPerPage] = useState(parseInt(query.get("page_size") || "50", 10));
+  const [sortConfig, setSortConfig] = useState({
+    key: query.get("sort_key") || "date",
+    direction: query.get("sort_dir") || "desc"
+  });
 
   useEffect(() => {
-    const pathParts = location.pathname.split("/");
-    const oibFromPath = pathParts[2] === "partner" ? pathParts[3] : "";
-    setSupplierOib(oibFromPath || "");
-  }, [location.pathname]);
+    const params = new URLSearchParams();
+
+    if (documentType) params.set("document_type", documentType);
+    if (supplierOib) params.set("supplier_oib", supplierOib);
+    if (selectedSupplier) params.set("selected_supplier", selectedSupplier);
+    if (selectedYear) params.set("selected_year", selectedYear);
+    if (currentPage) params.set("page", currentPage);
+    if (itemsPerPage) params.set("page_size", itemsPerPage);
+    if (sortConfig.key) params.set("sort_key", sortConfig.key);
+    if (sortConfig.direction) params.set("sort_dir", sortConfig.direction);
+
+    navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
+  }, [documentType, supplierOib, selectedSupplier, selectedYear, currentPage, itemsPerPage, sortConfig, navigate, location.pathname]);
 
   useEffect(() => {
     fetchDocuments();
-  }, [documentType, supplierOib]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentType, supplierOib, selectedSupplier, selectedYear, currentPage, itemsPerPage, sortConfig]);
 
   async function fetchDocuments() {
     setLoading(true);
@@ -38,15 +53,25 @@ export default function Documents() {
       const queryParts = [];
       if (documentType) queryParts.push(`document_type=${encodeURIComponent(documentType)}`);
       if (supplierOib) queryParts.push(`supplier_oib=${encodeURIComponent(supplierOib)}`);
-      const query = queryParts.length ? `?${queryParts.join("&")}` : "";
-      const res = await fetch(`/api/documents/${query}`);
+      if (selectedSupplier) queryParts.push(`selected_supplier=${encodeURIComponent(selectedSupplier)}`);
+      if (selectedYear) queryParts.push(`selected_year=${encodeURIComponent(selectedYear)}`);
+      queryParts.push(`page=${currentPage}`);
+      queryParts.push(`page_size=${itemsPerPage}`);
+      queryParts.push(`sort_key=${sortConfig.key}`);
+      queryParts.push(`sort_dir=${sortConfig.direction}`);
+      const queryString = queryParts.length ? `?${queryParts.join("&")}` : "";
+
+      const res = await fetch(`/api/documents/${queryString}`);
       if (!res.ok) throw new Error("Greška pri dohvatu dokumenata.");
       const data = await res.json();
-      setDocuments(Array.isArray(data) ? data : []);
+      setDocuments(Array.isArray(data.items) ? data.items : []);
+      setTotalCount(data.total || 0);
       setError(null);
     } catch (err) {
       toast.error(`❌ ${err.message}`);
       setDocuments([]);
+      setTotalCount(0);
+      setError(err.message);
       console.error("Greška pri dohvatu dokumenata:", err);
     } finally {
       setLoading(false);
@@ -55,24 +80,22 @@ export default function Documents() {
 
   async function handleClearAll() {
     if (!window.confirm("Jesi li siguran da želiš obrisati SVE dokumente, anotacije, partnere, PDF-ove i Elasticsearch indeks?")) return;
-
-    setClearLoading(true);
-
+    setLoading(true);
     try {
       const res = await fetch("/api/documents/clear-all", { method: "DELETE" });
       if (!res.ok) {
         const errorText = await res.text();
         throw new Error(`Greška pri brisanju dokumenata: ${errorText}`);
       }
-
-      const result = await res.json();
+      await res.json();
       toast.success("✅ Svi dokumenti, partneri, anotacije, PDF-ovi i ES indeks su obrisani.");
+      setCurrentPage(1);
       fetchDocuments();
     } catch (err) {
       toast.error(`❌ ${err.message}`);
       console.error("Greška pri brisanju:", err);
     } finally {
-      setClearLoading(false);
+      setLoading(false);
     }
   }
 
@@ -92,7 +115,7 @@ export default function Documents() {
       if (d.invoice_date) return new Date(d.invoice_date).getFullYear();
       return null;
     }).filter(Boolean));
-    return Array.from(setYears).sort((a,b) => b - a);
+    return Array.from(setYears).sort((a, b) => b - a);
   }, [documents]);
 
   const filteredDocuments = useMemo(() => {
@@ -126,133 +149,183 @@ export default function Documents() {
     });
   }, [filteredDocuments, sortConfig]);
 
-  const pageCount = Math.ceil(sortedDocuments.length / itemsPerPage);
-  const paginatedDocs = useMemo(() => {
-    if (itemsPerPage === -1) return sortedDocuments;
-    const start = (currentPage - 1) * itemsPerPage;
-    return sortedDocuments.slice(start, start + itemsPerPage);
-  }, [sortedDocuments, currentPage, itemsPerPage]);
+  const pageCount = Math.ceil(totalCount / itemsPerPage);
+
+  function renderDocTag(type) {
+    if (!type) return <span className="text-muted">-</span>;
+    const cls = `doc-tag ${type.toLowerCase()}`;
+    return <span className={cls}>{type}</span>;
+  }
+
+  const PaginationComponent = () => (
+    <nav className="pagination-container" aria-label="Pagination navigation">
+      <ul className="pagination">
+        <li className={`page-item${currentPage === 1 ? " disabled" : ""}`}>
+          <button
+            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+            aria-disabled={currentPage === 1}
+            type="button"
+            aria-label="Prethodna stranica"
+          >
+            ←
+          </button>
+        </li>
+
+        {Array.from({ length: pageCount }, (_, i) => (
+          <li key={i} className={`page-item${i + 1 === currentPage ? " active" : ""}`}>
+            <button
+              onClick={() => setCurrentPage(i + 1)}
+              aria-current={i + 1 === currentPage ? "page" : undefined}
+              type="button"
+            >
+              {i + 1}
+            </button>
+          </li>
+        ))}
+
+        <li className={`page-item${currentPage === pageCount ? " disabled" : ""}`}>
+          <button
+            onClick={() => currentPage < pageCount && setCurrentPage(currentPage + 1)}
+            aria-disabled={currentPage === pageCount}
+            type="button"
+            aria-label="Sljedeća stranica"
+          >
+            →
+          </button>
+        </li>
+      </ul>
+    </nav>
+  );
 
   return (
-    <div className="container-fluid mt-4">
-      {/* Naslov */}
-      <div className="page-title-container text-center mb-3">
-        <h2 className="h4 text-black fw-bold mb-0">OCR dokumenti</h2>
-      </div>
+    <div className="container mt-2 mb-2">
+      <div className="filters-pagination-bar d-flex justify-between align-center mb-3 flex-wrap gap-3">
+        <div className="filters-container d-flex flex-wrap gap-2">
+          <div className="filter-group d-flex flex-column">
+            <label htmlFor="documentType" className="filter-label">Vrsta dokumenta</label>
+            <select
+              id="documentType"
+              className="form-select"
+              value={documentType}
+              onChange={(e) => {
+                setDocumentType(e.target.value);
+                setCurrentPage(1);
+              }}
+              aria-label="Vrsta dokumenta"
+            >
+              <option value="">Sve</option>
+              <option value="URA">URA</option>
+              <option value="IRA">IRA</option>
+              <option value="UGOVOR">UGOVOR</option>
+              <option value="IZVOD">IZVOD</option>
+              <option value="NEPOZNATO">NEPOZNATO</option>
+            </select>
+          </div>
+          <div className="filter-group d-flex flex-column">
+            <label htmlFor="selectedSupplier" className="filter-label">Dobavljač</label>
+            <select
+              id="selectedSupplier"
+              className="form-select"
+              value={selectedSupplier}
+              onChange={(e) => {
+                setSelectedSupplier(e.target.value);
+                setCurrentPage(1);
+              }}
+              aria-label="Dobavljač"
+            >
+              <option value="">Svi</option>
+              {suppliers.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <div className="filter-group d-flex flex-column">
+            <label htmlFor="selectedYear" className="filter-label">Godina</label>
+            <select
+              id="selectedYear"
+              className="form-select"
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(e.target.value);
+                setCurrentPage(1);
+              }}
+              aria-label="Godina"
+            >
+              <option value="">Sve</option>
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <div className="filter-group d-flex flex-column">
+            <label htmlFor="itemsPerPage" className="filter-label">Dokumenata po stranici</label>
+            <select
+              id="itemsPerPage"
+              className="form-select"
+              value={itemsPerPage}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setItemsPerPage(val);
+                setCurrentPage(1);
+              }}
+              aria-label="Broj dokumenata po stranici"
+            >
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="1000">1000</option>
+              <option value="-1">Sve</option>
+            </select>
+          </div>
+        </div>
 
-      {/* Horizontalni filteri */}
-      <div className="d-flex justify-content-center flex-wrap gap-3 mb-3 filters-row">
-        <select
-          className="form-select form-select-sm"
-          value={documentType}
-          onChange={(e) => {
-            setDocumentType(e.target.value);
-            setCurrentPage(1);
-          }}
-          aria-label="Vrsta dokumenta"
-        >
-          <option value="">Vrsta: Sve</option>
-          <option value="URA">URA</option>
-          <option value="IRA">IRA</option>
-          <option value="UGOVOR">UGOVOR</option>
-          <option value="IZVOD">IZVOD</option>
-        </select>
-
-        <select
-          className="form-select form-select-sm"
-          value={selectedSupplier}
-          onChange={(e) => {
-            setSelectedSupplier(e.target.value);
-            setCurrentPage(1);
-          }}
-          aria-label="Dobavljač"
-        >
-          <option value="">Dobavljač: Svi</option>
-          {suppliers.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
-
-        <select
-          className="form-select form-select-sm"
-          value={selectedYear}
-          onChange={(e) => {
-            setSelectedYear(e.target.value);
-            setCurrentPage(1);
-          }}
-          aria-label="Godina"
-        >
-          <option value="">Godina: Sve</option>
-          {years.map((y) => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
-
-        <select
-          className="form-select form-select-sm"
-          value={itemsPerPage}
-          onChange={(e) => {
-            const val = parseInt(e.target.value);
-            setItemsPerPage(val);
-            setCurrentPage(1);
-          }}
-          aria-label="Broj dokumenata po stranici"
-        >
-          <option value="50">50 / stranici</option>
-          <option value="100">100</option>
-          <option value="1000">1000</option>
-          <option value="-1">Sve</option>
-        </select>
+        <PaginationComponent />
       </div>
 
       {loading ? (
-        <p>Učitavanje...</p>
+        <div className="text-center py-4">Učitavanje...</div>
       ) : error ? (
-        <p className="text-danger">{error}</p>
-      ) : paginatedDocs.length === 0 ? (
-        <p>Nema dokumenata za prikaz.</p>
+        <div className="text-danger text-center py-4">{error}</div>
+      ) : sortedDocuments.length === 0 ? (
+        <div className="text-center py-4">Nema dokumenata za prikaz.</div>
       ) : (
         <>
           <div className="table-responsive">
-            <table className="table table-striped table-hover table-sm w-100">
-              <thead className="table-light">
+            <table className="table table-custom table-hover w-100">
+              <thead>
                 <tr>
-                  <th onClick={() => requestSort("id")} style={{ cursor: "pointer" }}>#</th>
-                  <th onClick={() => requestSort("filename")} style={{ cursor: "pointer" }}>Naziv</th>
-                  <th onClick={() => requestSort("document_type")} style={{ cursor: "pointer" }}>Vrsta dokumenta</th>
-                  <th onClick={() => requestSort("date")} style={{ cursor: "pointer" }}>Arhivirano</th>
-                  <th onClick={() => requestSort("supplier_name_ocr")} style={{ cursor: "pointer" }}>Dobavljač</th>
-                  <th onClick={() => requestSort("supplier_oib")} style={{ cursor: "pointer" }}>OIB</th>
-                  <th onClick={() => requestSort("doc_number")} style={{ cursor: "pointer" }}>Broj računa</th>
-                  <th onClick={() => requestSort("invoice_date")} style={{ cursor: "pointer" }}>Datum računa</th>
-                  <th onClick={() => requestSort("due_date")} style={{ cursor: "pointer" }}>Datum valute</th>
+                  <th onClick={() => requestSort("id")} className="sortable">#</th>
+                  <th onClick={() => requestSort("filename")} className="sortable">Naziv</th>
+                  <th onClick={() => requestSort("document_type")} className="sortable">Vrsta dokumenta</th>
+                  <th onClick={() => requestSort("date")} className="sortable">Arhivirano</th>
+                  <th onClick={() => requestSort("supplier_name_ocr")} className="sortable">Dobavljač</th>
+                  <th onClick={() => requestSort("supplier_oib")} className="sortable">OIB</th>
+                  <th onClick={() => requestSort("doc_number")} className="sortable">Broj računa</th>
+                  <th onClick={() => requestSort("invoice_date")} className="sortable">Datum računa</th>
+                  <th onClick={() => requestSort("due_date")} className="sortable">Datum valute</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedDocs.map((doc) => (
+                {sortedDocuments.map((doc) => (
                   <tr key={doc.id}>
                     <td>{doc.id}</td>
                     <td>
-                      <a href={`/documents/${doc.id}`}>{doc.filename}</a>
+                      <a href={`/documents/${doc.id}`} className="fw-bold">
+                        {doc.filename}
+                      </a>
                     </td>
-                    <td>
-                      {doc.document_type ? (
-                        <span className="badge bg-info" style={{ fontSize: "0.9em" }}>
-                          {doc.document_type}
-                        </span>
-                      ) : (
-                        <span className="text-muted">-</span>
-                      )}
-                    </td>
+                    <td>{renderDocTag(doc.document_type)}</td>
                     <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "-"}</td>
                     <td>
                       {doc.supplier_oib ? (
-                        <button
-                          className="btn btn-link p-0 text-decoration-underline"
-                          onClick={() => navigate(`/documents/partner/${doc.supplier_oib}`)}
+                        <a
+                          href={`/documents/partner/${doc.supplier_oib}`}
+                          onClick={e => {
+                            e.preventDefault();
+                            navigate(`/documents/partner/${doc.supplier_oib}`);
+                          }}
                         >
                           {doc.supplier_name_ocr || "-"}
-                        </button>
+                        </a>
                       ) : (
                         doc.supplier_name_ocr || "-"
                       )}
@@ -267,19 +340,7 @@ export default function Documents() {
             </table>
           </div>
 
-          {itemsPerPage !== -1 && pageCount > 1 && (
-            <nav className="mt-3">
-              <ul className="pagination pagination-sm justify-content-end">
-                {Array.from({ length: pageCount }, (_, i) => (
-                  <li key={i} className={`page-item ${i + 1 === currentPage ? "active" : ""}`}>
-                    <button className="page-link" onClick={() => setCurrentPage(i + 1)}>
-                      {i + 1}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
+          <PaginationComponent />
         </>
       )}
     </div>

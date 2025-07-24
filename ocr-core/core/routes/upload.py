@@ -20,6 +20,10 @@ from modules.sudreg_api.client import SudregClient
 from core.vies_api.client import ViesClient
 from elasticsearch import Elasticsearch
 from PIL.Image import DecompressionBombWarning
+from core.routes.settings import TRAINING_MODE_FLAG
+import tempfile
+import requests
+import csv
 
 es = Elasticsearch(["http://localhost:9200"])
 router = APIRouter()
@@ -115,6 +119,9 @@ def upsert_document_annotations(db, doc_id, annotation_dict):
     db.commit()
     logger.info(f"Annotations auto-filled for document ID {doc_id}")
 
+def is_training_mode_enabled():
+    return TRAINING_MODE_FLAG["enabled"]
+
 @router.post("/documents")
 async def upload_documents(
     files: List[UploadFile] = File(...),
@@ -182,6 +189,26 @@ async def upload_documents(
                 logger.error(f"OCR error for {file.filename}: {e}")
                 results.append({"filename": file.filename, "status": "FAILED", "error": f"OCR error: {str(e)}"})
                 continue
+
+            # --- Trening mod: šalji sample na inference server kao CSV ---
+            if is_training_mode_enabled():
+                try:
+                    with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".csv", encoding="utf-8", newline='') as tf:
+                        writer = csv.writer(tf)
+                        writer.writerow(["text", "label"])
+                        writer.writerow([text, document_type])
+                        tf.flush()
+                        tf.seek(0)
+                        with open(tf.name, "rb") as f:
+                            files_data = {"file": (os.path.basename(tf.name), f, "text/csv")}
+                            resp = requests.post("http://192.168.100.53:9000/api/new_training_data", files=files_data, timeout=8)
+                        os.unlink(tf.name)
+                    if resp.ok:
+                        logger.info(f"Trening sample poslan: {file.filename}")
+                    else:
+                        logger.warning(f"Trening sample NIJE poslan: {file.filename}: {resp.text}")
+                except Exception as e:
+                    logger.error(f"Greška pri slanju trening sample-a: {e}")
 
             try:
                 if document_type == "email-prilog":

@@ -1,8 +1,8 @@
+// #Pdfviewer.jsx
+
 import React from "react";
 import { Viewer } from "@react-pdf-viewer/core"; 
 import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
-
-// Import pdfjs worker
 import { GlobalWorkerOptions } from "pdfjs-dist/build/pdf";
 
 import '@react-pdf-viewer/core/lib/styles/index.css';
@@ -18,11 +18,21 @@ export default function PdfViewer({ fileUrl }) {
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
   return (
-    <div style={{ height: "750px", border: "1px solid rgba(0, 0, 0, 0.3)" }}>
-      <Viewer 
-        fileUrl={fileUrl} 
-        plugins={[defaultLayoutPluginInstance]} 
-        defaultScale={1} // 100% zoom
+    <div
+      className="card shadow"
+      style={{
+        height: "750px",
+        border: "1.3px solid #eaf1fb",
+        borderRadius: "16px",
+        overflow: "hidden",
+        background: "#fff",
+        margin: "0 auto"
+      }}
+    >
+      <Viewer
+        fileUrl={fileUrl}
+        plugins={[defaultLayoutPluginInstance]}
+        defaultScale={1}
       />
     </div>
   );

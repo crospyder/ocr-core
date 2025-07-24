@@ -1,3 +1,4 @@
+// #footer.jsx
 import React, { useEffect, useState } from "react";
 
 export default function Footer() {
@@ -21,7 +22,7 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer className="footer">
+    <footer className="footer d-flex justify-between align-center">
       <div>
         © 2025{" "}
         <a
@@ -31,10 +32,10 @@ export default function Footer() {
           className="footer-link"
         >
           Spine ICT Solutions d.o.o.
-        </a>
-        {" "} Sva prava pridržana.
+        </a>{" "}
+        Sva prava pridržana.
       </div>
-      <div>
+      <div className="text-muted" style={{ fontSize: "0.96em" }}>
         Verzija: <strong>{version}</strong>
         {" · "}
         Ažurirano: {buildDate}

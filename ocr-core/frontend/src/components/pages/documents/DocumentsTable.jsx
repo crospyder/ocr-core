@@ -1,3 +1,4 @@
+// #DocumentsTable.jsx
 import React, { useState, useEffect } from "react";
 
 const DocumentsTable = ({ documents }) => {
@@ -11,7 +12,10 @@ const DocumentsTable = ({ documents }) => {
         let valA = a[sortConfig.key];
         let valB = b[sortConfig.key];
 
-        // Pretpostavimo da su datumi u ISO formatu pa ih možemo uspoređivati kao stringove
+        // Datumi i brojevi neka rade kao string/number
+        if (typeof valA === "number" && typeof valB === "number") {
+          return sortConfig.direction === "asc" ? valA - valB : valB - valA;
+        }
         if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
         if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
@@ -29,30 +33,36 @@ const DocumentsTable = ({ documents }) => {
   };
 
   return (
-    <table className="table table-striped table-hover">
-      <thead>
-        <tr>
-          <th onClick={() => requestSort("name")}>Naziv dokumenta</th>
-          <th onClick={() => requestSort("date")}>Datum</th>
-          <th onClick={() => requestSort("supplier")}>Dobavljač</th>
-          <th onClick={() => requestSort("due_date")}>Datum valute</th>
-          <th onClick={() => requestSort("amount")}>Iznos</th>
-          <th>Status obrade</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sortedDocs.map((doc) => (
-          <tr key={doc.id}>
-            <td><a href={`/documents/${doc.id}`}>{doc.name}</a></td>
-            <td>{doc.date}</td>
-            <td>{doc.supplier}</td>
-            <td>{doc.due_date}</td>
-            <td>{doc.amount.toFixed(2)} kn</td>
-            <td>{doc.status}</td>
+    <div className="table-responsive">
+      <table className="table table-custom table-hover w-100">
+        <thead>
+          <tr>
+            <th onClick={() => requestSort("name")} style={{ cursor: "pointer" }}>Naziv dokumenta</th>
+            <th onClick={() => requestSort("date")} style={{ cursor: "pointer" }}>Datum</th>
+            <th onClick={() => requestSort("supplier")} style={{ cursor: "pointer" }}>Dobavljač</th>
+            <th onClick={() => requestSort("due_date")} style={{ cursor: "pointer" }}>Datum valute</th>
+            <th onClick={() => requestSort("amount")} style={{ cursor: "pointer" }}>Iznos</th>
+            <th>Status obrade</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {sortedDocs.map((doc) => (
+            <tr key={doc.id}>
+              <td>
+                <a href={`/documents/${doc.id}`} className="fw-bold" style={{ color: "#1976d2" }}>
+                  {doc.name}
+                </a>
+              </td>
+              <td>{doc.date}</td>
+              <td>{doc.supplier}</td>
+              <td>{doc.due_date}</td>
+              <td>{doc.amount.toFixed(2)} kn</td>
+              <td>{doc.status}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
 

@@ -1,3 +1,4 @@
+// #SudReg_Manual.jsx
 import React, { useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -33,6 +34,12 @@ function SudregManualSearch() {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   // Pomagalo za prikaz adrese
   const formatAddress = (sjedista) => {
     if (!sjedista || !Array.isArray(sjedista) || sjedista.length === 0) {
@@ -45,10 +52,10 @@ function SudregManualSearch() {
   // Pomagalo za prikaz djelatnosti (lista)
   const formatActivities = (activities) => {
     if (!activities || !Array.isArray(activities) || activities.length === 0) {
-      return <p>Nema podataka</p>;
+      return <span className="text-muted">Nema podataka</span>;
     }
     return (
-      <ul>
+      <ul className="mb-2 ms-2" style={{ fontSize: "0.97em" }}>
         {activities.map((act, index) => (
           <li key={index}>{act.djelatnost_tekst}</li>
         ))}
@@ -63,54 +70,57 @@ function SudregManualSearch() {
     }
     const kapital = kapitalArray[0];
     const iznos = kapital.iznos || 0;
-    // Pretpostavljamo da je valuta EUR, pa formatiramo u euro format
     return `${iznos.toFixed(2)} €`;
   };
 
   return (
-    <div className="container mt-4">
-      <h2>Pretraživač Sudskog registra - ručna provjera</h2>
+    <div className="container mt-2 mb-2" style={{ maxWidth: 620 }}>
+      <div className="card card-compact shadow p-3 mb-3">
+        <h2 className="fw-bold mb-3 page-title">Pretraživač Sudskog registra (ručna provjera)</h2>
+        <div className="d-flex gap-1 mb-3">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Unesite OIB (11 znakova)"
+            value={oib}
+            onChange={(e) => setOib(e.target.value.replace(/\D/g, ""))}
+            maxLength={11}
+            style={{ maxWidth: 200 }}
+            onKeyDown={handleKeyDown}
+          />
+          <button
+            className="btn btn-primary fw-bold"
+            onClick={handleSearch}
+            disabled={loading}
+            style={{ minWidth: 120 }}
+          >
+            {loading ? "Tražim..." : "Traži"}
+          </button>
+        </div>
 
-      <div className="input-group mb-3">
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Unesite OIB (11 znakova)"
-          value={oib}
-          onChange={(e) => setOib(e.target.value)}
-          maxLength={11}
-        />
-        <button
-          className="btn btn-primary"
-          onClick={handleSearch}
-          disabled={loading}
-        >
-          {loading ? "Tražim..." : "Traži"}
-        </button>
-      </div>
-
-      {company && (
-        <div className="card">
-          <div className="card-body">
-            <h5>{company.skracene_tvrtke?.[0]?.ime || company.tvrtke?.[0]?.ime || "Nema naziva"}</h5>
-            <p><strong>OIB:</strong> {company.oib || "Nema podataka"}</p>
-            <p><strong>Adresa:</strong> {formatAddress(company.sjedista)}</p>
-            <p><strong>Temeljni kapital:</strong> {formatKapital(company.temeljni_kapitali)}</p>
-            <p><strong>Status postupka:</strong> {company.postupci?.[0]?.vrsta?.znacenje || "Nema podataka"}</p>
-            <p>
+        {company && (
+          <div className="card card-compact p-3 mt-2 mb-2">
+            <h5 className="fw-bold mb-2">
+              {company.skracene_tvrtke?.[0]?.ime || company.tvrtke?.[0]?.ime || "Nema naziva"}
+            </h5>
+            <div className="mb-1"><strong>OIB:</strong> {company.oib || "Nema podataka"}</div>
+            <div className="mb-1"><strong>Adresa:</strong> {formatAddress(company.sjedista)}</div>
+            <div className="mb-1"><strong>Temeljni kapital:</strong> {formatKapital(company.temeljni_kapitali)}</div>
+            <div className="mb-1"><strong>Status postupka:</strong> {company.postupci?.[0]?.vrsta?.znacenje || "Nema podataka"}</div>
+            <div className="mb-1">
               <strong>Datum osnivanja:</strong>{" "}
               {company.datum_osnivanja
                 ? new Date(company.datum_osnivanja).toLocaleDateString("hr-HR")
                 : "Nema podataka"}
-            </p>
-            <p><strong>Email:</strong> {company.email_adrese?.[0]?.adresa || "Nema podataka"}</p>
-            <div>
+            </div>
+            <div className="mb-1"><strong>Email:</strong> {company.email_adrese?.[0]?.adresa || "Nema podataka"}</div>
+            <div className="mb-1">
               <strong>Djelatnosti:</strong>
               {formatActivities(company.evidencijske_djelatnosti)}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

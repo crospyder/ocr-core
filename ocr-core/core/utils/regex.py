@@ -10,22 +10,31 @@ DOC_NUMBER_PATTERNS = [
     r"\bOTP.?BR\.?\s*([A-Z0-9\-\/]+)",
     r"\bBROJ\s*[:\-]?\s*([A-Z0-9\-\/]+)",
     r"\bINVOICE\s*(NO\.?|#)?[:\s]*([A-Z0-9\-\/]+)",
-    r"\b([0-9]{3,6}/[A-Z0-9]{2,6}/[0-9]{1,6})\b",
-    r"\b([A-Z]{2,4}-[0-9]{4}-[0-9]{3,})\b",
-    r"\b([0-9]{6,})\b",
+    r"\bRA[CĆ]UN[- ]?OTPREMNICA\s*([A-Z0-9\-\/]+)",               # Račun-otpremnica + broj
+    r"\bRA[CĆ]UN([A-Z0-9\-\/]+)",                               # Račun odmah iza broja, bez razmaka
+    r"\bINV(OICE)?[-\s]*#?\s*([A-Z0-9\-\/]+)",                  # skraćeno INV ili INVOICE s # ili razmakom
+    r"\bFAKTURA\s*#?\s*([A-Z0-9\-\/]+)",                        # Faktura + broj (hrv)
+    r"\b([A-Z]{2,4}-[0-9]{3,6}[-\/]?[0-9]{0,6})\b",            # Prefiks broj, tip npr. AB-1234-56 ili AB1234
+    r"\b([0-9]{3,6}\/[A-Z0-9]{2,6}\/[0-9]{1,6})\b",             # već imaš ovaj
+    r"\b([0-9]{6,})\b",                                         # brojevi od 6+ znamenki
 ]
 
 def extract_doc_number(text: str) -> str | None:
     for pattern in DOC_NUMBER_PATTERNS:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            # Uzimamo zadnju grupu koja je najčešće broj računa
             return match.group(match.lastindex or 0).strip()
     return None
 
 OIB_PATTERN = r"\b[0-9]{11}\b"
 
 def extract_oib(text: str) -> str | None:
+    # Prvo pokušaj pronaći HR OIB s prefiksom HR u tekstu (npr. HR10238889600)
+    hr_oib_match = re.search(r"HR(\d{11})", text, re.IGNORECASE)
+    if hr_oib_match:
+        return hr_oib_match.group(1)
+
+    # Fallback na samo niz od 11 znamenki
     matches = re.findall(OIB_PATTERN, text)
     if not matches:
         return None

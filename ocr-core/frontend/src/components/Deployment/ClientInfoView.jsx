@@ -66,12 +66,10 @@ export default function ClientInfoView() {
 
     try {
       if (client) {
-        // Update postojećeg klijenta PUT na /api/client/info
         const res = await axios.put("/api/client/info", formData);
         setClient(res.data);
         toast.success("Podaci klijenta su ažurirani.");
       } else {
-        // Kreiraj novog klijenta POST na /api/client/info
         const res = await axios.post("/api/client/info", formData);
         setClient(res.data);
         toast.success("Klijent uspješno kreiran.");
@@ -93,116 +91,37 @@ export default function ClientInfoView() {
   }
 
   return (
-    <div className="card mt-4 p-4">
+    <div className="card card-compact shadow p-4 mt-2">
       {editMode ? (
         <>
-          <h4>Konfiguracija klijenta</h4>
+          <h4 className="fw-bold mb-3">Konfiguracija klijenta</h4>
           <form onSubmit={handleSubmit} className="row g-3">
-            <div className="col-md-4">
-              <label className="form-label">Naziv firme *</label>
-              <input
-                type="text"
-                name="naziv_firme"
-                value={formData.naziv_firme}
-                onChange={handleChange}
-                className="form-control"
-                required
-              />
-            </div>
-            <div className="col-md-4">
-              <label className="form-label">OIB *</label>
-              <input
-                type="text"
-                name="oib"
-                value={formData.oib}
-                onChange={handleChange}
-                className="form-control"
-                required
-              />
-            </div>
-            <div className="col-md-4">
-              <label className="form-label">DB Name *</label>
-              <input
-                type="text"
-                name="db_name"
-                value={formData.db_name}
-                onChange={handleChange}
-                className="form-control"
-                required
-              />
-            </div>
+            {[
+              { label: "Naziv firme *", name: "naziv_firme", type: "text", required: true, col: "col-md-4" },
+              { label: "OIB *", name: "oib", type: "text", required: true, col: "col-md-4" },
+              { label: "DB Name *", name: "db_name", type: "text", required: true, col: "col-md-4" },
+              { label: "Broj licenci", name: "broj_licenci", type: "number", min: 1, col: "col-md-6" },
+              { label: "Adresa", name: "adresa", type: "text", col: "col-md-6" },
+              { label: "Kontakt osoba", name: "kontakt_osoba", type: "text", col: "col-md-6" },
+              { label: "Email", name: "email", type: "email", col: "col-md-6" },
+              { label: "Telefon", name: "telefon", type: "text", col: "col-md-6" },
+              { label: "Licenca početak", name: "licenca_pocetak", type: "date", col: "col-md-6" },
+              { label: "Licenca kraj", name: "licenca_kraj", type: "date", col: "col-md-6" },
+            ].map(({ label, name, type, required, min, col }) => (
+              <div key={name} className={col}>
+                <label className="form-label">{label}</label>
+                <input
+                  type={type}
+                  name={name}
+                  value={formData[name]}
+                  onChange={handleChange}
+                  className="form-control"
+                  required={required}
+                  min={min}
+                />
+              </div>
+            ))}
 
-            <div className="col-md-6">
-              <label className="form-label">Broj licenci</label>
-              <input
-                type="number"
-                min="1"
-                name="broj_licenci"
-                value={formData.broj_licenci}
-                onChange={handleChange}
-                className="form-control"
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Adresa</label>
-              <input
-                type="text"
-                name="adresa"
-                value={formData.adresa}
-                onChange={handleChange}
-                className="form-control"
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Kontakt osoba</label>
-              <input
-                type="text"
-                name="kontakt_osoba"
-                value={formData.kontakt_osoba}
-                onChange={handleChange}
-                className="form-control"
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="form-control"
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Telefon</label>
-              <input
-                type="text"
-                name="telefon"
-                value={formData.telefon}
-                onChange={handleChange}
-                className="form-control"
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Licenca početak</label>
-              <input
-                type="date"
-                name="licenca_pocetak"
-                value={formData.licenca_pocetak}
-                onChange={handleChange}
-                className="form-control"
-              />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Licenca kraj</label>
-              <input
-                type="date"
-                name="licenca_kraj"
-                value={formData.licenca_kraj}
-                onChange={handleChange}
-                className="form-control"
-              />
-            </div>
             <div className="col-md-6">
               <label className="form-label">Status licence</label>
               <select
@@ -225,7 +144,7 @@ export default function ClientInfoView() {
         </>
       ) : (
         <>
-          <h4>Podaci o licenciranom korisniku</h4>
+          <h4 className="fw-bold mb-3">Podaci o licenciranom korisniku</h4>
           <p><strong>Naziv firme:</strong> {client.naziv_firme}</p>
           <p><strong>OIB:</strong> {client.oib}</p>
           <p><strong>DB Name:</strong> {client.db_name}</p>

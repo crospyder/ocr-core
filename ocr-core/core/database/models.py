@@ -46,6 +46,7 @@ class Document(Base):
     parsed = Column(JSON, nullable=True)
     doc_number = Column(String(255), nullable=True)  # Broj računa
     hash = Column(String(64), unique=True, index=True, nullable=True)  # <--- hash polje
+    predlozi_izbacivanje = Column(Boolean, default=False)
 
 
 class User(Base):
@@ -109,3 +110,14 @@ class MailProcessed(Base):
     processed_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     status = Column(String(50), nullable=False, default="processed")
     mail_account = relationship("MailAccount")
+
+class Account(Base):
+    __tablename__ = "accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(255), nullable=False, unique=True)
+    email = Column(String(255), nullable=False, unique=True)
+    oib = Column(String(11), nullable=False, unique=True)
+    fiskalizacija_certifikat = Column(String, nullable=True)
+    rok_placanja_dana = Column(Integer, default=8)
+    # dodaj ostala polja ako ih ima

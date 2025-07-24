@@ -1,7 +1,8 @@
+// #DocumentStats.jsx
 import React, { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-const COLORS = ["#28a745", "#007bff", "#ffc107", "#17a2b8"]; // zelena, plava, zlatna, tirkizna
+const COLORS = ["#28a745", "#007bff", "#ffc107", "#17a2b8"];
 
 export default function DocumentStats() {
   const [stats, setStats] = useState(null);
@@ -22,7 +23,7 @@ export default function DocumentStats() {
 
   if (!stats)
     return (
-      <div className="document-stats-widget card" style={{ minHeight: 300 }}>
+      <div className="card document-stats-widget" style={{ minHeight: 300 }}>
         <div className="card-body text-muted">Učitavanje statistike...</div>
       </div>
     );
@@ -33,13 +34,9 @@ export default function DocumentStats() {
   }));
 
   return (
-    <div className="document-stats-widget card">
+    <div className="card document-stats-widget">
       <div className="card-body">
-        <h5 className="mb-4 page-title" style={{ color: "#232d39" }}>
-          📦 Statistika dokumenata i diska
-        </h5>
-
-        <div className="stats-summary d-flex justify-content-around mb-4 flex-wrap">
+        <div className="stats-summary d-flex justify-around mb-4 flex-wrap gap-4">
           <div className="text-center" style={{ minWidth: 120 }}>
             <div className="fw-bold" style={{ fontSize: "2.2rem", color: "#28a745" }}>
               {stats.total_documents}
@@ -53,7 +50,6 @@ export default function DocumentStats() {
             <div className="text-muted small mt-1">Obrađeni (OCR)</div>
           </div>
         </div>
-
         <ul className="list-unstyled small mb-4 text-secondary document-stats-list">
           <li>
             <strong>PDF ukupno:</strong> {stats.total_pdf_size_mb} MB
@@ -62,7 +58,6 @@ export default function DocumentStats() {
             <strong>Slobodan prostor:</strong> {stats.free_space_mb} MB
           </li>
         </ul>
-
         {pieData.length > 0 && (
           <div style={{ width: "100%", height: 250 }}>
             <ResponsiveContainer>
