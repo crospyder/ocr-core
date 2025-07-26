@@ -48,26 +48,26 @@ export default function DocumentDetail() {
   }, [id]);
 
   async function handleSaveTags(tags) {
-  setSaving(true);
-  try {
-    let amountStr = tags.amount || "";
-    amountStr = amountStr.toString().replace(",", ".");
-    let amountNum = parseFloat(amountStr);
-    const amount = !isNaN(amountNum) ? Number(amountNum.toFixed(2)) : 0;
+    setSaving(true);
+    try {
+      let amountStr = tags.amount || "";
+      amountStr = amountStr.toString().replace(/\./g, "").replace(",", ".");
+      let amountNum = parseFloat(amountStr);
+      const amount = !isNaN(amountNum) ? amountNum : 0;
 
-    const filteredTags = {
-      document_type: tags.document_type,
-      invoice_number: tags.invoice_number,
-      date_invoice: tags.date_invoice,
-      date_valute: tags.date_valute,
-      amount: amount,
-      oib: tags.oib,
-      supplier_name_ocr: tags.supplier_name_ocr,
-      supplier_oib: tags.supplier_oib,
-      partner_name: tags.partner_name,
-    };
+      const filteredTags = {
+        document_type: tags.document_type,
+        invoice_number: tags.invoice_number,
+        date_invoice: tags.date_invoice,
+        date_valute: tags.date_valute, // Dodano polje datum valute
+        amount: amount,
+        oib: tags.oib,
+        supplier_name_ocr: tags.supplier_name_ocr,
+        supplier_oib: tags.supplier_oib,
+        partner_name: tags.partner_name,
+      };
 
-    console.log("📤 Sending to backend:", filteredTags);
+      console.log("📤 Sending to backend:", filteredTags);
 
       const res = await fetch(`/api/annotations/${id}`, {
         method: "POST",

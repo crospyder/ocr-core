@@ -1,7 +1,8 @@
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, WebSocket, Depends
 from sqlalchemy.orm import Session
-from core.database.connection import SessionMain
+from core.database.connection import SessionMain, get_db
 from core.database.models import Document, Client
+from core.crud.settings import get_setting
 import httpx
 import asyncio
 import logging
@@ -11,7 +12,13 @@ import re
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-REMOTE_MODEL_URL = "http://192.168.100.53:9000/classify"
+def get_model_server_url(db: Session):
+    ip_setting = get_setting(db, "model_server_ip")
+    port_setting = get_setting(db, "model_server_port")
+    ip = ip_setting.value if ip_setting else "127.0.0.1"
+    port = port_setting.value if port_setting else "9000"
+    return f"http://{ip}:{port}/classify"
+
 LABELS = ["IZVOD", "UGOVOR", "URA", "IRA", "OSTALO"]
 BATCH_SIZE = 100
 HEURISTIKA_URA_IRA_THRESHOLD = 0.07
@@ -67,6 +74,17 @@ def sadrzi_rijec_ugovor(text):
     pattern = re.compile(r"\bugovor\w*\b", re.IGNORECASE)
     return bool(pattern.search(text))
 
+INDEX_TO_LABEL = {
+    "0": "IZVOD",
+    "1": "UGOVOR",
+    "2": "URA",
+    "3": "IRA",
+    "4": "OSTALO"
+}
+
+def normalize(text: str) -> str:
+    return re.sub(r'\W+', '', text).lower()
+
 @router.websocket("/ws/validate-progress")
 async def websocket_validate_progress(websocket: WebSocket):
     await websocket.accept()
@@ -90,6 +108,11 @@ async def websocket_validate_progress(websocket: WebSocket):
 
         total_labels = []
 
+        remote_model_url = get_model_server_url(db)
+
+        firma_norm = normalize(moja_firma)
+        oib_norm = normalize(moj_oib)
+
         for i in range(0, total, BATCH_SIZE):
             batch = documents[i:i+BATCH_SIZE]
             batch_labels = []
@@ -106,14 +129,16 @@ async def websocket_validate_progress(websocket: WebSocket):
                         "label_examples": label_examples
                     }
 
-                    resp = await client.post(REMOTE_MODEL_URL, json=payload)
+                    resp = await client.post(remote_model_url, json=payload)
                     result = resp.json()
+
+                    best_label_raw = result.get("best_label", "OSTALO")
+                    top_label = INDEX_TO_LABEL.get(best_label_raw, "OSTALO")
 
                     label_scores = result.get("label_scores", {})
                     ura_score = label_scores.get("URA", 0)
                     ira_score = label_scores.get("IRA", 0)
 
-                    top_label = result.get("best_label", "OSTALO")
                     if top_label in ["URA", "IRA"] and abs(ura_score - ira_score) < HEURISTIKA_URA_IRA_THRESHOLD:
                         poz_heur = heuristika_pozicija_firme(text_to_classify, moja_firma, moj_oib, top_n=TOP_N)
                         if poz_heur:
@@ -123,14 +148,12 @@ async def websocket_validate_progress(websocket: WebSocket):
                             if heuristika:
                                 top_label = heuristika
 
-                # Provjera domaćeg OIB-a za određene vrste, flag za izbacivanje
-                if top_label in ["URA", "IRA", "UGOVOR"]:
-                    if moja_firma.lower() not in text_to_classify.lower() and moj_oib not in text_to_classify:
-                        top_label = "NEPOZNATO"
-                        doc.predlozi_izbacivanje = True
-                        await websocket.send_text(f"Dokument ID {doc.id} predložen za izbacivanje - nema domaći OIB.")
-                    else:
-                        doc.predlozi_izbacivanje = False
+                # Stroža provjera: oba moraju biti u tekstu (naziv firme i OIB)
+                tekst_norm = normalize(text_to_classify)
+                if firma_norm not in tekst_norm or oib_norm not in tekst_norm:
+                    top_label = "NEPOZNATO"
+                    doc.predlozi_izbacivanje = True
+                    await websocket.send_text(f"Dokument ID {doc.id} predložen za izbacivanje - nedostaje naziv firme ili OIB.")
                 else:
                     doc.predlozi_izbacivanje = False
 
@@ -140,7 +163,6 @@ async def websocket_validate_progress(websocket: WebSocket):
                 count_validated += 1
                 logger.info(f"Doc ID {doc.id} klasificiran kao {top_label}")
 
-                # Pošalji najnoviji log na vrh
                 await websocket.send_text(f"[{count_validated}/{total}] Dokument ID {doc.id} klasificiran kao {top_label}")
 
                 await asyncio.sleep(0.01)

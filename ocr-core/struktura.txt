@@ -1,437 +1,94 @@
-.
-├── alembic
-│   ├── env.py
-│   ├── __pycache__
-│   │   └── env.cpython-311.pyc
-│   ├── README
-│   ├── script.py.mako
-│   └── versions
-│       ├── 0a546d706120_initial_migration.py
-│       └── __pycache__
-├── alembic.ini
-├── backend
-│   └── data
-│       └── uploads
-├── core
-│   ├── clients
-│   │   └── management.py
-│   ├── data
-│   │   └── uploads
-│   ├── database
-│   │   ├── connection.py
-│   │   ├── models.py
-│   │   └── __pycache__
-│   ├── init_app.py
-│   ├── main.py
-│   ├── models
-│   ├── ocr
-│   │   └── __pycache__
-│   ├── parsers
-│   │   ├── __pycache__
-│   │   ├── supplier_extractor.py
-│   │   └── ura_parser.py
-│   ├── __pycache__
-│   │   ├── init_app.cpython-311.pyc
-│   │   └── main.cpython-311.pyc
-│   ├── requirements.txt
-│   ├── routes
-│   │   ├── admin.py
-│   │   ├── annotations.py
-│   │   ├── clients.py
-│   │   ├── documents.py
-│   │   ├── __init__.py
-│   │   ├── logs.py
-│   │   ├── __pycache__
-│   │   ├── upload.py
-│   │   └── users.py
-│   ├── schemas
-│   │   ├── clients.py
-│   │   ├── documents.py
-│   │   ├── __pycache__
-│   │   └── users.py
-│   ├── struktura.txt
-│   ├── tests
-│   │   └── test_main.py
-│   └── To
-├── frontend
-│   ├── images
-│   │   └── logo-spineict.png
-│   ├── index.html
-│   ├── main.css
-│   ├── main.jsx
-│   ├── node_modules
-│   │   ├── @ampproject
-│   │   ├── @babel
-│   │   ├── bootstrap
-│   │   ├── browserslist
-│   │   ├── caniuse-lite
-│   │   ├── clsx
-│   │   ├── convert-source-map
-│   │   ├── cookie
-│   │   ├── debug
-│   │   ├── electron-to-chromium
-│   │   ├── @esbuild
-│   │   ├── esbuild
-│   │   ├── escalade
-│   │   ├── gensync
-│   │   ├── @jridgewell
-│   │   ├── jsesc
-│   │   ├── json5
-│   │   ├── js-tokens
-│   │   ├── loose-envify
-│   │   ├── lru-cache
-│   │   ├── lucide-react
-│   │   ├── ms
-│   │   ├── nanoid
-│   │   ├── node-releases
-│   │   ├── picocolors
-│   │   ├── @popperjs
-│   │   ├── postcss
-│   │   ├── react
-│   │   ├── react-dom
-│   │   ├── react-refresh
-│   │   ├── react-router
-│   │   ├── react-router-dom
-│   │   ├── react-toastify
-│   │   ├── @rolldown
-│   │   ├── rollup
-│   │   ├── scheduler
-│   │   ├── semver
-│   │   ├── set-cookie-parser
-│   │   ├── source-map-js
-│   │   ├── @types
-│   │   ├── update-browserslist-db
-│   │   ├── vite
-│   │   ├── @vitejs
-│   │   └── yallist
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── postcss.config.cjs
-│   ├── src
-│   │   ├── App.jsx
-│   │   └── components
-│   ├── struktura.txt
-│   └── vite.config.js
-├── gitpush.sh
-├── modules
-│   ├── ocr_processing
-│   │   ├── config.py
-│   │   ├── routes
-│   │   └── workers
-│   ├── sudreg_api
-│   │   ├── client.py
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   ├── schemas.py
-│   │   └── utils.py
-│   └── uploads
-├── node_modules
-│   ├── @ampproject
-│   │   └── remapping
-│   ├── @babel
-│   │   ├── code-frame
-│   │   ├── compat-data
-│   │   ├── core
-│   │   ├── generator
-│   │   ├── helper-compilation-targets
-│   │   ├── helper-module-imports
-│   │   ├── helper-module-transforms
-│   │   ├── helper-plugin-utils
-│   │   ├── helpers
-│   │   ├── helper-string-parser
-│   │   ├── helper-validator-identifier
-│   │   ├── helper-validator-option
-│   │   ├── parser
-│   │   ├── plugin-transform-react-jsx-self
-│   │   ├── plugin-transform-react-jsx-source
-│   │   ├── template
-│   │   ├── traverse
-│   │   └── types
-│   ├── browserslist
-│   │   ├── browser.js
-│   │   ├── cli.js
-│   │   ├── error.d.ts
-│   │   ├── error.js
-│   │   ├── index.d.ts
-│   │   ├── index.js
-│   │   ├── LICENSE
-│   │   ├── node.js
-│   │   ├── package.json
-│   │   ├── parse.js
-│   │   └── README.md
-│   ├── caniuse-lite
-│   │   ├── data
-│   │   ├── dist
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── convert-source-map
-│   │   ├── index.js
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── debug
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   ├── README.md
-│   │   └── src
-│   ├── electron-to-chromium
-│   │   ├── chromium-versions.js
-│   │   ├── chromium-versions.json
-│   │   ├── full-chromium-versions.js
-│   │   ├── full-chromium-versions.json
-│   │   ├── full-versions.js
-│   │   ├── full-versions.json
-│   │   ├── index.js
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   ├── README.md
-│   │   ├── versions.js
-│   │   └── versions.json
-│   ├── @esbuild
-│   │   └── linux-x64
-│   ├── esbuild
-│   │   ├── bin
-│   │   ├── install.js
-│   │   ├── lib
-│   │   ├── LICENSE.md
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── escalade
-│   │   ├── dist
-│   │   ├── index.d.mts
-│   │   ├── index.d.ts
-│   │   ├── license
-│   │   ├── package.json
-│   │   ├── readme.md
-│   │   └── sync
-│   ├── fdir
-│   │   ├── dist
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── gensync
-│   │   ├── index.js
-│   │   ├── index.js.flow
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   ├── README.md
-│   │   └── test
-│   ├── globals
-│   │   ├── globals.json
-│   │   ├── index.js
-│   │   ├── license
-│   │   ├── package.json
-│   │   └── readme.md
-│   ├── @jridgewell
-│   │   ├── gen-mapping
-│   │   ├── resolve-uri
-│   │   ├── set-array
-│   │   ├── sourcemap-codec
-│   │   └── trace-mapping
-│   ├── jsesc
-│   │   ├── bin
-│   │   ├── jsesc.js
-│   │   ├── LICENSE-MIT.txt
-│   │   ├── man
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── json5
-│   │   ├── dist
-│   │   ├── lib
-│   │   ├── LICENSE.md
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── js-tokens
-│   │   ├── CHANGELOG.md
-│   │   ├── index.js
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── lru-cache
-│   │   ├── index.js
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── ms
-│   │   ├── index.js
-│   │   ├── license.md
-│   │   ├── package.json
-│   │   └── readme.md
-│   ├── nanoid
-│   │   ├── async
-│   │   ├── bin
-│   │   ├── index.browser.cjs
-│   │   ├── index.browser.js
-│   │   ├── index.cjs
-│   │   ├── index.d.cts
-│   │   ├── index.d.ts
-│   │   ├── index.js
-│   │   ├── LICENSE
-│   │   ├── nanoid.js
-│   │   ├── non-secure
-│   │   ├── package.json
-│   │   ├── README.md
-│   │   └── url-alphabet
-│   ├── node-releases
-│   │   ├── data
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── picocolors
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   ├── picocolors.browser.js
-│   │   ├── picocolors.d.ts
-│   │   ├── picocolors.js
-│   │   ├── README.md
-│   │   └── types.d.ts
-│   ├── picomatch
-│   │   ├── index.js
-│   │   ├── lib
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   ├── posix.js
-│   │   └── README.md
-│   ├── postcss
-│   │   ├── lib
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── react-refresh
-│   │   ├── babel.js
-│   │   ├── cjs
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   ├── README.md
-│   │   └── runtime.js
-│   ├── @rolldown
-│   │   └── pluginutils
-│   ├── @rollup
-│   │   ├── rollup-linux-x64-gnu
-│   │   └── rollup-linux-x64-musl
-│   ├── rollup
-│   │   ├── dist
-│   │   ├── LICENSE.md
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── semver
-│   │   ├── bin
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   ├── range.bnf
-│   │   ├── README.md
-│   │   └── semver.js
-│   ├── source-map-js
-│   │   ├── lib
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   ├── README.md
-│   │   ├── source-map.d.ts
-│   │   └── source-map.js
-│   ├── tinyglobby
-│   │   ├── dist
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   └── README.md
-│   ├── @types
-│   │   ├── babel__core
-│   │   ├── babel__generator
-│   │   ├── babel__template
-│   │   ├── babel__traverse
-│   │   └── estree
-│   ├── update-browserslist-db
-│   │   ├── check-npm-version.js
-│   │   ├── cli.js
-│   │   ├── index.d.ts
-│   │   ├── index.js
-│   │   ├── LICENSE
-│   │   ├── package.json
-│   │   ├── README.md
-│   │   └── utils.js
-│   ├── vite
-│   │   ├── bin
-│   │   ├── client.d.ts
-│   │   ├── dist
-│   │   ├── LICENSE.md
-│   │   ├── misc
-│   │   ├── package.json
-│   │   ├── README.md
-│   │   └── types
-│   ├── @vitejs
-│   │   └── plugin-react
-│   └── yallist
-│       ├── iterator.js
-│       ├── LICENSE
-│       ├── package.json
-│       ├── README.md
-│       └── yallist.js
-├── README.md
-├── requirements.txt
-├── struktura.txt
-├── todo.txt
-├── uploads
-│   ├── 07aca1b1150f4dcdb76241d68de4105b.pdf
-│   ├── 0e3bd4d2758045659892ba84b590a72f.pdf
-│   ├── 0f5c4c0697be4b16935d11d4507d3772.pdf
-│   ├── 185a1080d90342ada7cddeff6f9f7d75.pdf
-│   ├── 258a9ed03f2c4555ac86016a7c182a1f.pdf
-│   ├── 2f83a12dad174a668b48b3ef910543ad.pdf
-│   ├── 37e7b93771c0459e8fac225ae62b73b7.pdf
-│   ├── 37f317b1a4244783970d12310bb868a5.pdf
-│   ├── 451e8ff0228e43c58b8c1681b3b0644d.pdf
-│   ├── 4dfbd8f65e99490ea4453db964362953.pdf
-│   ├── 512fbbf6e5f749a1a4140ef8ef4db0db.pdf
-│   ├── 5919037778ed402a847e47d89409979d.pdf
-│   ├── 604dba02285d49608dff2e0de90cc07d.pdf
-│   ├── 65eaac235452407fbc2ef6a30d0e3d92.pdf
-│   ├── 7a8b20d514fd4a0a963f0d41ad8160f8.pdf
-│   ├── 84d870a7c937412890fcb1eed21ae96b.pdf
-│   ├── 89315c5f906c48909160efad748838b7.pdf
-│   ├── 936eba3f4752468f96b85ba6b5e6a4df.pdf
-│   ├── 9cfa9744e9c24e3c9fcb0648cb516f1b.pdf
-│   ├── a605dfc4c00d4080965f5843733da22b.pdf
-│   ├── b567cd834c4b4dc19d22fd57d5c19a87.pdf
-│   ├── b90b36944f554ca3b31dee2fd543db5b.pdf
-│   ├── bf511eff6d43465689e85d65c272821a.pdf
-│   ├── c0d0feb5774c4d71a604a05bc4467b59.pdf
-│   ├── ca200886bcec4b8c9edff95a4f017d54.pdf
-│   ├── ce9400edec914dc98f4663faf5beeb76.pdf
-│   ├── d2d45d80dfad4abb96f73272812890c3.pdf
-│   ├── d56e074a9db94639b0fbfba386af205a.pdf
-│   ├── d6275f5884c4480ea43cc1aa311ffb2b.pdf
-│   ├── d8f4761b7180427e8f0237b5afabf944.pdf
-│   ├── f22bfca61ca248fbb18beb85f1f50ed7.pdf
-│   ├── f8d7e69ba6b847b6ad7907b30e9b3179.pdf
-│   ├── f97dc4808a244e268a78f9baa8487b31.pdf
-│   └── fbf2a17add014dc281e92fa335a6f8a0.pdf
-└── venv
-    ├── bin
-    │   ├── activate
-    │   ├── activate.csh
-    │   ├── activate.fish
-    │   ├── Activate.ps1
-    │   ├── dotenv
-    │   ├── fastapi
-    │   ├── normalizer
-    │   ├── pip
-    │   ├── pip3
-    │   ├── pip3.11
-    │   ├── pymupdf
-    │   ├── pytesseract
-    │   ├── python -> python3
-    │   ├── python3 -> /usr/bin/python3
-    │   ├── python3.11 -> python3
-    │   ├── uvicorn
-    │   ├── watchfiles
-    │   ├── websockets
-    │   └── wheel
-    ├── include
-    │   ├── python3.11
-    │   └── site
-    ├── lib
-    │   └── python3.11
-    ├── lib64 -> lib
-    └── pyvenv.cfg
+AI model server: 192.168.100.53
+DMS server: 192.168.100.252  – backend port 8000
+                           – frontend port 5173
 
-190 directories, 245 files
+Struktura
+
+OCR CORE
+
+ocr-core/core
+├── init_app.py
+├── main.py
+├── deployment.py
+├── clients
+│   └── management.py
+├── database
+│   ├── connection.py
+│   └── models.py
+├── data
+│   └── uploads
+├── routes
+│   ├── admin.py
+│   ├── annotations.py
+│   ├── client_info.py
+│   ├── clients.py
+│   ├── documents.py
+│   ├── logs.py
+│   ├── partneri.py
+│   ├── upload.py
+│   └── users.py
+├── parsers
+│   ├── barcode_scanner.py
+│   ├── dispatcher.py
+│   ├── ira_parser.py
+│   ├── izvod_parser.py
+│   ├── ugovor_parser.py
+│   ├── ura_parser.py
+│   └── supplier_extractor.py
+├── schemas
+│   ├── client_info.py
+│   ├── clients.py
+│   ├── documents.py
+│   └── users.py
+├── search
+│   └── elasticsearch_sync.py
+├── modules
+│   ├── ocr_processing
+│   │   ├── config.py
+│   │   ├── routes/upload.py
+│   │   └── workers/engine.py
+│   └── sudreg_api
+│       ├── client.py
+│       ├── schemas.py
+│       └── utils.py
+└── tests
+    └── test_main.py
+
+ocr-core/frontend/src
+├── App.jsx
+├── index.html
+├── main.css
+├── main.jsx
+├── components
+│   ├── AdminPanel.jsx
+│   ├── DocumentCard.jsx
+│   ├── SearchPage.jsx
+│   ├── Breadcrumbs.jsx
+│   ├── LoadingModal.jsx
+│   ├── Sidebar.jsx
+│   ├── DocumentsUpload.jsx
+│   ├── OcrTextTagger.jsx
+│   ├── DocumentDetail.jsx
+│   ├── PdfViewer.jsx
+│   ├── Topbar.jsx
+│   ├── Footer.jsx
+│   ├── Layout.jsx
+│   ├── Deployment
+│   │   ├── ClientUpload.jsx
+│   │   └── ClientInfoView.jsx
+│   ├── dashboard
+│   │   ├── BarChart.jsx
+│   │   ├── DocumentStats.jsx
+│   │   ├── RecentDocuments.jsx
+│   │   └── Dashboard.jsx
+│   └── pages
+│       ├── Upload.jsx
+│       ├── documents
+│       │   ├── DocumentsTable.jsx
+│       │   └── DocumentsFilter.jsx
+│       ├── Partneri.jsx
+│       ├── Documents.jsx
+│       ├── Deployment.jsx
+│       └── PartnerDocuments.jsx
+└── images
+    └── logo-spineict.png

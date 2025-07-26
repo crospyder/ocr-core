@@ -208,46 +208,57 @@ function DocumentTable({ documents, updatingDocId, updateDocumentType, deleteDoc
       </thead>
       <tbody>
         {documents.map((doc) => (
-          <tr key={doc.id}>
-            <td>{doc.partner_name_ocr || "-"}</td>
-            <td>{doc.id}</td>
-            <td>
-              <a href={`/documents/${doc.id}`} target="_blank" rel="noreferrer">
-                {doc.filename}
-              </a>
-            </td>
-            <td>
-              <span className={TAG_CLASSES[doc.document_type] || "doc-tag"}>
-                {doc.document_type}
-              </span>
-            </td>
-            <td className="table-actions d-flex gap-1">
-              <button
-                className="btn btn-sm btn-success"
-                onClick={() => updateDocumentType(doc.id, doc.document_type)}
-                disabled={updatingDocId === doc.id}
-                title="Ispravno"
-              >
-                Ispravno
-              </button>
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={() => handleEdit(doc.id)}
-                disabled={updatingDocId === doc.id}
-                title="Uredi"
-              >
-                Uredi
-              </button>
-              <button
-                className="btn btn-sm btn-danger"
-                onClick={() => deleteDocument(doc.id)}
-                disabled={updatingDocId === doc.id}
-                title="Obriši"
-              >
-                Obriši
-              </button>
-            </td>
-          </tr>
+          <React.Fragment key={doc.id}>
+            <tr>
+              <td>{doc.partner_name_ocr || "-"}</td>
+              <td>{doc.id}</td>
+              <td>
+                <a href={`/documents/${doc.id}`} target="_blank" rel="noreferrer">
+                  {doc.filename}
+                </a>
+              </td>
+              <td>
+                <span className={TAG_CLASSES[doc.document_type] || "doc-tag"}>
+                  {doc.document_type}
+                </span>
+              </td>
+              <td className="table-actions d-flex gap-1">
+                <button
+                  className="btn btn-sm btn-success"
+                  onClick={() => updateDocumentType(doc.id, doc.document_type)}
+                  disabled={updatingDocId === doc.id}
+                  title="Ispravno"
+                >
+                  Ispravno
+                </button>
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={() => handleEdit(doc.id)}
+                  disabled={updatingDocId === doc.id}
+                  title="Uredi"
+                >
+                  Uredi
+                </button>
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={() => deleteDocument(doc.id)}
+                  disabled={updatingDocId === doc.id}
+                  title="Obriši"
+                >
+                  Obriši
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={5} style={{ paddingLeft: 50 }}>
+                {doc.predlozi_izbacivanje ? (
+                  <span style={{ color: "red", fontWeight: "bold" }}>⚠️ Nije razriješeno</span>
+                ) : (
+                  <span style={{ color: "green", fontWeight: "bold" }}>✔️ Razriješeno</span>
+                )}
+              </td>
+            </tr>
+          </React.Fragment>
         ))}
       </tbody>
     </table>

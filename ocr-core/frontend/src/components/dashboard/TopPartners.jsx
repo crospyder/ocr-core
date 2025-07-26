@@ -1,4 +1,3 @@
-// #TopPartners.jsx
 import React, { useEffect, useState } from "react";
 
 export default function TopPartners() {
@@ -18,13 +17,18 @@ export default function TopPartners() {
     fetchPartners();
   }, []);
 
+  if (partners.length === 0) {
+    return (
+      <div className="card card-compact">
+        <div className="card-body text-muted small">Nema podataka za prikaz.</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="top-partners-widget card h-100">
-      <div className="card-body">
-        <ul className="list-unstyled">
-          {partners.length === 0 && (
-            <li className="text-muted">Nema podataka za prikaz.</li>
-          )}
+    <div className="card card-compact h-100">
+      <div className="card-body p-3">
+        <ul className="list-unstyled mb-0">
           {partners.map((p, i) => (
             <li key={i} className="top-partner-item">
               <span>

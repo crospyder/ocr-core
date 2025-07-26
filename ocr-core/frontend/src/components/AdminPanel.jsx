@@ -1,126 +1,264 @@
-// #AdminPanel.jsx
 import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 import { toast } from "react-toastify";
+import ClientInfoView from "./Deployment/ClientInfoView";
+import MailSettingsView from "./Deployment/MailSettingsView";
 
-// --- LIVE AI trening log widget (WebSocket direktno na inference server) ---
-function TrainingLogWidget() {
+// --- Toggle switch component ---
+function TrainingModeSwitch({ value, onChange, loading }) {
+  return (
+    <div className="training-switch-wrap mb-2">
+      <label className="training-switch-label" style={{ userSelect: "none" }}>
+        <input
+          type="checkbox"
+          checked={!!value}
+          disabled={loading}
+          onChange={e => onChange(e.target.checked)}
+          autoComplete="off"
+        />
+        <span className="training-switch-slider"></span>
+        <span className="training-switch-text" style={{ marginLeft: 8 }}>
+          {value ? "Trening MOD UKLJUČEN" : "Trening MOD ISKLJUČEN"}
+        </span>
+      </label>
+    </div>
+  );
+}
+
+// --- LIVE AI trening log widget ---
+function TrainingLogWidget({ wsUrl }) {
   const [logs, setLogs] = useState([]);
   const wsRef = useRef(null);
 
   useEffect(() => {
-    // PAZI: prilagodi IP/port svom inference serveru!
-    wsRef.current = new window.WebSocket("ws://192.168.100.53:9000/ws/training-logs");
+    if (!wsUrl) return;
+    wsRef.current = new window.WebSocket(wsUrl);
     wsRef.current.onmessage = (e) => {
       setLogs((prev) => [...prev, e.data]);
     };
     return () => wsRef.current && wsRef.current.close();
-  }, []);
+  }, [wsUrl]);
 
   return (
-    <div className="card p-2 mb-2" style={{ maxHeight: 300, overflowY: "auto", fontFamily: "monospace", fontSize: 13 }}>
+    <div className="ai-log-box mt-3">
       <b>Trening log:</b>
-      <div>
+      <div className="ai-log-entries" style={{ maxHeight: 200, overflowY: "auto" }}>
         {logs.length === 0
-          ? <em style={{ color: "#888" }}>Nema logova...</em>
-          : logs.map((log, i) => <div key={i}>{log}</div>)
+          ? <em>Nema logova...</em>
+          : logs.map((log, i) => <div key={i} style={{ fontSize: 13 }}>{log}</div>)
         }
       </div>
     </div>
   );
 }
 
-export default function AdminPanel() {
-  const [users, setUsers] = useState([]);
+// --- DATABASE INFO WIDGET ---
+function DatabaseInfoView() {
+  const [info, setInfo] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [newUser, setNewUser] = useState({ username: "", role: "user" });
-  const [editingUser, setEditingUser] = useState(null);
-
-  // --- Train Model button state
-  const [trainLoading, setTrainLoading] = useState(false);
-  const [trainMsg, setTrainMsg] = useState("");
 
   useEffect(() => {
-    fetchUsers();
-    // eslint-disable-next-line
+    async function fetchDb() {
+      setLoading(true);
+      try {
+        const res = await axios.get("/api/admin/database-info");
+        setInfo(res.data);
+      } catch {
+        toast.error("Greška kod dohvaćanja informacija o bazi.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDb();
   }, []);
 
-  async function fetchUsers() {
-    setLoading(true);
+  if (loading) return <div className="p-2">Učitavanje...</div>;
+  if (!info) return <div className="alert alert-warning">Nema podataka o bazi.</div>;
+
+  return (
+    <div className="card card-compact shadow p-2 mt-2" style={{ maxWidth: 620, margin: "0 auto" }}>
+      <h4 className="fw-bold mb-3">Baza podataka</h4>
+      <div className="mb-2"><b>Naziv baze:</b> {info.db_name}</div>
+      <div className="mb-2"><b>Veličina baze:</b> {info.db_size}</div>
+      <div className="mb-2"><b>Korisnika u bazi:</b> {info.user_count}</div>
+      <div className="mb-2"><b>Tablice:</b></div>
+      <ul style={{ paddingLeft: 16, marginTop: 0 }}>
+        {info.tables?.map(tbl => <li key={tbl}>{tbl}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+// --- ML METRICS COMPONENT ---
+function MlMetrics({ metrics }) {
+  if (!metrics) return null;
+
+  return (
+    <div className="card card-compact mt-3 p-3" style={{ backgroundColor: "#222b45", color: "white", borderRadius: 8 }}>
+      <h3>Analitički podaci o modelu</h3>
+      <p><strong>Accuracy:</strong> {metrics.accuracy ?? "N/A"}</p>
+      <p><strong>Loss:</strong> {metrics.loss ?? "N/A"}</p>
+      <p><strong>Training time (s):</strong> {metrics.training_time_seconds ?? "N/A"}</p>
+      <p><strong>Epochs:</strong> {metrics.epochs ?? "N/A"}</p>
+
+      <h4>Precision po klasama:</h4>
+      <ul>
+        {Object.entries(metrics.precision ?? {}).map(([cls, val]) => (
+          <li key={cls}>{cls}: {val}</li>
+        ))}
+      </ul>
+
+      <h4>Recall po klasama:</h4>
+      <ul>
+        {Object.entries(metrics.recall ?? {}).map(([cls, val]) => (
+          <li key={cls}>{cls}: {val}</li>
+        ))}
+      </ul>
+
+      <h4>F1-score po klasama:</h4>
+      <ul>
+        {Object.entries(metrics.f1_score ?? {}).map(([cls, val]) => (
+          <li key={cls}>{cls}: {val}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// --- REGEX EDITOR ---
+function RegexEditor() {
+  const [regexContent, setRegexContent] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    async function fetchRegex() {
+      setLoading(true);
+      try {
+        const res = await axios.get("/api/regex-config");
+        setRegexContent(JSON.stringify(res.data, null, 2));
+      } catch {
+        toast.error("Greška pri dohvaćanju regex konfiguracije.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRegex();
+  }, []);
+
+  async function handleSave() {
+    setSaving(true);
     try {
-      const res = await fetch("/api/admin/users");
-      if (!res.ok) throw new Error("Greška pri dohvatu korisnika");
-      const data = await res.json();
-      setUsers(data);
-    } catch (err) {
-      toast.error(err.message);
+      let regexContentParsed;
+      try {
+        regexContentParsed = JSON.parse(regexContent);
+      } catch {
+        toast.error("Regex konfiguracija nije validan JSON!");
+        setSaving(false);
+        return;
+      }
+      await axios.post("http://192.168.100.53:9000/api/regex-config", { regex: JSON.stringify(regexContentParsed) });
+      toast.success("Regex konfiguracija spremljena.");
+    } catch {
+      toast.error("Greška pri spremanju regex konfiguracije.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
 
-  async function handleAddUser() {
-    if (!newUser.username) {
-      toast.warning("Unesi korisničko ime");
-      return;
+  return (
+    <div className="card p-3" style={{ maxWidth: 800, margin: "0 auto" }}>
+      <h3>Regex Editor</h3>
+      {loading ? (
+        <div>Učitavanje...</div>
+      ) : (
+        <>
+          <textarea
+            style={{ width: "100%", height: 400, fontFamily: "monospace", fontSize: 14 }}
+            value={regexContent}
+            onChange={e => setRegexContent(e.target.value)}
+          />
+          <button
+            className="btn btn-primary mt-2"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? "Spremanje..." : "Spremi regex"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// --- TABS ---
+const TABS = [
+  { key: "ai", label: "AI Trening" },
+  { key: "client", label: "Podaci o korisniku" },
+  { key: "mail", label: "Mail postavke" },
+  { key: "db", label: "Baza podataka" },
+  { key: "regex", label: "Regex Editor" },
+];
+
+export default function AdminPanel() {
+  const [activeTab, setActiveTab] = useState("ai");
+  const [trainLoading, setTrainLoading] = useState(false);
+  const [trainMsg, setTrainMsg] = useState("");
+  const [settings, setSettings] = useState({
+    model_server_ip: "",
+    model_server_port: ""
+  });
+  const [trainingMode, setTrainingMode] = useState(false);
+  const [trainingModeLoading, setTrainingModeLoading] = useState(false);
+  const [metrics, setMetrics] = useState(null);
+
+  useEffect(() => {
+    axios.get("/api/settings/training-mode")
+      .then(res => setTrainingMode(res.data.enabled))
+      .catch(() => setTrainingMode(false));
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "ai") {
+      fetchMetrics();
     }
+  }, [activeTab]);
+
+  async function fetchMetrics() {
     try {
-      const res = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser),
-      });
-      if (!res.ok) throw new Error("Greška pri dodavanju korisnika");
-      setNewUser({ username: "", role: "user" });
-      fetchUsers();
-      toast.success("Korisnik uspješno dodan");
-    } catch (err) {
-      toast.error(err.message);
+      const modelServerUrl = `http://${settings.model_server_ip || "192.168.100.53"}:${settings.model_server_port || "9000"}`;
+      const res = await fetch(`${modelServerUrl}/api/ml/metrics`);
+      if (!res.ok) throw new Error("Nema metrika");
+      const data = await res.json();
+      setMetrics(data);
+    } catch (e) {
+      console.error("Fetch metrics error:", e);
+      setMetrics(null);
     }
   }
 
-  async function handleDeleteUser(id) {
-    if (!window.confirm("Jeste li sigurni da želite obrisati korisnika?")) return;
+  async function handleToggleTrainingMode(enabled) {
+    setTrainingModeLoading(true);
     try {
-      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Greška pri brisanju korisnika");
-      fetchUsers();
-      toast.success("Korisnik obrisan");
-    } catch (err) {
-      toast.error(err.message);
+      await axios.patch("/api/settings/training-mode", { enabled });
+      setTrainingMode(enabled);
+      toast.success(enabled ? "Trening mod uključen" : "Trening mod isključen");
+    } catch {
+      toast.error("Greška kod promjene trening moda");
+    } finally {
+      setTrainingModeLoading(false);
     }
   }
 
-  async function handleUpdateUser() {
-    if (!editingUser.username) {
-      toast.warning("Unesi korisničko ime");
-      return;
-    }
-    try {
-      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingUser),
-      });
-      if (!res.ok) throw new Error("Greška pri ažuriranju korisnika");
-      setEditingUser(null);
-      fetchUsers();
-      toast.success("Korisnik ažuriran");
-    } catch (err) {
-      toast.error(err.message);
-    }
-  }
-
-  // --- Treniranje modela AI tipka ---
   async function handleTrainModel() {
     setTrainLoading(true);
     setTrainMsg("");
     try {
-      // ADAPT URL ako inference nije na backend serveru!
-      const res = await fetch("http://192.168.100.53:9000/api/train_model", {
-        method: "POST",
-      });
+      const url = `http://${settings.model_server_ip || "192.168.100.53"}:${settings.model_server_port || "9000"}/api/train_model`;
+      const res = await fetch(url, { method: "POST" });
       const data = await res.json();
       setTrainMsg(data.message || "Treniranje pokrenuto!");
+      await fetchMetrics();
     } catch (err) {
       setTrainMsg("Greška pri treniranju: " + err.message);
     } finally {
@@ -128,148 +266,70 @@ export default function AdminPanel() {
     }
   }
 
-  return (
-    <div className="container mt-2">
-      {/* --- Novi korisnik --- */}
-      <div className="card card-compact mb-2">
-        <div className="card-header">Dodaj novog korisnika</div>
-        <div className="d-flex gap-2 align-center flex-wrap">
-          <input
-            type="text"
-            placeholder="Korisničko ime"
-            value={newUser.username}
-            onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-            className="form-control w-auto"
-            style={{ minWidth: 180, marginBottom: 0 }}
-          />
-          <select
-            value={newUser.role}
-            onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-            className="form-select w-auto"
-            style={{ minWidth: 120, marginBottom: 0 }}
-          >
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-            <option value="master">Master</option>
-          </select>
-          <button className="btn btn-success btn-sm" onClick={handleAddUser}>
-            Dodaj korisnika
-          </button>
-        </div>
-      </div>
-
-      {/* --- Popis korisnika --- */}
-      <div className="card card-compact mb-2">
-        <div className="card-header">Popis korisnika</div>
-        {loading ? (
-          <div className="p-2 text-muted">Učitavanje...</div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table table-hover table-striped">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Korisničko ime</th>
-                  <th>Uloga</th>
-                  <th>Akcije</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>
-                      {editingUser?.id === user.id ? (
-                        <input
-                          className="form-control"
-                          value={editingUser.username}
-                          onChange={(e) =>
-                            setEditingUser({ ...editingUser, username: e.target.value })
-                          }
-                          style={{ minWidth: 110, marginBottom: 0 }}
-                        />
-                      ) : (
-                        user.username
-                      )}
-                    </td>
-                    <td>
-                      {editingUser?.id === user.id ? (
-                        <select
-                          className="form-select"
-                          value={editingUser.role}
-                          onChange={(e) =>
-                            setEditingUser({ ...editingUser, role: e.target.value })
-                          }
-                          style={{ minWidth: 80, marginBottom: 0 }}
-                        >
-                          <option value="user">User</option>
-                          <option value="admin">Admin</option>
-                          <option value="master">Master</option>
-                        </select>
-                      ) : (
-                        <span className={`badge badge-${user.role === "master" ? "danger" : user.role === "admin" ? "success" : "secondary"}`}>
-                          {user.role}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      {editingUser?.id === user.id ? (
-                        <>
-                          <button
-                            className="btn btn-success btn-xs me-2"
-                            onClick={handleUpdateUser}
-                          >
-                            Spremi
-                          </button>
-                          <button
-                            className="btn btn-secondary btn-xs"
-                            onClick={() => setEditingUser(null)}
-                          >
-                            Odustani
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            className="btn btn-warning btn-xs me-2"
-                            onClick={() => setEditingUser(user)}
-                          >
-                            Uredi
-                          </button>
-                          <button
-                            className="btn btn-danger btn-xs"
-                            onClick={() => handleDeleteUser(user.id)}
-                          >
-                            Obriši
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+  function renderTabContent() {
+    switch (activeTab) {
+      case "ai":
+        return (
+          <div className="container">
+            <div className="card card-compact mb-4 p-4" style={{ background: "#20294a", color: "#f5f5f7" }}>
+              <TrainingModeSwitch
+                value={trainingMode}
+                onChange={handleToggleTrainingMode}
+                loading={trainingModeLoading}
+              />
+              <button
+                className="btn btn-primary"
+                onClick={handleTrainModel}
+                disabled={trainLoading}
+                style={{ minWidth: 270, fontSize: 20, fontWeight: 600, margin: "18px 0 8px 0" }}
+              >
+                {trainLoading ? "Treniranje..." : "Pokreni treniranje AI modela"}
+              </button>
+              {trainMsg && (
+                <div style={{ color: "#8cf", marginTop: 6, fontSize: 16, fontWeight: 500 }}>{trainMsg}</div>
+              )}
+              <TrainingLogWidget wsUrl={wsUrl} />
+              <MlMetrics metrics={metrics} />
+            </div>
           </div>
-        )}
-      </div>
+        );
+      case "client":
+        return <ClientInfoView />;
+      case "mail":
+        return <MailSettingsView />;
+      case "db":
+        return <DatabaseInfoView />;
+      case "regex":
+        return <RegexEditor />;
+      default:
+        return null;
+    }
+  }
 
-      {/* --- Pokreni treniranje AI modela --- */}
-      <div className="card card-compact mb-3 p-3" style={{background: "#20294a"}}>
-        <button
-          className="btn btn-primary"
-          onClick={handleTrainModel}
-          disabled={trainLoading}
-          style={{ minWidth: 180 }}
-        >
-          {trainLoading ? "Treniranje..." : "Pokreni treniranje AI modela"}
-        </button>
-        {trainMsg && (
-          <div style={{ color: "#8cf", marginTop: 8, fontSize: 15 }}>{trainMsg}</div>
-        )}
-      </div>
+  const wsUrl = settings.model_server_ip && settings.model_server_port
+    ? `ws://${settings.model_server_ip}:${settings.model_server_port}/ws/training-logs`
+    : "ws://192.168.100.53:9000/ws/training-logs";
 
-      {/* --- Live AI trening log --- */}
-      <TrainingLogWidget />
+  return (
+    <div className="container mt-2 mb-3" style={{ maxWidth: 1100 }}>
+      <h2 className="mb-3">Admin Panel</h2>
+      <div className="custom-tabs mb-4" role="tablist" aria-label="Admin Panel tabs">
+        {TABS.map(tab => (
+          <button
+            key={tab.key}
+            className={`custom-tab${activeTab === tab.key ? " active" : ""}`}
+            onClick={() => setActiveTab(tab.key)}
+            role="tab"
+            aria-selected={activeTab === tab.key}
+            tabIndex={activeTab === tab.key ? 0 : -1}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <section role="tabpanel">
+        {renderTabContent()}
+      </section>
     </div>
   );
 }

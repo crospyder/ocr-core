@@ -48,7 +48,6 @@ class Document(Base):
     hash = Column(String(64), unique=True, index=True, nullable=True)  # <--- hash polje
     predlozi_izbacivanje = Column(Boolean, default=False)
 
-
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -113,7 +112,6 @@ class MailProcessed(Base):
 
 class Account(Base):
     __tablename__ = "accounts"
-
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(255), nullable=False, unique=True)
     email = Column(String(255), nullable=False, unique=True)
@@ -121,3 +119,10 @@ class Account(Base):
     fiskalizacija_certifikat = Column(String, nullable=True)
     rok_placanja_dana = Column(Integer, default=8)
     # dodaj ostala polja ako ih ima
+
+# --- NOVI MODEL ZA APP SETTINGS ---
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, unique=True, index=True, nullable=False)
+    value = Column(JSON, nullable=False)

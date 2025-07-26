@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -56,14 +56,14 @@ export default function MailSettingsView() {
   const handleTestSettings = async () => {
     setTesting(true);
     setTestResult(null);
-
     try {
       const response = await axios.post("/api/mail_accounts/test", formData);
       setTestResult({ success: true, message: response.data.message });
       toast.success(response.data.message);
     } catch (error) {
-      setTestResult({ success: false, message: error.response?.data?.detail || "Testiranje nije uspjelo" });
-      toast.error(error.response?.data?.detail || "Testiranje nije uspjelo");
+      const msg = error.response?.data?.detail || "Testiranje nije uspjelo";
+      setTestResult({ success: false, message: msg });
+      toast.error(msg);
     } finally {
       setTesting(false);
     }
@@ -78,33 +78,35 @@ export default function MailSettingsView() {
       setSaved(true);
       setTestResult(null);
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Greška pri spremanju mail postavki.");
+      const msg = error.response?.data?.detail || "Greška pri spremanju mail postavki.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="card card-compact shadow p-4 mt-2">
-      <h4 className="fw-bold mb-3">Mail postavke - IMAP</h4>
-      <form onSubmit={handleSubmit} className="row g-3">
+    <div className="mail-settings-card">
+      <h3 className="mail-settings-title">Mail postavke - IMAP</h3>
+      <form onSubmit={handleSubmit} className="mail-settings-form">
         {[
-          { label: "Ime računa *", name: "name", type: "text", required: true, col: "col-md-6" },
-          { label: "Provider (npr. Gmail, Office365)", name: "provider", type: "text", col: "col-md-6" },
-          { label: "Email adresa *", name: "email", type: "email", required: true, col: "col-md-6" },
-          { label: "IMAP Server *", name: "imap_server", type: "text", required: true, col: "col-md-6" },
-          { label: "IMAP Port *", name: "imap_port", type: "number", required: true, col: "col-md-3", min: 1, max: 65535 },
-          { label: "Korisničko ime *", name: "username", type: "text", required: true, col: "col-md-6" },
-          { label: "Lozinka *", name: "password", type: "password", required: true, col: "col-md-6" },
-        ].map(({ label, name, type, required, col, min, max }) => (
-          <div key={name} className={col}>
-            <label className="form-label">{label}</label>
+          { label: "Ime računa *", name: "name", type: "text", required: true },
+          { label: "Provider (npr. Gmail, Office365)", name: "provider", type: "text" },
+          { label: "Email adresa *", name: "email", type: "email", required: true },
+          { label: "IMAP Server *", name: "imap_server", type: "text", required: true },
+          { label: "IMAP Port *", name: "imap_port", type: "number", required: true, min: 1, max: 65535 },
+          { label: "Korisničko ime *", name: "username", type: "text", required: true },
+          { label: "Lozinka *", name: "password", type: "password", required: true },
+        ].map(({ label, name, type, required, min, max }) => (
+          <div key={name} className="mail-settings-field">
+            <label htmlFor={name} className="mail-settings-label">{label}</label>
             <input
-              type={type}
+              id={name}
               name={name}
+              type={type}
               value={formData[name]}
               onChange={handleChange}
-              className="form-control"
+              className="mail-settings-input"
               required={required}
               min={min}
               max={max}
@@ -114,40 +116,33 @@ export default function MailSettingsView() {
           </div>
         ))}
 
-        <div className="col-md-3 d-flex align-items-center mt-4">
-          <div className="form-check">
+        <div className="mail-settings-checkbox-group">
+          <label className="mail-settings-checkbox-label">
             <input
-              className="form-check-input"
               type="checkbox"
               name="use_ssl"
               checked={formData.use_ssl}
               onChange={handleChange}
-              id="use_ssl"
               disabled={loading || testing}
             />
-            <label className="form-check-label" htmlFor="use_ssl">Koristi SSL/TLS</label>
-          </div>
-        </div>
-
-        <div className="col-md-3 d-flex align-items-center mt-4">
-          <div className="form-check">
+            Koristi SSL/TLS
+          </label>
+          <label className="mail-settings-checkbox-label">
             <input
-              className="form-check-input"
               type="checkbox"
               name="active"
               checked={formData.active}
               onChange={handleChange}
-              id="active"
               disabled={loading || testing}
             />
-            <label className="form-check-label" htmlFor="active">Aktivno</label>
-          </div>
+            Aktivno
+          </label>
         </div>
 
-        <div className="col-12 d-flex justify-content-between mt-3">
+        <div className="mail-settings-actions">
           <button
             type="button"
-            className="btn btn-outline-primary"
+            className="btn btn-outline"
             onClick={handleTestSettings}
             disabled={loading || testing}
           >
@@ -164,13 +159,13 @@ export default function MailSettingsView() {
         </div>
 
         {testResult && (
-          <div className={`alert mt-3 ${testResult.success ? "alert-success" : "alert-danger"}`} role="alert">
+          <div className={`alert ${testResult.success ? "alert-success" : "alert-danger"}`}>
             {testResult.message}
           </div>
         )}
 
         {saved && (
-          <div className="alert alert-info mt-3" role="alert">
+          <div className="alert alert-info">
             Mail postavke su spremljene i spremne za korištenje.
           </div>
         )}

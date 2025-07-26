@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Body, Query, Path
+from io import BytesIO
+from fastapi import APIRouter, Depends, HTTPException, Body, Query, Path, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
 from fastapi.responses import FileResponse
@@ -7,7 +8,7 @@ import os
 import logging
 from sqlalchemy import text, func
 import json
-
+from PyPDF2 import PdfReader
 from core.database.connection import get_db
 from core.database.models import Document, DocumentAnnotation, Partner
 from core.schemas.documents import DocumentOut
@@ -349,3 +350,18 @@ def delete_document(document_id: int = Path(...), db: Session = Depends(get_db))
         db.rollback()
         logging.error(f"Error deleting document {document_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Error deleting document: {e}")
+
+@router.post("/read-pdf-meta")
+async def read_pdf_meta(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Datoteka nije PDF")
+
+    contents = await file.read()
+    try:
+        pdf_file_like = BytesIO(contents)
+        reader = PdfReader(pdf_file_like)
+        meta = reader.metadata or {}
+        meta_dict = {k[1:]: v for k, v in meta.items()}  # ukloni / iz ključeva
+        return {"metadata": meta_dict}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Greška prilikom čitanja metapodataka: {e}")

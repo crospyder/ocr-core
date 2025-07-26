@@ -7,6 +7,7 @@ from logging.handlers import TimedRotatingFileHandler
 import os
 import sys
 from core.routes import settings
+from core.routes import ml_metrics
 from fastapi import FastAPI, Query, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -30,6 +31,10 @@ from modules.ocr_processing.routes import upload as upload_module
 from modules.sudreg_manual import router as sudreg_manual_router
 from core.routes.settings import router as settings_router
 from core.billing import api as billing_api
+from core.routes import regex_config
+from core.routes import finances
+
+ 
 
 LOG_DIR = "./logs"
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -82,6 +87,10 @@ app.include_router(sudreg_manual_router, prefix="/api/tools", tags=["tools"])
 app.include_router(mail_accounts.router, prefix="/api/mail_accounts")
 app.include_router(mail_processing.router)  # router has prefix internally
 app.include_router(billing_api.router, prefix="/billing", tags=["billing"])
+app.include_router(ml_metrics.router)
+app.include_router(regex_config.router, prefix="/api")
+app.include_router(finances.router, prefix="/api")
+
 
 load_module_routers(app)
 

@@ -44,7 +44,7 @@ a:active {
 }
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
-  color: #1c2536;
+  color: ##f7b905;
   margin: 0 0 0.5em 0;
   letter-spacing: 0.01em;
 }
@@ -1806,4 +1806,362 @@ h1, h2, h3, h4, h5, h6 {
   flex: 1 1 100%;
   min-height: 600px;
   margin-top: 1rem;
+}
+
+/*admin panel*/
+.custom-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 18px;
+  background: transparent;
+}
+.custom-tab {
+  background: #232f43;
+  color: #bcd2f9;
+  border: none;
+  padding: 12px 34px 12px 34px;
+  font-size: 17px;
+  font-weight: 600;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  outline: none;
+  border-bottom: 2px solid transparent;
+  transition: background 0.2s, color 0.2s, border-bottom 0.2s;
+}
+.custom-tab.active {
+  background: #162039;
+  color: #fff;
+  border-bottom: 2px solid #4896fa;
+}
+.custom-tab:hover {
+  background: #233459;
+  color: #fff;
+}
+
+/* AI trening log box styling */
+.ai-log-box {
+  background: #1a243b;
+  border-radius: 8px;
+  color: #d2eaff;
+  font-family: monospace;
+  font-size: 13px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid #29467a;
+  margin-bottom: 0;
+}
+.ai-log-entries {
+  color: #89a7d6;
+}
+
+/* --- main.css DODAJ OVO NA KRAJ: --- */
+
+.training-switch-wrap {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+.training-switch-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.training-switch-label input[type="checkbox"] {
+  display: none;
+}
+.training-switch-slider {
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  background: #405cbf;
+  border-radius: 16px;
+  position: relative;
+  transition: background 0.2s;
+}
+.training-switch-label input:checked + .training-switch-slider {
+  background: #24b47e;
+}
+.training-switch-slider:before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  transition: left 0.2s;
+}
+.training-switch-label input:checked + .training-switch-slider:before {
+  left: 19px;
+}
+.training-switch-text {
+  font-size: 14px;
+  color: #11111;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+/* --- kraj css-a --- */
+
+.client-info-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(36,56,93,0.1);
+  padding: 1.8rem 2rem;
+  max-width: 600px;
+  margin: 2rem auto;
+  font-size: 1rem;
+  color: #232a37;
+}
+
+.client-info-title {
+  font-weight: 700;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: #1a82e2;
+}
+
+.client-info-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.2rem 1.6rem;
+}
+
+.client-info-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.client-info-label {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #444;
+}
+
+.client-info-input,
+.client-info-select {
+  padding: 0.55rem 0.9rem;
+  font-size: 1rem;
+  border: 1.5px solid #e0e6f1;
+  border-radius: 8px;
+  background-color: #fefefe;
+  color: #232a37;
+  outline-offset: 2px;
+  transition: border-color 0.2s ease;
+}
+
+.client-info-input:focus,
+.client-info-select:focus {
+  border-color: #1a82e2;
+  box-shadow: 0 0 6px #1a82e2aa;
+}
+
+.client-info-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+  margin-top: 1rem;
+}
+
+.client-info-button {
+  background-color: #1a82e2;
+  color: white;
+  font-weight: 700;
+  border: none;
+  padding: 0.62rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.client-info-button:hover {
+  background-color: #0d5db8;
+}
+
+.client-info-button-secondary {
+  background-color: #e0e6f1;
+  color: #1a82e2;
+}
+
+.client-info-button-secondary:hover {
+  background-color: #c1cee6;
+}
+
+.client-info-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.client-info-view div strong {
+  color: #555;
+  min-width: 140px;
+  display: inline-block;
+}
+
+.client-info-edit-button {
+  margin-top: 1.5rem;
+  background: none;
+  border: none;
+  color: #1a82e2;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1rem;
+  transition: color 0.15s ease;
+}
+
+.client-info-edit-button:hover {
+  color: #0d5db8;
+}
+
+.mail-settings-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(36,56,93,0.1);
+  padding: 1.8rem 2rem;
+  max-width: 600px;
+  margin: 2rem auto;
+  font-size: 1rem;
+  color: #232a37;
+}
+
+.mail-settings-title {
+  font-weight: 700;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: #1a82e2;
+}
+
+.mail-settings-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.2rem 1.6rem;
+}
+
+.mail-settings-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.mail-settings-label {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #444;
+}
+
+.mail-settings-input {
+  padding: 0.55rem 0.9rem;
+  font-size: 1rem;
+  border: 1.5px solid #e0e6f1;
+  border-radius: 8px;
+  background-color: #fefefe;
+  color: #232a37;
+  outline-offset: 2px;
+  transition: border-color 0.2s ease;
+}
+
+.mail-settings-input:focus {
+  border-color: #1a82e2;
+  box-shadow: 0 0 6px #1a82e2aa;
+}
+
+.mail-settings-checkbox-group {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  margin-top: 0.6rem;
+}
+
+.mail-settings-checkbox-label {
+  font-weight: 600;
+  user-select: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #444;
+}
+
+.mail-settings-checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.mail-settings-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+  margin-top: 1.6rem;
+}
+
+.btn {
+  background-color: #1a82e2;
+  color: white;
+  font-weight: 700;
+  border: none;
+  padding: 0.62rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  min-width: 120px;
+  text-align: center;
+  user-select: none;
+}
+
+.btn:hover:not(:disabled),
+.btn:focus:not(:disabled) {
+  background-color: #0d5db8;
+  outline: none;
+}
+
+.btn:disabled {
+  background-color: #a1b5d9;
+  cursor: default;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: #1a82e2;
+  border: 2px solid #1a82e2;
+}
+
+.btn-outline:hover:not(:disabled),
+.btn-outline:focus:not(:disabled) {
+  background-color: #1a82e2;
+  color: white;
+}
+
+.alert {
+  grid-column: 1 / -1;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  user-select: none;
+  margin-top: 1rem;
+}
+
+.alert-success {
+  background-color: #e8f7f0;
+  color: #23a05d;
+}
+
+.alert-danger {
+  background-color: #fae3e7;
+  color: #ea3c52;
+}
+
+.alert-info {
+  background-color: #d9e7fb;
+  color: #1a82e2;
 }

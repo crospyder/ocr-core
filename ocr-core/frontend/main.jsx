@@ -21,6 +21,8 @@ import SearchPage from "./src/components/SearchPage";
 import Validation from "./src/components/pages/Validation.jsx";
 import SudReg_Manual from "./src/components/SudReg_Manual.jsx";
 import MailClients from "./src/components/mail-client.jsx";
+import Settings from "./src/components/pages/Settings.jsx";
+
 
 import BillingRouter from "./billing/router.jsx";
 
@@ -44,6 +46,7 @@ const router = createBrowserRouter([
       { path: "tools/manual-sudreg", element: <SudReg_Manual /> },
       { path: "mail_clients", element: <MailClients /> },
       { path: "billing/*", element: <BillingRouter /> },  // <-- billing ruta dodana
+      { path: "settings", element: <Settings /> },
     ],
   },
 ]);

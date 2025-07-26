@@ -118,3 +118,30 @@ def get_logs(
 
     logs = tail(log_path, lines)
     return {"logs": logs}
+
+from sqlalchemy import text
+
+@router.get("/database-info")
+def database_info(db: Session = Depends(get_db)):
+    db_name = db.execute(text("SELECT current_database()")).scalar()
+    db_size_bytes = db.execute(text(f"SELECT pg_database_size('{db_name}')")).scalar()
+    db_size = sizeof_fmt(db_size_bytes)
+    user_count = db.execute(text("SELECT COUNT(*) FROM users")).scalar()
+    tables = [row[0] for row in db.execute(text("""
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema='public'
+        ORDER BY table_name
+    """)).fetchall()]
+    return {
+        "db_name": db_name,
+        "db_size": db_size,
+        "user_count": user_count,
+        "tables": tables,
+    }
+
+def sizeof_fmt(num, suffix="B"):
+    for unit in ["", "K", "M", "G", "T", "P"]:
+        if abs(num) < 1024.0:
+            return f"{num:3.1f} {unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f} P{suffix}"

@@ -302,6 +302,7 @@ export default function Documents() {
                   <th onClick={() => requestSort("doc_number")} className="sortable">Broj računa</th>
                   <th onClick={() => requestSort("invoice_date")} className="sortable">Datum računa</th>
                   <th onClick={() => requestSort("due_date")} className="sortable">Datum valute</th>
+                  <th onClick={() => requestSort("amount")} className="sortable">Iznos</th>
                 </tr>
               </thead>
               <tbody>
@@ -334,6 +335,7 @@ export default function Documents() {
                     <td>{doc.doc_number || "-"}</td>
                     <td>{doc.invoice_date ? new Date(doc.invoice_date).toLocaleDateString("hr-HR") : "-"}</td>
                     <td>{doc.due_date ? new Date(doc.due_date).toLocaleDateString("hr-HR") : "-"}</td>
+                    <td>{doc.amount !== undefined ? doc.amount : "-"}</td>
                   </tr>
                 ))}
               </tbody>

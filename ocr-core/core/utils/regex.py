@@ -128,3 +128,7 @@ def extract_dates(text: str) -> dict:
 def extract_invoice_date(text: str) -> str | None:
     dates = extract_dates(text)
     return dates.get("invoice_date")
+
+def extract_due_date(text: str) -> str | None:
+    dates = extract_dates(text)
+    return dates.get("due_date")

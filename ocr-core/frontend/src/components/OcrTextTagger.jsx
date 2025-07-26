@@ -1,4 +1,3 @@
-// #OcrTextTagger.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Info } from "lucide-react";
 import { toast } from "react-toastify";
@@ -19,6 +18,7 @@ const TAG_TYPES = [
   { key: "vat", label: "VAT (Strani dobavljač)" },
   { key: "invoice_number", label: "Broj računa" },
   { key: "date_invoice", label: "Datum računa" },
+  { key: "due_date", label: "Datum valute" },
   { key: "amount", label: "Iznos" },
   { key: "supplier_name", label: "Naziv dobavljača" },
   { key: "partner_name", label: "Naziv partnera" },
@@ -26,10 +26,10 @@ const TAG_TYPES = [
 
 // Koja polja prikazati za tip dokumenta
 const fieldsForType = {
-  URA: ["supplier_name", "amount", "date_invoice", "invoice_number", "oib", "euvat", "vat"],
-  IRA: ["partner_name", "amount", "date_invoice", "invoice_number", "oib", "euvat", "vat"],
-  IZVOD: ["amount", "date_invoice", "oib", "euvat", "vat"],
-  UGOVOR: ["partner_name", "date_invoice", "oib", "euvat", "vat"],
+  URA: ["supplier_name", "amount", "date_invoice", "due_date", "invoice_number", "oib", "euvat", "vat"],
+  IRA: ["partner_name", "amount", "date_invoice", "due_date", "invoice_number", "oib", "euvat", "vat"],
+  IZVOD: ["amount", "date_invoice", "due_date", "oib", "euvat", "vat"],
+  UGOVOR: ["partner_name", "date_invoice", "due_date", "oib", "euvat", "vat"],
   OSTALO: ["oib", "euvat", "vat"],
 };
 
@@ -116,6 +116,7 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
           value={documentType}
           onChange={handleTypeChange}
           disabled={loading}
+          aria-label="Tip dokumenta"
         >
           {DOCUMENT_TYPES.map(dt =>
             <option key={dt.key} value={dt.key}>{dt.label}</option>
@@ -158,6 +159,7 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
               onChange={e => handleInputChange(key, e.target.value)}
               placeholder={`Upiši ili označi ${label.toLowerCase()}`}
               disabled={loading}
+              aria-label={label}
             />
             <button
               className="btn btn-secondary btn-xs"
@@ -165,6 +167,8 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
               style={{ minWidth: 102 }}
               onClick={() => handleQuickTag(key)}
               disabled={loading}
+              aria-label={`Preuzmi selekciju za ${label}`}
+              title={`Preuzmi selekciju za ${label}`}
             >
               Preuzmi selekciju
             </button>
@@ -175,6 +179,7 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
                 title="Obriši polje"
                 onClick={() => handleRemove(key)}
                 disabled={loading}
+                aria-label={`Obriši polje ${label}`}
               >
                 &times;
               </button>
@@ -188,6 +193,7 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
         style={{ minWidth: 130 }}
         onClick={handleSave}
         disabled={loading || !tags.document_type}
+        aria-label="Spremi oznake"
       >
         {loading ? "Spremanje..." : "Spremi oznake"}
       </button>

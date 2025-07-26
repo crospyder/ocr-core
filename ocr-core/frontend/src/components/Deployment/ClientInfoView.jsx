@@ -58,12 +58,10 @@ export default function ClientInfoView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!formData.naziv_firme || !formData.oib || !formData.db_name) {
       toast.warn("Molimo ispunite obavezna polja: Naziv, OIB i DB Name.");
       return;
     }
-
     try {
       if (client) {
         const res = await axios.put("/api/client/info", formData);
@@ -91,72 +89,83 @@ export default function ClientInfoView() {
   }
 
   return (
-    <div className="card card-compact shadow p-4 mt-2">
+    <div className="client-info-card">
       {editMode ? (
         <>
-          <h4 className="fw-bold mb-3">Konfiguracija klijenta</h4>
-          <form onSubmit={handleSubmit} className="row g-3">
+          <h3 className="client-info-title">Konfiguracija klijenta</h3>
+          <form onSubmit={handleSubmit} className="client-info-form">
             {[
-              { label: "Naziv firme *", name: "naziv_firme", type: "text", required: true, col: "col-md-4" },
-              { label: "OIB *", name: "oib", type: "text", required: true, col: "col-md-4" },
-              { label: "DB Name *", name: "db_name", type: "text", required: true, col: "col-md-4" },
-              { label: "Broj licenci", name: "broj_licenci", type: "number", min: 1, col: "col-md-6" },
-              { label: "Adresa", name: "adresa", type: "text", col: "col-md-6" },
-              { label: "Kontakt osoba", name: "kontakt_osoba", type: "text", col: "col-md-6" },
-              { label: "Email", name: "email", type: "email", col: "col-md-6" },
-              { label: "Telefon", name: "telefon", type: "text", col: "col-md-6" },
-              { label: "Licenca početak", name: "licenca_pocetak", type: "date", col: "col-md-6" },
-              { label: "Licenca kraj", name: "licenca_kraj", type: "date", col: "col-md-6" },
-            ].map(({ label, name, type, required, min, col }) => (
-              <div key={name} className={col}>
-                <label className="form-label">{label}</label>
+              { label: "Naziv firme *", name: "naziv_firme", type: "text", required: true },
+              { label: "OIB *", name: "oib", type: "text", required: true },
+              { label: "DB Name *", name: "db_name", type: "text", required: true },
+              { label: "Broj licenci", name: "broj_licenci", type: "number", min: 1 },
+              { label: "Adresa", name: "adresa", type: "text" },
+              { label: "Kontakt osoba", name: "kontakt_osoba", type: "text" },
+              { label: "Email", name: "email", type: "email" },
+              { label: "Telefon", name: "telefon", type: "text" },
+              { label: "Licenca početak", name: "licenca_pocetak", type: "date" },
+              { label: "Licenca kraj", name: "licenca_kraj", type: "date" },
+            ].map(({ label, name, type, required, min }) => (
+              <div key={name} className="client-info-field">
+                <label htmlFor={name} className="client-info-label">{label}</label>
                 <input
-                  type={type}
+                  id={name}
                   name={name}
+                  type={type}
                   value={formData[name]}
                   onChange={handleChange}
-                  className="form-control"
+                  className="client-info-input"
                   required={required}
                   min={min}
+                  autoComplete="off"
                 />
               </div>
             ))}
 
-            <div className="col-md-6">
-              <label className="form-label">Status licence</label>
+            <div className="client-info-field">
+              <label htmlFor="status_licence" className="client-info-label">Status licence</label>
               <select
+                id="status_licence"
                 name="status_licence"
                 value={formData.status_licence}
                 onChange={handleChange}
-                className="form-select"
+                className="client-info-select"
               >
                 <option value="active">Active</option>
                 <option value="expired">Expired</option>
                 <option value="suspended">Suspended</option>
               </select>
             </div>
-            <div className="col-12">
-              <button type="submit" className="btn btn-primary mt-3">
-                Spremi podatke
+
+            <div className="client-info-actions">
+              <button type="submit" className="client-info-button">Spremi podatke</button>
+              <button
+                type="button"
+                className="client-info-button client-info-button-secondary"
+                onClick={() => setEditMode(false)}
+              >
+                Odustani
               </button>
             </div>
           </form>
         </>
       ) : (
         <>
-          <h4 className="fw-bold mb-3">Podaci o licenciranom korisniku</h4>
-          <p><strong>Naziv firme:</strong> {client.naziv_firme}</p>
-          <p><strong>OIB:</strong> {client.oib}</p>
-          <p><strong>DB Name:</strong> {client.db_name}</p>
-          <p><strong>Broj licenci:</strong> {client.broj_licenci}</p>
-          <p><strong>Adresa:</strong> {client.adresa || "-"}</p>
-          <p><strong>Kontakt osoba:</strong> {client.kontakt_osoba || "-"}</p>
-          <p><strong>Email:</strong> {client.email || "-"}</p>
-          <p><strong>Telefon:</strong> {client.telefon || "-"}</p>
-          <p><strong>Licenca početak:</strong> {client.licenca_pocetak || "-"}</p>
-          <p><strong>Licenca kraj:</strong> {client.licenca_kraj || "-"}</p>
-          <p><strong>Status licence:</strong> {client.status_licence}</p>
-          <button className="btn btn-link mt-3" onClick={() => setEditMode(true)}>
+          <h3 className="client-info-title">Podaci o licenciranom korisniku</h3>
+          <div className="client-info-view">
+            <div><strong>Naziv firme:</strong> {client.naziv_firme}</div>
+            <div><strong>OIB:</strong> {client.oib}</div>
+            <div><strong>DB Name:</strong> {client.db_name}</div>
+            <div><strong>Broj licenci:</strong> {client.broj_licenci}</div>
+            <div><strong>Adresa:</strong> {client.adresa || "-"}</div>
+            <div><strong>Kontakt osoba:</strong> {client.kontakt_osoba || "-"}</div>
+            <div><strong>Email:</strong> {client.email || "-"}</div>
+            <div><strong>Telefon:</strong> {client.telefon || "-"}</div>
+            <div><strong>Licenca početak:</strong> {client.licenca_pocetak || "-"}</div>
+            <div><strong>Licenca kraj:</strong> {client.licenca_kraj || "-"}</div>
+            <div><strong>Status licence:</strong> {client.status_licence}</div>
+          </div>
+          <button className="client-info-edit-button" onClick={() => setEditMode(true)}>
             Uredi podatke
           </button>
         </>

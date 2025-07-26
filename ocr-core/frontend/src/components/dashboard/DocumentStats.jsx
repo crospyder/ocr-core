@@ -1,8 +1,20 @@
-// #DocumentStats.jsx
 import React, { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-const COLORS = ["#28a745", "#007bff", "#ffc107", "#17a2b8"];
+const statColors = {
+  total_documents: "#28a745",
+  processed_documents: "#007bff",
+  total_pdf_size_gb: "#ffc107",
+  ai_processed_documents: "#17a2b8",
+  free_space_gb: "#17a2b8",
+};
+
+const statLabels = {
+  total_documents: "Ukupno dokumenata",
+  processed_documents: "Obrađeni (OCR)",
+  ai_processed_documents: "Dokumenti obrađeni A.I.-jem",
+  total_pdf_size_gb: "PDF ukupno (GB)",
+  free_space_gb: "Slobodan prostor (GB)",
+};
 
 export default function DocumentStats() {
   const [stats, setStats] = useState(null);
@@ -11,7 +23,7 @@ export default function DocumentStats() {
     async function fetchStats() {
       try {
         const res = await fetch("/api/documents/stats-info");
-        if (!res.ok) throw new Error("Greška pri dohvatu statistike.");
+        if (!res.ok) throw new Error("Greška pri dohvaćanju statistike.");
         const data = await res.json();
         setStats(data);
       } catch (err) {
@@ -21,82 +33,66 @@ export default function DocumentStats() {
     fetchStats();
   }, []);
 
-  if (!stats)
+  if (!stats) {
     return (
-      <div className="card document-stats-widget" style={{ minHeight: 300 }}>
+      <div className="card card-compact" style={{ minHeight: 300 }}>
         <div className="card-body text-muted">Učitavanje statistike...</div>
       </div>
     );
+  }
 
-  const pieData = Object.entries(stats.by_type || {}).map(([type, count]) => ({
-    name: type,
-    value: count,
-  }));
+  const toGB = (mb) => (mb / 1024).toFixed(2);
+
+  const freeSpaceGB = toGB(stats.free_space_mb);
+  const totalPDFGB = toGB(stats.total_pdf_size_mb);
+
+  const statsToShow = [
+    { key: "total_documents", value: stats.total_documents },
+    { key: "processed_documents", value: stats.processed_documents },
+    { key: "ai_processed_documents", value: stats.ai_processed_documents || 0 },
+    { key: "total_pdf_size_gb", value: totalPDFGB },
+    { key: "free_space_gb", value: freeSpaceGB },
+  ];
 
   return (
-    <div className="card document-stats-widget">
-      <div className="card-body">
-        <div className="stats-summary d-flex justify-around mb-4 flex-wrap gap-4">
-          <div className="text-center" style={{ minWidth: 120 }}>
-            <div className="fw-bold" style={{ fontSize: "2.2rem", color: "#28a745" }}>
-              {stats.total_documents}
+    <div className="card card-compact p-3">
+      <div
+        className="stats-grid"
+        style={{
+          display: "flex",
+          gap: "1.2rem",
+          flexWrap: "wrap",
+          justifyContent: "center",
+        }}
+      >
+        {statsToShow.map(({ key, value }) => (
+          <div
+            key={key}
+            className="stat-card"
+            style={{
+              background: statColors[key] + "33",
+              borderRadius: 12,
+              padding: "1.8rem 2rem",
+              flex: "1 1 140px",
+              minWidth: 140,
+              textAlign: "center",
+              boxShadow: "0 2px 8px rgb(36 56 93 / 0.12)",
+            }}
+          >
+            <div
+              className="stat-value fw-bold"
+              style={{ fontSize: "2.6rem", color: statColors[key] }}
+            >
+              {value}
             </div>
-            <div className="text-muted small mt-1">Ukupno dokumenata</div>
-          </div>
-          <div className="text-center" style={{ minWidth: 120 }}>
-            <div className="fw-bold" style={{ fontSize: "2.2rem", color: "#007bff" }}>
-              {stats.processed_documents}
+            <div
+              className="stat-label"
+              style={{ fontWeight: 600, marginTop: 6, color: "#444" }}
+            >
+              {statLabels[key]}
             </div>
-            <div className="text-muted small mt-1">Obrađeni (OCR)</div>
           </div>
-        </div>
-        <ul className="list-unstyled small mb-4 text-secondary document-stats-list">
-          <li>
-            <strong>PDF ukupno:</strong> {stats.total_pdf_size_mb} MB
-          </li>
-          <li>
-            <strong>Slobodan prostor:</strong> {stats.free_space_mb} MB
-          </li>
-        </ul>
-        {pieData.length > 0 && (
-          <div style={{ width: "100%", height: 250 }}>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#f8f9fa",
-                    borderRadius: "8px",
-                    borderColor: "#dee2e6",
-                  }}
-                  itemStyle={{ color: "#232d39", fontWeight: 600 }}
-                />
-                <Legend
-                  layout="horizontal"
-                  verticalAlign="bottom"
-                  align="center"
-                  wrapperStyle={{
-                    marginTop: 12,
-                    fontWeight: 600,
-                    color: "#232d39",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        ))}
       </div>
     </div>
   );
