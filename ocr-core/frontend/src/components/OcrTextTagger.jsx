@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Info } from "lucide-react";
 import { toast } from "react-toastify";
 
-// Tipovi dokumenata
 const DOCUMENT_TYPES = [
   { key: "URA", label: "Ulazni račun (URA)" },
   { key: "IRA", label: "Izlazni račun (IRA)" },
@@ -11,7 +10,6 @@ const DOCUMENT_TYPES = [
   { key: "OSTALO", label: "Ostalo" },
 ];
 
-// Master polja (sve opcije)
 const TAG_TYPES = [
   { key: "oib", label: "OIB (HR)" },
   { key: "euvat", label: "EU VAT (EU dobavljač)" },
@@ -24,7 +22,6 @@ const TAG_TYPES = [
   { key: "partner_name", label: "Naziv partnera" },
 ];
 
-// Koja polja prikazati za tip dokumenta
 const fieldsForType = {
   URA: ["supplier_name", "amount", "date_invoice", "due_date", "invoice_number", "oib", "euvat", "vat"],
   IRA: ["partner_name", "amount", "date_invoice", "due_date", "invoice_number", "oib", "euvat", "vat"],
@@ -42,7 +39,9 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
   }, [initialTags]);
 
   const documentType = tags.document_type || "OSTALO";
-  const activeFields = fieldsForType[documentType] || [];
+  const knownTypes = DOCUMENT_TYPES.map(dt => dt.key);
+  const docTypeKey = knownTypes.includes(documentType) ? documentType : "OSTALO";
+  const activeFields = fieldsForType[docTypeKey] || [];
 
   function getSelectedText() {
     const selection = window.getSelection();
@@ -52,23 +51,34 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
     return selection.toString();
   }
 
+  function normalizeDate(dateStr) {
+    const corrected = dateStr.trim().replace(/\s+/g, "");
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(corrected)) return corrected;
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(corrected + ".")) return corrected + ".";
+    return corrected;
+  }
+
   function handleQuickTag(key) {
     const selected = getSelectedText();
     if (!selected) {
       toast.error("❗ Selektirajte tekst u OCR prikazu!");
       return;
     }
+    const value = key.includes("date") ? normalizeDate(selected) : selected.trim();
+    console.log(`handleQuickTag key=${key} value=${value}`);
     setTags(prev => ({
       ...prev,
-      [key]: selected.trim()
+      [key]: value,
     }));
     window.getSelection().removeAllRanges();
   }
 
   function handleInputChange(key, value) {
+    const cleanValue = key.includes("date") ? normalizeDate(value) : value;
+    console.log(`handleInputChange key=${key} value=${cleanValue}`);
     setTags(prev => ({
       ...prev,
-      [key]: value
+      [key]: cleanValue,
     }));
   }
 
@@ -92,111 +102,104 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
   }
 
   function handleSave() {
+    console.log("handleSave sending tags:", tags);
     if (onSave) onSave(tags);
   }
 
   return (
-    <div>
-      {/* Info */}
-      <div className="card card-compact shadow p-2 mb-3" style={{ background: "#eaf1fb" }}>
-        <div className="d-flex align-center gap-1" style={{ fontSize: "0.96rem", color: "#1976d2" }}>
-          <Info size={18} />
-          <span>
-            Prvo odaberite tip dokumenta. Ovisno o tipu, označite ili upišite važne elemente (OIB, EU VAT, VAT, iznos...) u prikazana polja.
-          </span>
-        </div>
+    <div style={{ background: "#fff", borderRadius: 8, padding: 16, boxShadow: "0 0 6px rgba(0,0,0,0.1)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, color: "#1976d2" }}>
+        <Info size={18} />
+        <span style={{ fontSize: 14 }}>
+          Odaberite tip dokumenta. Ovisno o tipu, označite ili upišite važne elemente (OIB, iznos...) u prikazana polja.
+        </span>
       </div>
 
-      {/* Tip dokumenta */}
-      <div className="mb-3 d-flex align-center gap-2">
+      <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
         <label style={{ minWidth: 120, fontWeight: 600 }}>Tip dokumenta:</label>
         <select
-          className="form-select"
-          style={{ maxWidth: 240, display: "inline-block" }}
-          value={documentType}
+          value={docTypeKey}
           onChange={handleTypeChange}
           disabled={loading}
-          aria-label="Tip dokumenta"
+          style={{ maxWidth: 240, padding: 6, borderRadius: 4, border: "1px solid #ccc" }}
         >
-          {DOCUMENT_TYPES.map(dt =>
+          {DOCUMENT_TYPES.map(dt => (
             <option key={dt.key} value={dt.key}>{dt.label}</option>
-          )}
+          ))}
         </select>
       </div>
 
-      {/* OCR tekst */}
-      <div
-        ref={textRef}
-        className="mb-3"
-        style={{
-          whiteSpace: "pre-wrap",
-          border: "1.3px solid #eaf1fb",
-          padding: "1.1rem",
-          minHeight: "160px",
-          maxHeight: "300px",
-          overflowY: "auto",
-          userSelect: "text",
-          fontFamily: "monospace",
-          fontSize: "1.06rem",
-          lineHeight: "1.45",
-          background: "#fff",
-          borderRadius: "10px",
-        }}
-        tabIndex={0}
-      >
-        {text}
-      </div>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 24 }}>
+        <div
+          ref={textRef}
+          style={{
+            flex: 1,
+            whiteSpace: "pre-wrap",
+            border: "1.3px solid #eaf1fb",
+            padding: "1.1rem",
+            minHeight: "300px",
+            maxHeight: "500px",
+            overflowY: "auto",
+            userSelect: "text",
+            fontFamily: "monospace",
+            fontSize: "1rem",
+            lineHeight: "1.4",
+            background: "#fff",
+            borderRadius: "10px",
+          }}
+          tabIndex={0}
+        >
+          {text}
+        </div>
 
-      {/* Dinamička forma */}
-      <div className="d-flex flex-column gap-2 mb-3">
-        {TAG_TYPES.filter(t => activeFields.includes(t.key)).map(({ key, label }) => (
-          <div className="d-flex align-center gap-1" key={key}>
-            <label style={{ minWidth: 150 }}>{label}:</label>
-            <input
-              className="form-control"
-              style={{ maxWidth: 240 }}
-              value={tags[key] || ""}
-              onChange={e => handleInputChange(key, e.target.value)}
-              placeholder={`Upiši ili označi ${label.toLowerCase()}`}
-              disabled={loading}
-              aria-label={label}
-            />
-            <button
-              className="btn btn-secondary btn-xs"
-              type="button"
-              style={{ minWidth: 102 }}
-              onClick={() => handleQuickTag(key)}
-              disabled={loading}
-              aria-label={`Preuzmi selekciju za ${label}`}
-              title={`Preuzmi selekciju za ${label}`}
-            >
-              Preuzmi selekciju
-            </button>
-            {tags[key] && (
-              <button
-                className="btn btn-danger btn-xs"
-                type="button"
-                title="Obriši polje"
-                onClick={() => handleRemove(key)}
-                disabled={loading}
-                aria-label={`Obriši polje ${label}`}
-              >
-                &times;
-              </button>
-            )}
+        <div style={{ flex: 1, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+          {TAG_TYPES.filter(t => activeFields.includes(t.key)).map(({ key, label }) => (
+            <div key={key}>
+              <div style={{ fontSize: 10, fontWeight: 400, marginBottom: 2 }}>{label}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  style={{ width: 200, padding: 6, border: "1px solid #ccc", borderRadius: 4 }}
+                  value={tags[key] || ""}
+                  onChange={e => handleInputChange(key, e.target.value)}
+                  placeholder={`Upiši ili označi ${label.toLowerCase()}`}
+                  disabled={loading}
+                />
+                <button
+                  onClick={() => handleQuickTag(key)}
+                  disabled={loading}
+                  style={{ padding: "6px 10px", borderRadius: 4, background: "#1976d2", color: "white", border: "none" }}
+                >
+                  Preuzmi
+                </button>
+                {tags[key] && (
+                  <button
+                    onClick={() => handleRemove(key)}
+                    disabled={loading}
+                    style={{ padding: "6px 8px", borderRadius: 4, background: "#d32f2f", color: "white", border: "none" }}
+                    title="Obriši"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          <button
+            onClick={handleSave}
+            disabled={loading || !docTypeKey}
+            style={{ marginTop: 12, alignSelf: "flex-start", padding: "8px 16px", borderRadius: 4, background: "#2e7d32", color: "white", border: "none" }}
+          >
+            {loading ? "Spremanje..." : "Spremi oznake"}
+          </button>
+
+          <div style={{ marginTop: 24, fontSize: 12, color: "#999" }}>
+            <hr style={{ margin: "12px 0" }} />
+            <div><strong>Trenutne oznake (JSON):</strong></div>
+            <pre style={{ fontSize: 11 }}>{JSON.stringify(tags, null, 2)}</pre>
           </div>
-        ))}
+        </div>
       </div>
-
-      <button
-        className="btn btn-primary mt-2"
-        style={{ minWidth: 130 }}
-        onClick={handleSave}
-        disabled={loading || !tags.document_type}
-        aria-label="Spremi oznake"
-      >
-        {loading ? "Spremanje..." : "Spremi oznake"}
-      </button>
     </div>
   );
 }

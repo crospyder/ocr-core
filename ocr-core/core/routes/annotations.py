@@ -1,3 +1,4 @@
+# core/routes/annotations.py
 from fastapi import APIRouter, HTTPException, Depends, Body
 from sqlalchemy.orm import Session
 from typing import Dict, Any
@@ -8,15 +9,17 @@ import logging
 
 router = APIRouter()
 logger = logging.getLogger("annotations")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)  # DEBUG da hvata sve logove
 
 def safe_load_json(data):
     if not data:
+        logger.debug("safe_load_json: empty data, returning empty dict")
         return {}
     try:
         result = json.loads(data)
         if isinstance(result, str):
             result = json.loads(result)
+        logger.debug(f"safe_load_json: parsed data {result}")
         return result
     except Exception as e:
         logger.error(f"JSON parsing error: {e}")
@@ -24,14 +27,14 @@ def safe_load_json(data):
 
 @router.get("/{document_id}")
 def get_annotation(document_id: int, db: Session = Depends(get_db)):
-    logger.info(f"GET /annotations/{document_id}")
+    logger.debug(f"GET /annotations/{document_id} called")
     ann = db.query(DocumentAnnotation).filter(DocumentAnnotation.document_id == document_id).first()
     if not ann or not ann.annotations:
-        logger.info(f"Document {document_id} - no annotation found.")
+        logger.debug(f"Document {document_id} - no annotation found or empty annotations")
         return {"annotations": {}}
     try:
         data = safe_load_json(ann.annotations)
-        logger.info(f"Document {document_id} - annotation loaded: {data}")
+        logger.debug(f"Document {document_id} - loaded annotation: {data}")
         return {"annotations": data}
     except Exception as e:
         logger.error(f"Failed to parse annotation for document {document_id}: {e}")
@@ -43,15 +46,19 @@ def save_annotation(
     annotations: Dict[str, Any] = Body(...),  # Expecting dict
     db: Session = Depends(get_db)
 ):
-    logger.info(f"POST /annotations/{document_id} - data: {annotations}")
+    logger.debug(f"POST /annotations/{document_id} - received data: {annotations}")
     try:
-        # Check if annotation exists in the database
+        # fallback za due_date ako nije poslan ili je prazan
+        if not annotations.get("due_date") and annotations.get("date_invoice"):
+            annotations["due_date"] = annotations["date_invoice"]
+            logger.debug(f"due_date not present, fallback to date_invoice: {annotations['due_date']}")
+
         ann = db.query(DocumentAnnotation).filter(DocumentAnnotation.document_id == document_id).first()
         if not ann:
+            logger.debug(f"No existing annotation for document {document_id}, creating new")
             ann = DocumentAnnotation(document_id=document_id)
             db.add(ann)
 
-        # Save annotations in JSON format
         if isinstance(annotations, dict):
             ann.annotations = json.dumps(annotations, ensure_ascii=False)
         else:
@@ -61,52 +68,52 @@ def save_annotation(
             except Exception:
                 ann.annotations = "{}"
         db.commit()
-        logger.info(f"Annotation for document {document_id} saved.")
+        logger.debug(f"Annotation for document {document_id} saved to DB")
 
-        # Update relevant fields in the documents table based on annotations
         doc = db.query(Document).filter(Document.id == document_id).first()
         if doc:
-            # Mapping for annotations and fields in the documents table
             mapping = {
-                "invoice_number": "doc_number",
-                "date_invoice": "invoice_date",
-                "date_valute": "due_date",
-                "amount": "amount",  # This will be converted
+                "supplier_name": "supplier_name_ocr",
                 "oib": "supplier_oib",
-                "supplier_name": "supplier_name_ocr",  # This is correct for update
+                "date_invoice": "invoice_date",
+                "due_date": "due_date",
+                "invoice_number": "doc_number",
+                "amount": "amount",
             }
 
-            # Update only those fields which are changed
             for ann_field, doc_field in mapping.items():
                 if ann_field in annotations:
                     new_value = annotations[ann_field]
+                    logger.debug(f"Checking field '{ann_field}': new_value={new_value}")
 
-                    # If amount, replace comma with dot
                     if ann_field == "amount" and isinstance(new_value, str):
                         new_value = new_value.replace(",", ".")
+                        logger.debug(f"Normalized amount: {new_value}")
 
-                    # If amount, convert to decimal number
                     if ann_field == "amount":
                         try:
                             new_value = float(new_value)
                         except ValueError:
                             new_value = None
+                        logger.debug(f"Converted amount to float: {new_value}")
 
-                    if getattr(doc, doc_field) != new_value:  # Check if it's new
+                    current_value = getattr(doc, doc_field)
+                    if current_value != new_value:
+                        logger.debug(f"Updating document field '{doc_field}' from '{current_value}' to '{new_value}'")
                         setattr(doc, doc_field, new_value)
 
             db.commit()
-            logger.info(f"Document {document_id} updated with new annotation values.")
+            logger.debug(f"Document {document_id} updated with new annotation values")
 
         return {"status": "ok"}
 
     except Exception as e:
-        logger.error(f"Error saving annotation for document {document_id}: {e}")
+        logger.error(f"Error saving annotation for document {document_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Greška pri spremanju oznaka")
 
 @router.get("/export/all")
 def export_all_annotations(db: Session = Depends(get_db)):
-    logger.info("EXPORT /annotations/export/all")
+    logger.debug("EXPORT /annotations/export/all called")
     records = []
     docs = db.query(DocumentAnnotation).all()
     for ann in docs:
@@ -118,7 +125,7 @@ def export_all_annotations(db: Session = Depends(get_db)):
             row = {}
         row["document_id"] = ann.document_id
         records.append(row)
-    logger.info(f"Exported {len(records)} annotated docs.")
+    logger.debug(f"Exported {len(records)} annotated docs")
     return {"data": records}
 
 print("✅ core/routes/annotations.py loaded")

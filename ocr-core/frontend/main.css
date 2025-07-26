@@ -2165,3 +2165,59 @@ h1, h2, h3, h4, h5, h6 {
   background-color: #d9e7fb;
   color: #1a82e2;
 }
+
+/* main.css dopune */
+
+.document-detail-page {
+  padding: 1.5rem;
+}
+
+.ocr-annotator {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.pdf-container {
+  flex: 1;
+  min-width: 400px;
+  background: #f9f9f9;
+  border: 1px solid #eee;
+  padding: 1rem;
+  border-radius: 12px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.sudreg-container {
+  flex: 1;
+  min-width: 400px;
+  background: #f5f7fa;
+  border: 1px solid #dde3ec;
+  padding: 1rem;
+  border-radius: 12px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+.ocr-textarea {
+  white-space: pre-wrap;
+  border: 1.3px solid #eaf1fb;
+  padding: 1.1rem;
+  min-height: 300px;
+  max-height: 600px;
+  overflow-y: auto;
+  user-select: text;
+  font-family: monospace;
+  font-size: 1.06rem;
+  line-height: 1.45;
+  background: #fff;
+  border-radius: 10px;
+}
+
+.tag-label {
+  min-width: 150px;
+}
+
+.tag-input {
+  max-width: 240px;
+}
