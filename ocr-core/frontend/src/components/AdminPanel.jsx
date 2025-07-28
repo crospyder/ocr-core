@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+
 import ClientInfoView from "./Deployment/ClientInfoView";
 import MailSettingsView from "./Deployment/MailSettingsView";
+import Settings from "./pages/Settings";  // Ispravljena putanja na "pages"
 
-// --- Toggle switch component ---
 function TrainingModeSwitch({ value, onChange, loading }) {
   return (
     <div className="training-switch-wrap mb-2">
@@ -25,7 +26,6 @@ function TrainingModeSwitch({ value, onChange, loading }) {
   );
 }
 
-// --- LIVE AI trening log widget ---
 function TrainingLogWidget({ wsUrl }) {
   const [logs, setLogs] = useState([]);
   const wsRef = useRef(null);
@@ -52,7 +52,6 @@ function TrainingLogWidget({ wsUrl }) {
   );
 }
 
-// --- DATABASE INFO WIDGET ---
 function DatabaseInfoView() {
   const [info, setInfo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -89,7 +88,6 @@ function DatabaseInfoView() {
   );
 }
 
-// --- ML METRICS COMPONENT ---
 function MlMetrics({ metrics }) {
   if (!metrics) return null;
 
@@ -125,7 +123,6 @@ function MlMetrics({ metrics }) {
   );
 }
 
-// --- REGEX EDITOR ---
 function RegexEditor() {
   const [regexContent, setRegexContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -157,7 +154,7 @@ function RegexEditor() {
         setSaving(false);
         return;
       }
-      await axios.post("http://192.168.100.53:9000/api/regex-config", { regex: JSON.stringify(regexContentParsed) });
+      await axios.post("http://10.0.1.6:9000/api/regex-config", { regex: JSON.stringify(regexContentParsed) });
       toast.success("Regex konfiguracija spremljena.");
     } catch {
       toast.error("Greška pri spremanju regex konfiguracije.");
@@ -191,13 +188,13 @@ function RegexEditor() {
   );
 }
 
-// --- TABS ---
 const TABS = [
   { key: "ai", label: "AI Trening" },
   { key: "client", label: "Podaci o korisniku" },
   { key: "mail", label: "Mail postavke" },
   { key: "db", label: "Baza podataka" },
   { key: "regex", label: "Regex Editor" },
+  { key: "settings", label: "Postavke poslužitelja" }, // dodat tab
 ];
 
 export default function AdminPanel() {
@@ -226,7 +223,7 @@ export default function AdminPanel() {
 
   async function fetchMetrics() {
     try {
-      const modelServerUrl = `http://${settings.model_server_ip || "192.168.100.53"}:${settings.model_server_port || "9000"}`;
+      const modelServerUrl = `http://${settings.model_server_ip || "10.0.1.6"}:${settings.model_server_port || "9000"}`;
       const res = await fetch(`${modelServerUrl}/api/ml/metrics`);
       if (!res.ok) throw new Error("Nema metrika");
       const data = await res.json();
@@ -254,7 +251,7 @@ export default function AdminPanel() {
     setTrainLoading(true);
     setTrainMsg("");
     try {
-      const url = `http://${settings.model_server_ip || "192.168.100.53"}:${settings.model_server_port || "9000"}/api/train_model`;
+      const url = `http://${settings.model_server_ip || "10.0.1.6"}:${settings.model_server_port || "9000"}/api/train_model`;
       const res = await fetch(url, { method: "POST" });
       const data = await res.json();
       setTrainMsg(data.message || "Treniranje pokrenuto!");
@@ -301,6 +298,8 @@ export default function AdminPanel() {
         return <DatabaseInfoView />;
       case "regex":
         return <RegexEditor />;
+      case "settings":
+        return <Settings />;
       default:
         return null;
     }
@@ -308,7 +307,7 @@ export default function AdminPanel() {
 
   const wsUrl = settings.model_server_ip && settings.model_server_port
     ? `ws://${settings.model_server_ip}:${settings.model_server_port}/ws/training-logs`
-    : "ws://192.168.100.53:9000/ws/training-logs";
+    : "ws://10.0.1.6:9000/ws/training-logs";
 
   return (
     <div className="container mt-2 mb-3" style={{ maxWidth: 1100 }}>

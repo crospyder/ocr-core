@@ -1,4 +1,3 @@
-// #DocumentsUpload.jsx
 import React, { useState, useRef } from "react";
 import LoadingModal from "./LoadingModal.jsx";
 import { toast } from "react-toastify";
@@ -7,6 +6,7 @@ import { Folder, FileText } from "lucide-react";
 export default function DocumentsUpload({ onFilesSelected, onDebug }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [docType, setDocType] = useState("IRA"); // defaultna vrijednost
   const inputFolderRef = useRef(null);
   const inputFileRef = useRef(null);
 
@@ -22,7 +22,7 @@ export default function DocumentsUpload({ onFilesSelected, onDebug }) {
     e.target.value = null;
 
     if (onFilesSelected) {
-      onFilesSelected(pdfFiles);
+      onFilesSelected(pdfFiles, docType);
     }
   }
 
@@ -34,10 +34,25 @@ export default function DocumentsUpload({ onFilesSelected, onDebug }) {
           Odaberi dokumente za OCR obradu
         </h2>
         <p className="documents-upload-subtitle">
-          Odaberi cijeli folder s dokumentima ili odaberi pojedinačni dokument za daljnju obradu, indeksrianje i pohranu
+          Odaberi cijeli folder s dokumentima ili odaberi pojedinačni dokument za daljnju obradu, indeksiranje i pohranu.
         </p>
 
-        {/* DROPDOWN ZA TIP DOKUMENTA UKLONJEN */}
+        {/* NOVO: Dropdown za vrstu dokumenata */}
+        <div className="mb-3">
+          <label htmlFor="docTypeSelect" className="form-label fw-bold">
+            Vrsta dokumenta:
+          </label>
+          <select
+            id="docTypeSelect"
+            className="form-select"
+            value={docType}
+            onChange={(e) => setDocType(e.target.value)}
+            disabled={loading}
+          >
+            <option value="IRA">IRA (vlastiti računi)</option>
+            <option value="Ulazni dokumenti">Ulazni dokumenti</option>
+          </select>
+        </div>
 
         <div className="documents-upload-custom-file">
           <input
@@ -83,15 +98,15 @@ export default function DocumentsUpload({ onFilesSelected, onDebug }) {
             <h6 className="fw-bold d-flex align-center">
               <span className="ms-1">Lista dokumenata u pripremi za obradu:</span>
             </h6>
-          <ul className="documents-upload-file-list">
-  {files.map((file, idx) => (
-    <li key={idx} className="d-flex align-center mb-1 documents-upload-file-list-item">
-      <span className="documents-upload-file-index me-2">{idx + 1}.</span>
-      <span className="ms-2 me-2">{file.webkitRelativePath || file.name}</span>
-      <span className="text-muted">({(file.size / 1024).toFixed(2)} KB)</span>
-    </li>
-  ))}
-</ul>
+            <ul className="documents-upload-file-list">
+              {files.map((file, idx) => (
+                <li key={idx} className="d-flex align-center mb-1 documents-upload-file-list-item">
+                  <span className="documents-upload-file-index me-2">{idx + 1}.</span>
+                  <span className="ms-2 me-2">{file.webkitRelativePath || file.name}</span>
+                  <span className="text-muted">({(file.size / 1024).toFixed(2)} KB)</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

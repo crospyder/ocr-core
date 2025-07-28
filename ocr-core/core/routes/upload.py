@@ -1,11 +1,3 @@
-"""
-Patched upload route for handling document uploads with improved type safety.
-
-This version includes additional checks to avoid `'str' object has no attribute 'get'`
-errors when dealing with responses from SudReg and VIES APIs or other data
-structures that might sometimes be strings rather than dictionaries.
-"""
-
 import os
 import uuid
 import json
@@ -22,7 +14,7 @@ from core.parsers.dispatcher import dispatch_parser
 from core.database.connection import SessionMain
 from core.database.models import Document, Partner, DocumentAnnotation
 from core.parsers.supplier_extractor import extract_supplier_info
-from core.utils.regex import extract_all_vats, extract_all_oibs, extract_invoice_date, extract_due_date
+from core.utils.regex_common import extract_all_vats, extract_all_oibs, extract_invoice_date, extract_due_date
 from core.routes.oibvalidator import is_valid_oib
 from core.deployment import get_owner_oib
 from modules.ocr_processing.workers.engine import perform_ocr
@@ -30,14 +22,16 @@ from modules.sudreg_api.client import SudregClient
 from core.vies_api.client import ViesClient
 from elasticsearch import Elasticsearch
 
-# Mapping returned numeric labels from the AI model to human-readable document types.
-# Adjust this mapping to match the classes used by your model server.  The keys should
-# correspond to the string numbers returned in `best_label`, and the values are the
-# corresponding document type names (e.g., "URA", "IRA", "OSTALO").
 AI_LABEL_MAPPING: Dict[str, str] = {
     "0": "URA",
     "1": "IRA",
-    "2": "OSTALO",
+    "2": "UGOVOR",
+    "3": "IZVOD",
+    "4": "CESIJA",
+    "5": "IOS",
+    "6": "KONTO_KARTICA",
+    "7": "OSTALO",
+    "NEPOZNATO": "NEPOZNATO"
 }
 
 from PIL.Image import DecompressionBombWarning
@@ -45,6 +39,20 @@ from core.routes.settings import TRAINING_MODE_FLAG
 import tempfile
 import requests
 import csv
+
+def determine_final_document_type(
+    document_type: str,
+    ai_label: Optional[str],
+    text: str,
+) -> str:
+    text_lower = text.lower()
+    if document_type == "IRA":
+        return "IRA"
+    if ai_label and ai_label in AI_LABEL_MAPPING:
+        return AI_LABEL_MAPPING[ai_label]
+    if "račun" in text_lower or "faktura" in text_lower:
+        return "URA"
+    return document_type or "OSTALO"
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -55,7 +63,6 @@ logging.basicConfig(
 es = Elasticsearch(["http://localhost:9200"])
 router = APIRouter()
 
-# Base directory and upload destination
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "uploads"))
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -63,18 +70,13 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 sudreg_client = SudregClient()
 vies_client = ViesClient()
 
-
 def serialize_for_json(obj: Any) -> Any:
-    """
-    Ensure that complex objects (e.g., SudregCompany) are serializable for JSON dumps.
-    """
     from modules.sudreg_api.schemas import SudregCompany
     if isinstance(obj, SudregCompany):
         return obj.dict()
     if hasattr(obj, "dict"):
         return obj.dict()
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
-
 
 def str_to_date(date_str: Optional[str]):
     if not date_str:
@@ -85,10 +87,8 @@ def str_to_date(date_str: Optional[str]):
         logger.error(f"Error parsing date '{date_str}': {e}")
         return None
 
-
 def date_to_str(date_obj):
     return date_obj.strftime("%d.%m.%Y") if date_obj else None
-
 
 def format_address(address_obj):
     if not address_obj:
@@ -101,7 +101,6 @@ def format_address(address_obj):
     if hasattr(address_obj, "mjesto") and address_obj.mjesto:
         parts.append(address_obj.mjesto)
     return ", ".join(parts)
-
 
 def index_to_elasticsearch(doc: Document):
     try:
@@ -121,7 +120,6 @@ def index_to_elasticsearch(doc: Document):
     except Exception as e:
         logger.error(f"ES: Indexing failed for document ID {doc.id}: {e}")
 
-
 def build_auto_annotation_dict(
     document_type: str,
     oib: Optional[str],
@@ -132,10 +130,6 @@ def build_auto_annotation_dict(
     skraceni_naziv: Optional[str],
     supplier_info: Any,
 ) -> Dict[str, Any]:
-    """
-    Build the annotation dictionary used for auto-filling document annotations.
-    Includes checks on supplier_info to avoid attribute errors if supplier_info is a string.
-    """
     supplier_name = skraceni_naziv or (
         supplier_info.get("naziv_firme") if isinstance(supplier_info, dict) else ""
     )
@@ -148,7 +142,6 @@ def build_auto_annotation_dict(
         "invoice_number": doc_number,
         "date_invoice": date_to_str(invoice_date),
         "date_valute": date_to_str(due_date),
-        # fallback to various possible keys
         "amount_total": str(
             parsed_data.get("total")
             or parsed_data.get("iznos")
@@ -157,8 +150,11 @@ def build_auto_annotation_dict(
         ),
         "supplier_name": supplier_name,
         "partner_name": partner_name,
+        # AI notifikacije, ako postoje
+        "ai_suggestion": parsed_data.get("ai_suggestion"),
+        "ai_score": parsed_data.get("ai_score"),
+        "ai_conflict": parsed_data.get("ai_conflict"),
     }
-
 
 def upsert_document_annotations(db: Session, doc_id: int, annotation_dict: Dict[str, Any]) -> None:
     annotation = db.query(DocumentAnnotation).filter(DocumentAnnotation.document_id == doc_id).first()
@@ -173,10 +169,8 @@ def upsert_document_annotations(db: Session, doc_id: int, annotation_dict: Dict[
     db.commit()
     logger.info(f"Annotations auto-filled for document ID {doc_id}")
 
-
 def is_training_mode_enabled() -> bool:
     return TRAINING_MODE_FLAG.get("enabled", False)
-
 
 @router.post("/documents")
 async def upload_documents(
@@ -198,7 +192,6 @@ async def upload_documents(
             logger.info(f"Processing file: {file.filename}")
             ext = os.path.splitext(file.filename)[1]
 
-            # Read entire file in chunks to calculate hash
             hasher = hashlib.sha256()
             content_bytes = b""
             while True:
@@ -225,7 +218,6 @@ async def upload_documents(
                 )
                 continue
 
-            # Save file temporarily under random name
             unique_name = f"{uuid.uuid4().hex}{ext}"
             file_path = os.path.join(UPLOAD_DIR, unique_name)
 
@@ -246,7 +238,7 @@ async def upload_documents(
 
             upload_time = datetime.utcnow()
 
-            # Perform OCR on the saved file
+            # OCR
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter("error", DecompressionBombWarning)
@@ -275,10 +267,9 @@ async def upload_documents(
                 )
                 continue
 
-            # Call external AI model for classification and parsing
+            # AI classification
             ai_classify_result: Dict[str, Any] = {}
             try:
-                # Build URL for model server from settings
                 model_ip_setting = None
                 model_port_setting = None
                 try:
@@ -301,7 +292,6 @@ async def upload_documents(
             except Exception as e:
                 logger.warning(f"AI classification failed: {e}")
 
-            # Normalise classification response into parsed fields and label
             ai_parsed = (
                 ai_classify_result.get("parsed_fields", {})
                 if isinstance(ai_classify_result, dict)
@@ -309,6 +299,11 @@ async def upload_documents(
             )
             ai_label = (
                 ai_classify_result.get("best_label")
+                if isinstance(ai_classify_result, dict)
+                else None
+            )
+            ai_score = (
+                ai_classify_result.get("best_score")
                 if isinstance(ai_classify_result, dict)
                 else None
             )
@@ -326,12 +321,9 @@ async def upload_documents(
                     oib_ai = None
                 oib = oib_ai
 
-            # Invoice number from AI; fallback to invoice number regex patterns
             doc_number = (
                 ai_parsed.get("invoice_number") if isinstance(ai_parsed, dict) else None
             )
-            # Attempt regex fallback using pattern definitions from utils/regex_config.json
-            # (omitted here; can be reintroduced if needed)
 
             invoice_date_str = (
                 ai_parsed.get("date_issued") if isinstance(ai_parsed, dict) else None
@@ -342,7 +334,6 @@ async def upload_documents(
             invoice_date = str_to_date(invoice_date_str)
             due_date = str_to_date(due_date_str)
 
-            # VAT detection
             vat_ai = (
                 ai_parsed.get("vat_number") if isinstance(ai_parsed, dict) else None
             )
@@ -359,24 +350,47 @@ async def upload_documents(
                     filtered_vats = [owner_vat]
                 vat_number = filtered_vats[0] if filtered_vats else None
 
-            # Determine the final document type using AI_LABEL_MAPPING. If the AI returned
-            # a numeric label, map it to the corresponding document type; otherwise
-            # fall back to the provided document_type. Additionally, normalize any
-            # special labels such as "email-prilog" to a known type ("OSTALO").
-            if ai_label:
-                final_document_type = AI_LABEL_MAPPING.get(ai_label, ai_label)
-            else:
-                final_document_type = document_type
-            if final_document_type == "email-prilog":
-                final_document_type = "OSTALO"
+            text_lower = text.lower()
 
-            # Combine regex and AI parsed data
+            # Klasifikacija tipa dokumenta
+            # Ako je korisnik rekao IRA, uvijek ostaje IRA, ali bilježimo AI prijedlog (ako je različit).
+            final_document_type = None
+            ai_conflict = False
+            ai_suggestion = None
+            ai_suggestion_score = None
+
+            if document_type == "IRA":
+                final_document_type = "IRA"
+                ai_suggestion = AI_LABEL_MAPPING.get(ai_label, None)
+                ai_suggestion_score = ai_score
+                if ai_suggestion and ai_suggestion != "IRA":
+                    ai_conflict = True
+            else:
+                if ai_label and ai_label in AI_LABEL_MAPPING:
+                    final_document_type = AI_LABEL_MAPPING[ai_label]
+                elif "račun" in text_lower or "faktura" in text_lower:
+                    final_document_type = "URA"
+                else:
+                    final_document_type = document_type or "OSTALO"
+
+            # DISPATCH PARSER OUTPUT + AI/REGEX MERGE
+            parser = dispatch_parser(final_document_type)
+            parser_output = parser(text)
+
             parsed_data: Dict[str, Any] = {}
-            # AI fields override regex fields if present
             if isinstance(ai_parsed, dict):
-                parsed_data.update(
-                    {k: v for k, v in ai_parsed.items() if v is not None}
-                )
+                parsed_data.update({k: v for k, v in ai_parsed.items() if v is not None})
+
+            # Merge parser_output, popuni prazna polja iz parsera ako ih nema u ai/regext outputu
+            for k, v in parser_output.items():
+                if k not in parsed_data or parsed_data[k] in (None, '', [], {}):
+                    parsed_data[k] = v
+
+            # Dodaj AI notifikacije ako je IRA (ručni upload) i postoji konflikt
+            if document_type == "IRA":
+                parsed_data["ai_suggestion"] = ai_suggestion
+                parsed_data["ai_score"] = ai_suggestion_score
+                parsed_data["ai_conflict"] = ai_conflict
 
             # Normalise amount
             amount_value: Optional[float] = None
@@ -384,14 +398,13 @@ async def upload_documents(
                 if key in parsed_data and parsed_data[key]:
                     try:
                         cleaned = (
-                            parsed_data[key].replace(".", "").replace(",", ".")
+                            str(parsed_data[key]).replace(".", "").replace(",", ".")
                         )
                         amount_value = float(cleaned)
                         break
                     except Exception:
                         pass
 
-            # Extract supplier info using OCR text; ensure dictionary fallback
             supplier_info = extract_supplier_info(text)
             if not isinstance(supplier_info, dict):
                 supplier_info = {}
@@ -402,15 +415,12 @@ async def upload_documents(
             vies_data = None
 
             if not oib and not vat_number:
-                # Unknown supplier
                 skraceni_naziv = "Nepoznat dobavljač"
             else:
-                # We have OIB or VAT; attempt to match existing partner or fetch from external services
                 if oib:
                     partner_obj = db.query(Partner).filter_by(oib=oib).first()
                     if partner_obj or oib != owner_oib:
                         if partner_obj:
-                            # Existing partner in DB
                             supplier_info.update(
                                 {
                                     "naziv_firme": partner_obj.naziv,
@@ -431,7 +441,6 @@ async def upload_documents(
                             else:
                                 vies_data = partner_obj.vies_response
                         else:
-                            # No partner in DB; query Sudreg API
                             try:
                                 sudreg_data, sudreg_raw = sudreg_client.get_company_by_oib(oib, db)
                                 if sudreg_data:
@@ -467,7 +476,6 @@ async def upload_documents(
                                     )
                                     db.add(novi_partner)
                                     db.commit()
-                                    # Fetch VIES for new partner
                                     try:
                                         country_code = oib[:2]
                                         vat = oib[2:]
@@ -483,13 +491,11 @@ async def upload_documents(
                                     f"Error fetching Sudreg data for OIB {oib}: {e}"
                                 )
                 else:
-                    # Only VAT number available; call VIES
                     if vat_number:
                         try:
                             country_code = vat_number[:2]
                             vat = vat_number[2:]
                             vies_data = vies_client.call_vies_soap_api(country_code, vat)
-                            # Only use if dict and valid
                             if (
                                 isinstance(vies_data, dict)
                                 and vies_data.get("valid")
@@ -518,9 +524,6 @@ async def upload_documents(
                                         db.commit()
                                     except Exception:
                                         db.rollback()
-                                else:
-                                    # partner already exists
-                                    pass
                             else:
                                 ai_supplier_name = (
                                     ai_parsed.get("supplier_name")
@@ -543,7 +546,6 @@ async def upload_documents(
                             )
                             supplier_info.update({"naziv_firme": skraceni_naziv})
 
-            # Determine supplier name for OCR
             supplier_name_ocr = (
                 skraceni_naziv
                 or (
@@ -554,7 +556,6 @@ async def upload_documents(
                 or "Nepoznat dobavljač"
             )
 
-            # Create Document entry
             doc = Document(
                 filename=unique_name,
                 ocrresult=text,
@@ -589,7 +590,6 @@ async def upload_documents(
                 f"Document saved with ID: {doc.id} and filename: {doc.filename}"
             )
 
-            # Create and upsert annotation
             annotation_dict = build_auto_annotation_dict(
                 final_document_type,
                 oib,
@@ -602,10 +602,8 @@ async def upload_documents(
             )
             upsert_document_annotations(db, doc.id, annotation_dict)
 
-            # Index in Elasticsearch
             index_to_elasticsearch(doc)
 
-            # Rename uploaded file to {id}.pdf
             try:
                 new_filename = f"{doc.id}.pdf"
                 new_path = os.path.join(UPLOAD_DIR, new_filename)
@@ -616,7 +614,6 @@ async def upload_documents(
             except Exception as e:
                 logger.warning(f"File renaming failed: {e}")
 
-            # Send training sample if training mode enabled
             if is_training_mode_enabled():
                 try:
                     with tempfile.NamedTemporaryFile(

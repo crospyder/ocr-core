@@ -131,3 +131,35 @@ def extract_invoice_date(text: str) -> str | None:
 def extract_due_date(text: str) -> str | None:
     dates = extract_dates(text)
     return dates.get("due_date")
+
+def is_invoice(text: str) -> bool:
+    """
+    Prepoznaje je li dokument račun na temelju ključnih riječi.
+    """
+    invoice_keywords = [
+        r"\bRA[CĆ]UN\b",
+        r"\bFAKTURA\b",
+        r"\bINVOICE\b",
+        r"\bRA[CĆ]UN[-\s]?OTPREMNICA\b",
+    ]
+    return any(re.search(pat, text, re.IGNORECASE) for pat in invoice_keywords)
+
+
+def detect_doc_type(text: str) -> str:
+    """
+    Pokušaj detekcije tipa dokumenta putem ključnih riječi (fallback kad AI ne prepozna).
+    """
+    text = text.lower()
+    if any(x in text for x in ["račun", "faktura", "invoice", "račun-otpremnica"]):
+        return "URA"
+    if any(x in text for x in ["ugovor", "raskid ugovora", "ugovor o radu"]):
+        return "UGOVOR"
+    if any(x in text for x in ["izvod", "izvadak"]):
+        return "IZVOD"
+    if "cesija" in text:
+        return "CESIJA"
+    if "ios" in text or "izvješće otvorenih stavaka" in text:
+        return "IOS"
+    if "konto kartica" in text:
+        return "KONTO_KARTICA"
+    return "OSTALO"

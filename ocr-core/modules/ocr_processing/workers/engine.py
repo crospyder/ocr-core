@@ -112,7 +112,7 @@ def perform_ocr(file_path, engine=None, return_lines=False):
 
 # ---------- BACKWARD-COMPATIBLE EKSTRAKCIJE ----------
 from modules.sudreg_api.client import SudregClient
-from core.utils.regex import extract_oib, extract_invoice_date, extract_dates
+from core.utils.regex_common import extract_oib, extract_invoice_date, extract_dates
 
 sudreg_client = SudregClient()
 

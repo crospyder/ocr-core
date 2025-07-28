@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const API_BASE_URL = "http://192.168.100.252:8000";
+const API_BASE_URL = "http://10.0.1.252:8000";
 
 const TAG_CLASSES = {
   URA: "doc-tag ura",
@@ -14,6 +14,7 @@ const TAG_CLASSES = {
 export default function Validation() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [onlyNew, setOnlyNew] = useState(true);
   const wsRef = useRef(null);
 
   const [unknownDocs, setUnknownDocs] = useState([]);
@@ -23,12 +24,11 @@ export default function Validation() {
   useEffect(() => {
     if (!loading) return;
 
-    wsRef.current = new WebSocket(
-      `${API_BASE_URL.replace("http", "ws")}/api/documents/ws/validate-progress`
-    );
+    const wsUrl = `${API_BASE_URL.replace("http", "ws")}/api/documents/ws/validate-progress?only_new=${onlyNew}`;
+    wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {
-      setLogs((logs) => ["WebSocket connected, validacija pokrenuta...", ...logs]);
+      setLogs(["WebSocket connected, validacija pokrenuta..."]);
     };
 
     wsRef.current.onmessage = (event) => {
@@ -50,7 +50,7 @@ export default function Validation() {
     return () => {
       wsRef.current && wsRef.current.close();
     };
-  }, [loading]);
+  }, [loading, onlyNew]);
 
   useEffect(() => {
     fetchUnknownDocs();
@@ -59,9 +59,7 @@ export default function Validation() {
 
   async function fetchUnknownDocs() {
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/documents?document_type=NEPOZNATO&page=1&page_size=100`
-      );
+      const res = await fetch(`${API_BASE_URL}/api/documents?document_type=NEPOZNATO&page=1&page_size=100`);
       if (!res.ok) throw new Error("Greška pri dohvatu nepoznatih dokumenata");
       const data = await res.json();
       setUnknownDocs(Array.isArray(data.items) ? data.items : []);
@@ -72,9 +70,7 @@ export default function Validation() {
 
   async function fetchForeignDocs() {
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/documents?predlozi_izbacivanje=true&page=1&page_size=100`
-      );
+      const res = await fetch(`${API_BASE_URL}/api/documents?predlozi_izbacivanje=true&page=1&page_size=100`);
       if (!res.ok) throw new Error("Greška pri dohvatu potencijalno tuđih dokumenata");
       const data = await res.json();
       setForeignDocs(Array.isArray(data.items) ? data.items : []);
@@ -86,20 +82,14 @@ export default function Validation() {
   async function updateDocumentType(id, newType) {
     setUpdatingDocId(id);
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/api/documents/${id}/update_type`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ new_type: newType }),
-        }
-      );
+      const res = await fetch(`${API_BASE_URL}/api/documents/${id}/update_type`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ new_type: newType }),
+      });
       if (!res.ok) throw new Error("Greška pri ažuriranju tipa dokumenta");
-
-      // odmah ukloni iz validacijskih lista
       setUnknownDocs((docs) => docs.filter((doc) => doc.id !== id));
       setForeignDocs((docs) => docs.filter((doc) => doc.id !== id));
-
       setLogs((logs) => [`Dokument ${id} promijenjen u ${newType}`, ...logs]);
     } catch (err) {
       setLogs((logs) => [`Greška pri updateu: ${err.message}`, ...logs]);
@@ -111,15 +101,10 @@ export default function Validation() {
   async function deleteDocument(id) {
     setUpdatingDocId(id);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/documents/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`${API_BASE_URL}/api/documents/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Greška pri brisanju dokumenta");
-
-      // odmah ukloni iz validacijskih lista
       setUnknownDocs((docs) => docs.filter((doc) => doc.id !== id));
       setForeignDocs((docs) => docs.filter((doc) => doc.id !== id));
-
       setLogs((logs) => [`Dokument ${id} obrisan`, ...logs]);
     } catch (err) {
       setLogs((logs) => [`Greška pri brisanju: ${err.message}`, ...logs]);
@@ -143,13 +128,21 @@ export default function Validation() {
         {logs.length === 0 ? "Nema poruka..." : logs.join("\n")}
       </pre>
 
-      <button
-        className="btn btn-primary mb-3 w-100"
-        onClick={handleValidate}
-        disabled={loading}
-      >
-        {loading ? "Obrada..." : "Pokreni validaciju i klasifikaciju"}
-      </button>
+      <div className="mb-3 d-flex align-items-center gap-3">
+        <button className="btn btn-primary" onClick={handleValidate} disabled={loading}>
+          {loading ? "Obrada..." : "Pokreni validaciju i klasifikaciju"}
+        </button>
+        <label className="form-check-label">
+          <input
+            type="checkbox"
+            className="form-check-input me-1"
+            checked={onlyNew}
+            onChange={(e) => setOnlyNew(e.target.checked)}
+            disabled={loading}
+          />
+          Samo novi dokumenti
+        </label>
+      </div>
 
       <div className="text-center fw-bold mb-3 validation-info">
         Ovo su dokumenti koje je naš AI sustav prepoznao kao dokumente koji trebaju vašu intervenciju
@@ -157,9 +150,7 @@ export default function Validation() {
 
       <div className="d-flex gap-3 validation-tables-container">
         <section className="flex-grow-1 overflow-auto border rounded p-3 validation-table-wrapper">
-          <h4>
-            Nepoznatih dokumenata: {unknownDocs.length}
-          </h4>
+          <h4>Nepoznatih dokumenata: {unknownDocs.length}</h4>
           {unknownDocs.length === 0 ? (
             <p>Nema nepoznatih dokumenata.</p>
           ) : (
@@ -174,9 +165,7 @@ export default function Validation() {
         </section>
 
         <section className="flex-grow-1 overflow-auto border rounded p-3 validation-table-wrapper">
-          <h4>
-            Potencijalno tuđih dokumenata: {foreignDocs.length}
-          </h4>
+          <h4>Potencijalno tuđih dokumenata: {foreignDocs.length}</h4>
           {foreignDocs.length === 0 ? (
             <p>Nema potencijalno tuđih dokumenata.</p>
           ) : (

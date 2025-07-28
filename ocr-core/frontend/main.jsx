@@ -2,7 +2,7 @@
 
 import axios from "axios";
 
-axios.defaults.baseURL = "http://192.168.100.252:8000";
+axios.defaults.baseURL = "http://10.0.1.252:8000";
 
 import React from "react";
 import ReactDOM from "react-dom/client";

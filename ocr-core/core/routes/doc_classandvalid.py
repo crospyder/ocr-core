@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, Depends
+from fastapi import APIRouter, WebSocket, Depends, Query
 from sqlalchemy.orm import Session
 from core.database.connection import SessionMain, get_db
 from core.database.models import Document, Client
@@ -74,19 +74,11 @@ def sadrzi_rijec_ugovor(text):
     pattern = re.compile(r"\bugovor\w*\b", re.IGNORECASE)
     return bool(pattern.search(text))
 
-INDEX_TO_LABEL = {
-    "0": "IZVOD",
-    "1": "UGOVOR",
-    "2": "URA",
-    "3": "IRA",
-    "4": "OSTALO"
-}
-
 def normalize(text: str) -> str:
     return re.sub(r'\W+', '', text).lower()
 
 @router.websocket("/ws/validate-progress")
-async def websocket_validate_progress(websocket: WebSocket):
+async def websocket_validate_progress(websocket: WebSocket, only_new: bool = Query(default=False)):
     await websocket.accept()
     logger.info("WebSocket connected, počinjemo obradu.")
     await websocket.send_text("WebSocket connected, počinjemo obradu.")
@@ -100,14 +92,17 @@ async def websocket_validate_progress(websocket: WebSocket):
 
         label_examples = build_label_examples(moja_firma, moj_oib)
 
-        documents = db.query(Document).all()
+        if only_new:
+            documents = db.query(Document).filter(Document.document_type == None).all()
+            await websocket.send_text(f"Obrađuju se samo novi dokumenti ({len(documents)} dokumenata)...")
+        else:
+            documents = db.query(Document).all()
+            await websocket.send_text(f"Obrađuju se svi dokumenti ({len(documents)} dokumenata)...")
+
         total = len(documents)
         count_validated = 0
 
-        await websocket.send_text(f"Validacija i klasifikacija pokrenuta. Ukupno dokumenata: {total}")
-
         total_labels = []
-
         remote_model_url = get_model_server_url(db)
 
         firma_norm = normalize(moja_firma)
@@ -119,6 +114,9 @@ async def websocket_validate_progress(websocket: WebSocket):
 
             for doc in batch:
                 text_to_classify = doc.ocrresult or ""
+
+                # DODANO: logiraj OCR tekst (prvih 400 znakova da ne zatrpaš log)
+                logger.info(f"OCR TEXT [{doc.id}]: {repr(text_to_classify[:400])}")
 
                 if sadrzi_rijec_ugovor(text_to_classify):
                     top_label = "UGOVOR"
@@ -133,7 +131,7 @@ async def websocket_validate_progress(websocket: WebSocket):
                     result = resp.json()
 
                     best_label_raw = result.get("best_label", "OSTALO")
-                    top_label = INDEX_TO_LABEL.get(best_label_raw, "OSTALO")
+                    top_label = best_label_raw  # KORISTI IZ MODELA DIREKTNO
 
                     label_scores = result.get("label_scores", {})
                     ura_score = label_scores.get("URA", 0)
@@ -148,7 +146,6 @@ async def websocket_validate_progress(websocket: WebSocket):
                             if heuristika:
                                 top_label = heuristika
 
-                # Stroža provjera: oba moraju biti u tekstu (naziv firme i OIB)
                 tekst_norm = normalize(text_to_classify)
                 if firma_norm not in tekst_norm or oib_norm not in tekst_norm:
                     top_label = "NEPOZNATO"
@@ -164,11 +161,9 @@ async def websocket_validate_progress(websocket: WebSocket):
                 logger.info(f"Doc ID {doc.id} klasificiran kao {top_label}")
 
                 await websocket.send_text(f"[{count_validated}/{total}] Dokument ID {doc.id} klasificiran kao {top_label}")
-
                 await asyncio.sleep(0.01)
 
             db.commit()
-
             counter = Counter(batch_labels)
             stats_msg = "Statistika batcha: " + ", ".join(f"{k}: {v}" for k, v in counter.items())
             await websocket.send_text(stats_msg)

@@ -18,7 +18,7 @@ export default function BatchUploadModal({ files, onClose }) {
   const uploadSingleFile = async (file) => {
     const formData = new FormData();
     formData.append("files", file);
-    formData.append("document_type", documentType || "OSTALO");
+    formData.append("document_type", documentType || "ULAZNI");
 
     try {
       const response = await axios.post("/api/upload/documents", formData, {
@@ -87,11 +87,8 @@ export default function BatchUploadModal({ files, onClose }) {
                 disabled={uploading}
               >
                 <option value="">-- odaberi tip --</option>
-                <option value="URA">Ulazni račun (URA)</option>
                 <option value="IRA">Izlazni račun (IRA)</option>
-                <option value="IZVOD">Izvod</option>
-                <option value="UGOVOR">Ugovor</option>
-                <option value="OSTALO">Ostalo</option>
+                <option value="ULAZNI">Ulazni dokumenti (automatsko prepoznavanje)</option>
               </select>
             </div>
           )}

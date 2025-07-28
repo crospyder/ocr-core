@@ -27,6 +27,9 @@ export default function Documents() {
     direction: query.get("sort_dir") || "desc"
   });
 
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [showDeleted, setShowDeleted] = useState(false);
+
   useEffect(() => {
     const params = new URLSearchParams();
 
@@ -38,14 +41,22 @@ export default function Documents() {
     if (itemsPerPage) params.set("page_size", itemsPerPage);
     if (sortConfig.key) params.set("sort_key", sortConfig.key);
     if (sortConfig.direction) params.set("sort_dir", sortConfig.direction);
+    if (showDeleted) params.set("include_deleted", "true");
 
     navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
-  }, [documentType, supplierOib, selectedSupplier, selectedYear, currentPage, itemsPerPage, sortConfig, navigate, location.pathname]);
+  }, [
+    documentType, supplierOib, selectedSupplier, selectedYear,
+    currentPage, itemsPerPage, sortConfig, showDeleted,
+    navigate, location.pathname
+  ]);
 
   useEffect(() => {
     fetchDocuments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [documentType, supplierOib, selectedSupplier, selectedYear, currentPage, itemsPerPage, sortConfig]);
+  }, [
+    documentType, supplierOib, selectedSupplier, selectedYear,
+    currentPage, itemsPerPage, sortConfig, showDeleted
+  ]);
 
   async function fetchDocuments() {
     setLoading(true);
@@ -59,6 +70,7 @@ export default function Documents() {
       queryParts.push(`page_size=${itemsPerPage}`);
       queryParts.push(`sort_key=${sortConfig.key}`);
       queryParts.push(`sort_dir=${sortConfig.direction}`);
+      if (showDeleted) queryParts.push("include_deleted=true");
       const queryString = queryParts.length ? `?${queryParts.join("&")}` : "";
 
       const res = await fetch(`/api/documents/${queryString}`);
@@ -67,11 +79,13 @@ export default function Documents() {
       setDocuments(Array.isArray(data.items) ? data.items : []);
       setTotalCount(data.total || 0);
       setError(null);
+      setSelectedIds([]); // resetiraj selekciju kod svakog fetcha
     } catch (err) {
       toast.error(`❌ ${err.message}`);
       setDocuments([]);
       setTotalCount(0);
       setError(err.message);
+      setSelectedIds([]);
       console.error("Greška pri dohvatu dokumenata:", err);
     } finally {
       setLoading(false);
@@ -94,6 +108,26 @@ export default function Documents() {
     } catch (err) {
       toast.error(`❌ ${err.message}`);
       console.error("Greška pri brisanju:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleBatchDelete() {
+    if (!window.confirm(`Obrisati ${selectedIds.length} označenih dokumenata?`)) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/documents/batch_delete", {
+        method: "POST", // POST jer backend endpoint koristi POST!
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+      if (!res.ok) throw new Error("Brisanje nije uspjelo!");
+      toast.success("Dokumenti obrisani.");
+      setSelectedIds([]);
+      fetchDocuments();
+    } catch (e) {
+      toast.error(e.message || "Greška!");
     } finally {
       setLoading(false);
     }
@@ -153,7 +187,8 @@ export default function Documents() {
 
   function renderDocTag(type) {
     if (!type) return <span className="text-muted">-</span>;
-    const cls = `doc-tag ${type.toLowerCase()}`;
+    let cls = `doc-tag ${type.toLowerCase()}`;
+    if (type === "OBRISANI DOKUMENT") cls += " text-danger";
     return <span className={cls}>{type}</span>;
   }
 
@@ -276,10 +311,34 @@ export default function Documents() {
               <option value="-1">Sve</option>
             </select>
           </div>
+          <div className="filter-group d-flex flex-row align-items-end mt-2">
+            <input
+              type="checkbox"
+              id="showDeleted"
+              checked={showDeleted}
+              onChange={e => setShowDeleted(e.target.checked)}
+              style={{ marginRight: "6px" }}
+            />
+            <label htmlFor="showDeleted" className="filter-label" style={{ marginBottom: 0 }}>
+              Prikaži i obrisane dokumente
+            </label>
+          </div>
         </div>
-
         <PaginationComponent />
       </div>
+
+      {selectedIds.length > 0 && (
+        <div className="mb-2">
+          <button
+            className="btn btn-danger me-2"
+            onClick={handleBatchDelete}
+            disabled={loading}
+          >
+            Obriši označene ({selectedIds.length})
+          </button>
+          <span>Označeno: {selectedIds.length} / {sortedDocuments.length} na ovoj stranici</span>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-4">Učitavanje...</div>
@@ -293,6 +352,19 @@ export default function Documents() {
             <table className="table table-custom table-hover w-100">
               <thead>
                 <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length > 0 && selectedIds.length === sortedDocuments.length}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setSelectedIds(sortedDocuments.map(doc => doc.id));
+                        } else {
+                          setSelectedIds([]);
+                        }
+                      }}
+                    />
+                  </th>
                   <th onClick={() => requestSort("id")} className="sortable">#</th>
                   <th onClick={() => requestSort("filename")} className="sortable">Naziv</th>
                   <th onClick={() => requestSort("document_type")} className="sortable">Vrsta dokumenta</th>
@@ -307,7 +379,25 @@ export default function Documents() {
               </thead>
               <tbody>
                 {sortedDocuments.map((doc) => (
-                  <tr key={doc.id}>
+                  <tr
+                    key={doc.id}
+                    style={doc.document_type === "OBRISANI DOKUMENT"
+                      ? { background: "#fbeaea", color: "#b30000" }
+                      : {}}
+                  >
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(doc.id)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setSelectedIds([...selectedIds, doc.id]);
+                          } else {
+                            setSelectedIds(selectedIds.filter(id => id !== doc.id));
+                          }
+                        }}
+                      />
+                    </td>
                     <td>{doc.id}</td>
                     <td>
                       <a href={`/documents/${doc.id}`} className="fw-bold">
@@ -341,7 +431,6 @@ export default function Documents() {
               </tbody>
             </table>
           </div>
-
           <PaginationComponent />
         </>
       )}

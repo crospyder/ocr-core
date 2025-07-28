@@ -13,6 +13,7 @@ from core.database.connection import get_db
 from core.database.models import Document, DocumentAnnotation, Partner
 from core.schemas.documents import DocumentOut
 from elasticsearch import Elasticsearch
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -321,11 +322,18 @@ def delete_document(document_id: int = Path(...), db: Session = Depends(get_db))
         # Update document_type i dodaj info u anotacije
         doc.document_type = "OBRISANI DOKUMENT"
 
+        # Dodaj info o brisanju u anotacije (audit trail)
         if not doc.annotation:
             doc.annotation = DocumentAnnotation(document_id=doc.id, annotations={})
             db.add(doc.annotation)
 
         annotations_data = doc.annotation.annotations or {}
+        if isinstance(annotations_data, str):
+            try:
+                annotations_data = json.loads(annotations_data)
+            except Exception:
+                annotations_data = {}
+
         annotations_data["deleted_info"] = "Obrisao korisnik"
         doc.annotation.annotations = annotations_data
 
@@ -350,6 +358,65 @@ def delete_document(document_id: int = Path(...), db: Session = Depends(get_db))
         db.rollback()
         logging.error(f"Error deleting document {document_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Error deleting document: {e}")
+
+# --- BATCH DELETE ENDPOINT ---
+class BatchDeleteRequest(BaseModel):
+    ids: list[int]
+
+@router.post("/batch_delete")
+def batch_delete_documents(
+    payload: BatchDeleteRequest,
+    db: Session = Depends(get_db)
+):
+    deleted_ids = []
+    for doc_id in payload.ids:
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            continue
+        try:
+            # Obriši povezane anotacije prvo
+            annotations = db.query(DocumentAnnotation).filter(DocumentAnnotation.document_id == doc_id).all()
+            for ann in annotations:
+                db.delete(ann)
+            # Obrisi fajl s diska
+            if doc.filename:
+                file_path = os.path.join(UPLOAD_DIR, doc.filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            # Markiraj kao obrisano
+            doc.document_type = "OBRISANI DOKUMENT"
+            # Audit trail
+            if not doc.annotation:
+                doc.annotation = DocumentAnnotation(document_id=doc.id, annotations={})
+                db.add(doc.annotation)
+            annotations_data = doc.annotation.annotations or {}
+            if isinstance(annotations_data, str):
+                try:
+                    annotations_data = json.loads(annotations_data)
+                except Exception:
+                    annotations_data = {}
+            annotations_data["deleted_info"] = "Batch delete"
+            doc.annotation.annotations = annotations_data
+            db.commit()
+            deleted_ids.append(doc_id)
+            # Obrisi iz Elasticsearcha
+            try:
+                es = Elasticsearch("http://localhost:9200")
+                if es.indices.exists(index=ES_INDEX):
+                    es.delete_by_query(
+                        index=ES_INDEX,
+                        body={"query": {"match": {"id": doc_id}}},
+                        refresh=True,
+                        wait_for_completion=True
+                    )
+                    es.indices.refresh(index=ES_INDEX)
+            except Exception as es_exc:
+                logging.warning(f"Elasticsearch delete error: {es_exc}")
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error deleting document {doc_id}: {e}")
+            continue
+    return {"message": f"Obrisano {len(deleted_ids)} dokumenata.", "deleted_ids": deleted_ids}
 
 @router.post("/read-pdf-meta")
 async def read_pdf_meta(file: UploadFile = File(...)):
