@@ -33,7 +33,17 @@ export default function Documents() {
   useEffect(() => {
     const params = new URLSearchParams();
 
-    if (documentType) params.set("document_type", documentType);
+    if (documentType) {
+      // Merge URA and IRA into FAKTURA filter on frontend
+      if (documentType === "FAKTURA") {
+        params.set("document_type", "FAKTURA");
+      } else if (documentType === "URA" || documentType === "IRA") {
+        // Ignore separate URA and IRA, treat as FAKTURA for filtering consistency
+        params.set("document_type", "FAKTURA");
+      } else {
+        params.set("document_type", documentType);
+      }
+    }
     if (supplierOib) params.set("supplier_oib", supplierOib);
     if (selectedSupplier) params.set("selected_supplier", selectedSupplier);
     if (selectedYear) params.set("selected_year", selectedYear);
@@ -62,7 +72,16 @@ export default function Documents() {
     setLoading(true);
     try {
       const queryParts = [];
-      if (documentType) queryParts.push(`document_type=${encodeURIComponent(documentType)}`);
+      if (documentType) {
+        // Again map URA and IRA as FAKTURA on request side
+        if (documentType === "FAKTURA") {
+          queryParts.push(`document_type=FAKTURA`);
+        } else if (documentType === "URA" || documentType === "IRA") {
+          queryParts.push(`document_type=FAKTURA`);
+        } else {
+          queryParts.push(`document_type=${encodeURIComponent(documentType)}`);
+        }
+      }
       if (supplierOib) queryParts.push(`supplier_oib=${encodeURIComponent(supplierOib)}`);
       if (selectedSupplier) queryParts.push(`selected_supplier=${encodeURIComponent(selectedSupplier)}`);
       if (selectedYear) queryParts.push(`selected_year=${encodeURIComponent(selectedYear)}`);
@@ -153,6 +172,7 @@ export default function Documents() {
   }, [documents]);
 
   const filteredDocuments = useMemo(() => {
+    // On frontend, show documents normally, as backend returns merged FAKTURA for URA and IRA
     return documents.filter(doc => {
       return (
         (!documentType || doc.document_type === documentType) &&
@@ -249,11 +269,11 @@ export default function Documents() {
               aria-label="Vrsta dokumenta"
             >
               <option value="">Sve</option>
-              <option value="URA">URA</option>
-              <option value="IRA">IRA</option>
+              <option value="FAKTURA">FAKTURA</option>
               <option value="UGOVOR">UGOVOR</option>
               <option value="IZVOD">IZVOD</option>
               <option value="NEPOZNATO">NEPOZNATO</option>
+              <option value="PONUDA">PONUDA</option>
             </select>
           </div>
           <div className="filter-group d-flex flex-column">

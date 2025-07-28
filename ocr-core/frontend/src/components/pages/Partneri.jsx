@@ -74,10 +74,6 @@ export default function Partneri() {
 
   return (
     <div className="container mt-2 mb-2 partneri-page">
-      <div className="text-center mb-3">
-        <h2 className="page-title mb-0">Partneri</h2>
-      </div>
-
       <input
         type="text"
         placeholder="Pretraži po nazivu, OIB-u ili kontakt osobi..."
@@ -132,7 +128,7 @@ export default function Partneri() {
               <tbody>
                 {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center">
+                    <td colSpan={7} className="text-center text-muted">
                       Nema partnera za prikaz
                     </td>
                   </tr>

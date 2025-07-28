@@ -19,16 +19,16 @@ def get_model_server_url(db: Session):
     port = port_setting.value if port_setting else "9000"
     return f"http://{ip}:{port}/classify"
 
-LABELS = ["IZVOD", "UGOVOR", "URA", "IRA", "OSTALO"]
+LABELS = ["IZVOD", "UGOVOR", "FAKTURA", "OSTALO"]  # URA and IRA replaced by FAKTURA
 BATCH_SIZE = 100
-HEURISTIKA_URA_IRA_THRESHOLD = 0.07
+HEURISTIKA_FAKTURA_THRESHOLD = 0.07
 TOP_N = 10
 
 def build_label_examples(moja_firma, moj_oib):
     return {
         "IZVOD": ["Izvadak", "Izvod", "Bankovni izvod"],
         "UGOVOR": ["Ugovor o radu", "Ugovor o najmu poslovnog prostora", "Ugovor između dviju strana", "ugovor"],
-        "URA": [
+        "FAKTURA": [
             "Primljeni račun od dobavljača",
             "Iznos za plaćanje po ulaznom računu",
             "Dobavljač: Konzum d.d.",
@@ -36,9 +36,7 @@ def build_label_examples(moja_firma, moj_oib):
             f"Račun broj 0001, primatelj: {moja_firma}",
             f"OIB primatelja: {moj_oib}",
             "kupac:{moja_firma}",
-            "naručitelj:"
-        ],
-        "IRA": [
+            "naručitelj:",
             "Izdani račun za kupca",
             "Prodaja usluge, kupac: ABC d.o.o.",
             "Račun izdan kupcu",
@@ -49,15 +47,15 @@ def build_label_examples(moja_firma, moj_oib):
         "OSTALO": ["Ostali dokumenti", "Neprepoznati ili nedefinirani dokument", "Opći poslovni dokument"]
     }
 
-def heuristika_ura_ira(text, moja_firma, moj_oib):
+def heuristika_faktura(text, moja_firma, moj_oib):
     text_lower = text.lower()
     linije = text_lower.splitlines()
     for linija in linije:
         if moja_firma.lower() in linija or moj_oib in linija:
             if "kupac" in linija or "primatelj" in linija:
-                return "URA"
+                return "FAKTURA"
             if "prodavatelj" in linija or "pošiljatelj" in linija:
-                return "IRA"
+                return "FAKTURA"
     return None
 
 def heuristika_pozicija_firme(text, moja_firma, moj_oib, top_n=10):
@@ -65,9 +63,9 @@ def heuristika_pozicija_firme(text, moja_firma, moj_oib, top_n=10):
     for i, linija in enumerate(linije):
         if moja_firma.lower() in linija.lower() or moj_oib in linija:
             if i < top_n:
-                return "IRA"
+                return "FAKTURA"
             else:
-                return "URA"
+                return "FAKTURA"
     return None
 
 def sadrzi_rijec_ugovor(text):
@@ -115,7 +113,7 @@ async def websocket_validate_progress(websocket: WebSocket, only_new: bool = Que
             for doc in batch:
                 text_to_classify = doc.ocrresult or ""
 
-                # DODANO: logiraj OCR tekst (prvih 400 znakova da ne zatrpaš log)
+                # Log OCR text (first 400 chars)
                 logger.info(f"OCR TEXT [{doc.id}]: {repr(text_to_classify[:400])}")
 
                 if sadrzi_rijec_ugovor(text_to_classify):
@@ -131,18 +129,18 @@ async def websocket_validate_progress(websocket: WebSocket, only_new: bool = Que
                     result = resp.json()
 
                     best_label_raw = result.get("best_label", "OSTALO")
-                    top_label = best_label_raw  # KORISTI IZ MODELA DIREKTNO
+                    top_label = best_label_raw  # use model label directly
 
                     label_scores = result.get("label_scores", {})
-                    ura_score = label_scores.get("URA", 0)
-                    ira_score = label_scores.get("IRA", 0)
+                    faktura_score = label_scores.get("FAKTURA", 0)
 
-                    if top_label in ["URA", "IRA"] and abs(ura_score - ira_score) < HEURISTIKA_URA_IRA_THRESHOLD:
+                    # Heuristic if needed (optional, here simplified)
+                    if top_label == "FAKTURA" and faktura_score < HEURISTIKA_FAKTURA_THRESHOLD:
                         poz_heur = heuristika_pozicija_firme(text_to_classify, moja_firma, moj_oib, top_n=TOP_N)
                         if poz_heur:
                             top_label = poz_heur
                         else:
-                            heuristika = heuristika_ura_ira(text_to_classify, moja_firma, moj_oib)
+                            heuristika = heuristika_faktura(text_to_classify, moja_firma, moj_oib)
                             if heuristika:
                                 top_label = heuristika
 

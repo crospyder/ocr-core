@@ -8,7 +8,7 @@ export default function FinancialDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const BACKEND_URL = "http://192.168.100.252:8000";
+  const BACKEND_URL = "http://10.0.1.252:8000";
 
   async function fetchPartners() {
     try {

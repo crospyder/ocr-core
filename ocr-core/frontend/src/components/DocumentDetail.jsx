@@ -1,4 +1,3 @@
-// Updated DocumentDetail.jsx with layout separation
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import OcrTextTagger from "./OcrTextTagger";
@@ -21,18 +20,21 @@ export default function DocumentDetail() {
         const data = await res.json();
         setDocument(data);
 
-        const ares = await fetch(`/api/annotations/${id}`);
-        if (ares.ok) {
-          const ann = await ares.json();
-          let annTags = ann.annotations || {};
-          if ("amount_total" in annTags) {
-            annTags.amount = annTags.amount_total;
-            delete annTags.amount_total;
-          }
-          setInitialTags(annTags);
-        } else {
-          setInitialTags({});
-        }
+        // Koristimo polja iz documents kao initialTags
+        const tagsFromDocument = {
+          document_type: data.document_type,
+          invoice_number: data.doc_number,
+          date_invoice: data.invoice_date,
+          due_date: data.due_date,
+          amount: data.amount,
+          oib: data.supplier_oib,
+          supplier_name_ocr: data.supplier_name_ocr,
+          supplier_oib: data.supplier_oib,
+          partner_name: data.partner_name || "",  // ako postoji
+          vat_number: "", // ako postoji u parsed, možeš dodati
+        };
+        setInitialTags(tagsFromDocument);
+
       } catch (e) {
         toast.error(e.message);
       } finally {
@@ -63,6 +65,7 @@ export default function DocumentDetail() {
         partner_name: tags.partner_name,
       };
 
+      // Spremi u annotations
       const res = await fetch(`/api/annotations/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,6 +75,7 @@ export default function DocumentDetail() {
 
       toast.success("Oznake su spremljene!");
 
+      // Update documents tablice s ručno izmijenjenim podacima iz annotacija
       const docUpdateRes = await fetch(`/api/documents/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

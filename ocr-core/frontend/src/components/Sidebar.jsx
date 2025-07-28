@@ -24,7 +24,6 @@ export default function Sidebar() {
     { to: "/partneri", label: "Partneri", icon: <Users size={18} />, end: true },
     { to: "/search", label: "Pretraga", icon: <FileText size={18} /> },
     { to: "/tools/manual-sudreg", label: "Sudreg ručno", icon: <Search size={18} /> },
-    { to: "/validation", label: "Validacija i klasifikacija", icon: <CheckSquare size={18} /> },
     { to: "/mail_clients", label: "Mail klijenti", icon: <Mail size={18} /> },
   ];
 

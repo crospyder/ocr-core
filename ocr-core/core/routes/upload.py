@@ -23,15 +23,14 @@ from core.vies_api.client import ViesClient
 from elasticsearch import Elasticsearch
 
 AI_LABEL_MAPPING: Dict[str, str] = {
-    "0": "URA",
-    "1": "IRA",
-    "2": "UGOVOR",
-    "3": "IZVOD",
-    "4": "CESIJA",
-    "5": "IOS",
-    "6": "KONTO_KARTICA",
-    "7": "OSTALO",
-    "NEPOZNATO": "NEPOZNATO"
+    "0": "FAKTURA",  # URA nema, sve se mapira na FAKTURA
+    "1": "UGOVOR",
+    "2": "IZVOD",
+    "3": "CESIJA",
+    "4": "IOS",
+    "5": "KONTO_KARTICA",
+    "6": "OSTALO",
+    "7": "NEPOZNATO",
 }
 
 from PIL.Image import DecompressionBombWarning
@@ -39,20 +38,6 @@ from core.routes.settings import TRAINING_MODE_FLAG
 import tempfile
 import requests
 import csv
-
-def determine_final_document_type(
-    document_type: str,
-    ai_label: Optional[str],
-    text: str,
-) -> str:
-    text_lower = text.lower()
-    if document_type == "IRA":
-        return "IRA"
-    if ai_label and ai_label in AI_LABEL_MAPPING:
-        return AI_LABEL_MAPPING[ai_label]
-    if "račun" in text_lower or "faktura" in text_lower:
-        return "URA"
-    return document_type or "OSTALO"
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -70,14 +55,6 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 sudreg_client = SudregClient()
 vies_client = ViesClient()
 
-def serialize_for_json(obj: Any) -> Any:
-    from modules.sudreg_api.schemas import SudregCompany
-    if isinstance(obj, SudregCompany):
-        return obj.dict()
-    if hasattr(obj, "dict"):
-        return obj.dict()
-    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
-
 def str_to_date(date_str: Optional[str]):
     if not date_str:
         return None
@@ -86,6 +63,39 @@ def str_to_date(date_str: Optional[str]):
     except Exception as e:
         logger.error(f"Error parsing date '{date_str}': {e}")
         return None
+
+def determine_final_document_type(
+    document_type: str,
+    ai_label: Optional[str],
+    text: str,
+) -> str:
+    text_lower = text.lower()
+
+    # Ručno izabrano IRA uvijek ima prioritet
+    if document_type == "IRA":
+        return "IRA"
+
+    # AI label mapiranje (URA ne postoji više, ako se pojavi, mapiraj na FAKTURA)
+    if ai_label and ai_label in AI_LABEL_MAPPING:
+        label = AI_LABEL_MAPPING[ai_label]
+        if label == "URA":
+            return "FAKTURA"
+        return label
+
+    # Regex fallback za fakture
+    if "faktura" in text_lower or "račun" in text_lower:
+        return "FAKTURA"
+
+    # Ostatak dokumenta (npr. ponuda, ugovor...)
+    return document_type or "OSTALO"
+
+def serialize_for_json(obj: Any) -> Any:
+    from modules.sudreg_api.schemas import SudregCompany
+    if isinstance(obj, SudregCompany):
+        return obj.dict()
+    if hasattr(obj, "dict"):
+        return obj.dict()
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 def date_to_str(date_obj):
     return date_obj.strftime("%d.%m.%Y") if date_obj else None
@@ -129,6 +139,7 @@ def build_auto_annotation_dict(
     parsed_data: Dict[str, Any],
     skraceni_naziv: Optional[str],
     supplier_info: Any,
+    vat_number: Optional[str] = None,   # dodan argument
 ) -> Dict[str, Any]:
     supplier_name = skraceni_naziv or (
         supplier_info.get("naziv_firme") if isinstance(supplier_info, dict) else ""
@@ -136,9 +147,13 @@ def build_auto_annotation_dict(
     partner_name = (
         supplier_info.get("naziv_firme") if document_type == "IRA" and isinstance(supplier_info, dict) else ""
     )
+    # VAT broj iz parsed_data ili argumenta
+    vat_from_parsed = parsed_data.get("vat_number", None)
+    vat_final = vat_number or vat_from_parsed
     return {
         "document_type": document_type,
         "oib": oib,
+        "vat_number": vat_final,  # <--- DODANO
         "invoice_number": doc_number,
         "date_invoice": date_to_str(invoice_date),
         "date_valute": date_to_str(due_date),
@@ -150,7 +165,6 @@ def build_auto_annotation_dict(
         ),
         "supplier_name": supplier_name,
         "partner_name": partner_name,
-        # AI notifikacije, ako postoje
         "ai_suggestion": parsed_data.get("ai_suggestion"),
         "ai_score": parsed_data.get("ai_score"),
         "ai_conflict": parsed_data.get("ai_conflict"),
@@ -168,6 +182,34 @@ def upsert_document_annotations(db: Session, doc_id: int, annotation_dict: Dict[
     annotation.annotations = json.dumps(annotation_dict, ensure_ascii=False)
     db.commit()
     logger.info(f"Annotations auto-filled for document ID {doc_id}")
+
+def sync_annotations_to_document(db: Session, doc: Document, annotations: Dict[str, Any]):
+    mapping = {
+        "supplier_name": "supplier_name_ocr",
+        "oib": "supplier_oib",
+        "date_invoice": "invoice_date",
+        "due_date": "due_date",
+        "invoice_number": "doc_number",
+        "amount": "amount",
+        "document_type": "document_type",
+    }
+
+    for ann_field, doc_field in mapping.items():
+        if ann_field in annotations:
+            new_value = annotations[ann_field]
+
+            if ann_field == "amount" and isinstance(new_value, str):
+                new_value = new_value.replace(",", ".")
+            if ann_field == "amount":
+                try:
+                    new_value = float(new_value)
+                except ValueError:
+                    new_value = None
+
+            current_value = getattr(doc, doc_field)
+            if current_value != new_value:
+                setattr(doc, doc_field, new_value)
+    db.commit()
 
 def is_training_mode_enabled() -> bool:
     return TRAINING_MODE_FLAG.get("enabled", False)
@@ -353,25 +395,7 @@ async def upload_documents(
             text_lower = text.lower()
 
             # Klasifikacija tipa dokumenta
-            # Ako je korisnik rekao IRA, uvijek ostaje IRA, ali bilježimo AI prijedlog (ako je različit).
-            final_document_type = None
-            ai_conflict = False
-            ai_suggestion = None
-            ai_suggestion_score = None
-
-            if document_type == "IRA":
-                final_document_type = "IRA"
-                ai_suggestion = AI_LABEL_MAPPING.get(ai_label, None)
-                ai_suggestion_score = ai_score
-                if ai_suggestion and ai_suggestion != "IRA":
-                    ai_conflict = True
-            else:
-                if ai_label and ai_label in AI_LABEL_MAPPING:
-                    final_document_type = AI_LABEL_MAPPING[ai_label]
-                elif "račun" in text_lower or "faktura" in text_lower:
-                    final_document_type = "URA"
-                else:
-                    final_document_type = document_type or "OSTALO"
+            final_document_type = determine_final_document_type(document_type, ai_label, text)
 
             # DISPATCH PARSER OUTPUT + AI/REGEX MERGE
             parser = dispatch_parser(final_document_type)
@@ -387,7 +411,12 @@ async def upload_documents(
                     parsed_data[k] = v
 
             # Dodaj AI notifikacije ako je IRA (ručni upload) i postoji konflikt
+            ai_conflict = False
             if document_type == "IRA":
+                ai_suggestion = AI_LABEL_MAPPING.get(ai_label, None)
+                ai_suggestion_score = ai_score
+                if ai_suggestion and ai_suggestion != "IRA":
+                    ai_conflict = True
                 parsed_data["ai_suggestion"] = ai_suggestion
                 parsed_data["ai_score"] = ai_suggestion_score
                 parsed_data["ai_conflict"] = ai_conflict
@@ -599,8 +628,10 @@ async def upload_documents(
                 parsed_data,
                 skraceni_naziv,
                 supplier_info,
+                vat_number=vat_number,
             )
             upsert_document_annotations(db, doc.id, annotation_dict)
+            sync_annotations_to_document(db, doc, annotation_dict)
 
             index_to_elasticsearch(doc)
 

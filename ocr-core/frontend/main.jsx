@@ -18,7 +18,6 @@ import Dashboard from "./src/components/dashboard/Dashboard.jsx";
 import PartnerDocuments from "./src/components/pages/PartnerDocuments.jsx";
 import Partneri from "./src/components/pages/Partneri.jsx";
 import SearchPage from "./src/components/SearchPage";
-import Validation from "./src/components/pages/Validation.jsx";
 import SudReg_Manual from "./src/components/SudReg_Manual.jsx";
 import MailClients from "./src/components/mail-client.jsx";
 import Settings from "./src/components/pages/Settings.jsx";
@@ -42,7 +41,6 @@ const router = createBrowserRouter([
       { path: "documents/partner/:oib", element: <PartnerDocuments /> },
       { path: "partneri", element: <Partneri /> },
       { path: "search", element: <SearchPage /> },
-      { path: "validation", element: <Validation /> },
       { path: "tools/manual-sudreg", element: <SudReg_Manual /> },
       { path: "mail_clients", element: <MailClients /> },
       { path: "billing/*", element: <BillingRouter /> },  // <-- billing ruta dodana

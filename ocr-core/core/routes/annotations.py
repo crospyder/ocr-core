@@ -79,6 +79,7 @@ def save_annotation(
                 "due_date": "due_date",
                 "invoice_number": "doc_number",
                 "amount": "amount",
+                "document_type": "document_type",  # Dodano da update može mijenjati tip dokumenta
             }
 
             for ann_field, doc_field in mapping.items():
@@ -101,6 +102,12 @@ def save_annotation(
                     if current_value != new_value:
                         logger.debug(f"Updating document field '{doc_field}' from '{current_value}' to '{new_value}'")
                         setattr(doc, doc_field, new_value)
+
+            # EKSPRESNO: dodatno – uvijek eksplicitno postavi document_type iz annotacija (da ne ostane stari)
+            if "document_type" in annotations and annotations["document_type"]:
+                if doc.document_type != annotations["document_type"]:
+                    logger.debug(f"FORCING document_type update from '{doc.document_type}' to '{annotations['document_type']}'")
+                    doc.document_type = annotations["document_type"]
 
             db.commit()
             logger.debug(f"Document {document_id} updated with new annotation values")

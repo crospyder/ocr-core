@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import logging
-#from core.ml.classifier import *  # Uncomment if needed to load model on startup
 from logging.handlers import TimedRotatingFileHandler
 import os
 import sys
@@ -26,7 +25,6 @@ from core.routes.upload import router as upload_router
 from core.routes.clients import router as clients_router
 from core.routes.annotations import router as annotations_router
 from core.routes import logs, client_info, partneri, clients, mail_accounts, mail_processing
-from core.routes.doc_classandvalid import router as doc_class_router
 from modules.ocr_processing.routes import upload as upload_module
 from modules.sudreg_manual import router as sudreg_manual_router
 from core.routes.settings import router as settings_router
@@ -82,7 +80,6 @@ app.include_router(logs.router, prefix="/api/logs")
 app.include_router(client_info.router, prefix="/api/client")
 app.include_router(partneri.router, prefix="/api")
 app.include_router(clients.router, prefix="/api/client")
-app.include_router(doc_class_router, prefix="/api/documents", tags=["validation"])
 app.include_router(sudreg_manual_router, prefix="/api/tools", tags=["tools"])
 app.include_router(mail_accounts.router, prefix="/api/mail_accounts")
 app.include_router(mail_processing.router)  # router has prefix internally

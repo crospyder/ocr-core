@@ -6,7 +6,7 @@ import { Folder, FileText } from "lucide-react";
 export default function DocumentsUpload({ onFilesSelected, onDebug }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [docType, setDocType] = useState("IRA"); // defaultna vrijednost
+  const [docType, setDocType] = useState(""); // default je prazno = automatska klasifikacija
   const inputFolderRef = useRef(null);
   const inputFileRef = useRef(null);
 
@@ -49,8 +49,8 @@ export default function DocumentsUpload({ onFilesSelected, onDebug }) {
             onChange={(e) => setDocType(e.target.value)}
             disabled={loading}
           >
-            <option value="IRA">IRA (vlastiti računi)</option>
-            <option value="Ulazni dokumenti">Ulazni dokumenti</option>
+            <option value="">Ulazni dokumenti (automatsko prepoznavanje)</option>
+            <option value="IRA">Izlazni račun (IRA)</option>
           </select>
         </div>
 

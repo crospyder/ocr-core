@@ -9,6 +9,8 @@ const TAG_CLASSES = {
   IZVOD: "doc-tag izvod",
   OSTALO: "doc-tag ostalo",
   NEPOZNATO: "doc-tag nepoznato",
+  FAKTURA: "doc-tag faktura",
+  PONUDA: "doc-tag ponuda",
 };
 
 export default function Validation() {
@@ -199,7 +201,7 @@ function DocumentTable({ documents, updatingDocId, updateDocumentType, deleteDoc
         {documents.map((doc) => (
           <React.Fragment key={doc.id}>
             <tr>
-              <td>{doc.partner_name_ocr || "-"}</td>
+              <td>{doc.partner_name || doc.partner_name_ocr || "-"}</td>
               <td>{doc.id}</td>
               <td>
                 <a href={`/documents/${doc.id}`} target="_blank" rel="noreferrer">

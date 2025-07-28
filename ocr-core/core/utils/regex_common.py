@@ -1,11 +1,13 @@
 # core/utils/regex_common.py
 import re
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 # --- DOC NUMBER REGEX ---
 DOC_NUMBER_PATTERNS = [
+    r"\bPONUDA\s*(br\.?|broj\.?|[-:\s])?\s*([A-Z0-9\-\/]+)",
     r"\bRA[CĆ]UN\s*(br\.?|broj\.?|[-:\s])?\s*([A-Z0-9\-\/]+)",
     r"\bR1\s*RA[CĆ]UN.*?br\.?\s*([A-Z0-9\-\/]+)",
     r"\bOTP.?BR\.?\s*([A-Z0-9\-\/]+)",
@@ -61,13 +63,14 @@ DATE_PATTERNS = [
     (r"(datum isporuke|isporuka)[:\s]*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})", "delivery_date"),
     (r"(datum unosa)[:\s]*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})", "entry_date"),
     (r"\b([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{4})\b", "any_date"),
+    # Engleski formati: 15th Jan 2025, 1 Feb 2024, 3rd March 2025
+    (r"\b(\d{1,2})(st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4})\b", "date_en"),
 ]
 
 def extract_doc_number(text: str) -> str | None:
     for pattern in DOC_NUMBER_PATTERNS:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            # grupa koja sadrži broj dokumenta je zadnja grupa (group 2 u većini)
             group_index = 2 if match.lastindex and match.lastindex >= 2 else 0
             return match.group(group_index).strip()
     return None
@@ -76,7 +79,6 @@ def extract_oib(text: str) -> str | None:
     hr_oib_match = re.search(r"HR(\d{11})", text, re.IGNORECASE)
     if hr_oib_match:
         return hr_oib_match.group(1)
-
     matches = re.findall(OIB_PATTERN, text)
     if not matches:
         return None
@@ -88,21 +90,17 @@ def extract_all_oibs(text: str) -> list[str]:
 def extract_vat_number(text: str) -> str | None:
     candidates = re.findall(VAT_CANDIDATE_PATTERN, text.upper())
     logger.debug(f"Pronađeni kandidati za VAT broj (raw): {candidates}")
-
     for country_code, number, suffix in candidates:
         candidate = f"{country_code}{number}{suffix}"
         pattern = COUNTRY_VAT_REGEX.get(country_code)
-
         if not pattern:
             logger.debug(f"Nema pravila za zemlju {country_code} za VAT broj {candidate}, preskačem.")
             continue
-
         if re.fullmatch(pattern, candidate):
             logger.debug(f"Validan VAT broj pronađen: {candidate}")
             return candidate
         else:
             logger.debug(f"Nevalidan VAT broj za zemlju {country_code}: {candidate}")
-
     return None
 
 def extract_all_vats(text: str) -> list[str]:
@@ -115,22 +113,94 @@ def extract_all_vats(text: str) -> list[str]:
             vats.append(candidate)
     return vats
 
+def parse_english_date_with_suffix(date_str: str):
+    """
+    Parsira engleski format datuma s ordinalnim sufiksima (15th Jan 2025, 2nd Feb 2023).
+    Vraća ISO string ili None.
+    """
+    # Ukloni sufikse st/nd/rd/th
+    clean = re.sub(r'(st|nd|rd|th)', '', date_str.lower())
+    # Standardiziraj: "15 jan 2025" ili "5 march 2023"
+    try:
+        # Probaj kratki i dugi naziv mjeseca
+        for fmt in ("%d %b %Y", "%d %B %Y"):
+            try:
+                dt = datetime.strptime(clean.strip(), fmt)
+                return dt.date().isoformat()
+            except Exception:
+                continue
+        return None
+    except Exception:
+        return None
+
 def extract_dates(text: str) -> dict:
     result = {}
     for pat, label in DATE_PATTERNS:
         for match in re.finditer(pat, text, re.IGNORECASE):
-            value = match.group(2 if match.lastindex and match.lastindex > 1 else 1)
-            if label not in result:
-                result[label] = value
+            # Engleski datum: npr. "15th Jan 2025" -> 'date_en'
+            if label == "date_en":
+                # Sastavi datum iz grupe (dan, sufiks, mjesec, godina)
+                day = match.group(1)
+                month = match.group(3)
+                year = match.group(4)
+                date_str = f"{day} {month} {year}"
+                parsed = parse_english_date_with_suffix(date_str)
+                if parsed and "date_en" not in result:
+                    result["date_en"] = parsed
+            else:
+                value = match.group(2 if match.lastindex and match.lastindex > 1 else 1)
+                if label not in result:
+                    result[label] = value
     return result
 
 def extract_invoice_date(text: str) -> str | None:
     dates = extract_dates(text)
-    return dates.get("invoice_date")
+    # Preferiraj HR format, fallback na ENG format
+    return dates.get("invoice_date") or dates.get("date_en")
 
 def extract_due_date(text: str) -> str | None:
     dates = extract_dates(text)
-    return dates.get("due_date")
+    # Preferiraj HR format, fallback na ENG format
+    return dates.get("due_date") or dates.get("date_en")
+
+def extract_amount(text: str) -> float | None:
+    """
+    Traži iznos računa s fokusom na prave ključne riječi i izbjegava lažne vrijednosti (npr. temeljni kapital).
+    """
+    keywords = [
+        "ukupno", "za plaćanje", "total", "amount due", "iznos", "ukupno za uplatu", "plativo", "svega za platiti"
+    ]
+    ignore_lines = [
+        "temeljni kapital", "sud", "registar", "osnivač", "društvo je upisano", "uprava", "skladište"
+    ]
+    lines = text.splitlines()
+    candidate_amounts = []
+
+    for line in lines:
+        line_lower = line.lower()
+        if any(kw in line_lower for kw in keywords) and not any(bad in line_lower for bad in ignore_lines):
+            found = re.findall(r"(\d{1,3}(?:[., ]\d{3})*(?:[.,]\d{2}))", line)
+            for n in found:
+                n_clean = n.replace(" ", "").replace(".", "").replace(",", ".")
+                try:
+                    candidate_amounts.append(float(n_clean))
+                except Exception:
+                    pass
+
+    # Ako nema iz ključnih linija, prođi cijeli tekst, ali izbjegavaj ignore_lines
+    if not candidate_amounts:
+        for line in lines:
+            line_lower = line.lower()
+            if not any(bad in line_lower for bad in ignore_lines):
+                found = re.findall(r"(\d{1,3}(?:[., ]\d{3})*(?:[.,]\d{2}))", line)
+                for n in found:
+                    n_clean = n.replace(" ", "").replace(".", "").replace(",", ".")
+                    try:
+                        candidate_amounts.append(float(n_clean))
+                    except Exception:
+                        pass
+
+    return max(candidate_amounts) if candidate_amounts else None
 
 def is_invoice(text: str) -> bool:
     """
@@ -144,22 +214,25 @@ def is_invoice(text: str) -> bool:
     ]
     return any(re.search(pat, text, re.IGNORECASE) for pat in invoice_keywords)
 
-
 def detect_doc_type(text: str) -> str:
     """
     Pokušaj detekcije tipa dokumenta putem ključnih riječi (fallback kad AI ne prepozna).
     """
-    text = text.lower()
-    if any(x in text for x in ["račun", "faktura", "invoice", "račun-otpremnica"]):
+    text_lower = text.lower()
+    if any(x in text_lower for x in ["račun-otpremnica", "račun otpremnica"]):
         return "URA"
-    if any(x in text for x in ["ugovor", "raskid ugovora", "ugovor o radu"]):
+    if any(x in text_lower for x in ["račun", "faktura", "invoice"]):
+        return "URA"
+    if any(x in text_lower for x in ["ponuda", "ponuda br", "ponuda broj"]):
+        return "PONUDA"
+    if any(x in text_lower for x in ["ugovor", "raskid ugovora", "ugovor o radu"]):
         return "UGOVOR"
-    if any(x in text for x in ["izvod", "izvadak"]):
+    if any(x in text_lower for x in ["izvod", "izvadak"]):
         return "IZVOD"
-    if "cesija" in text:
+    if "cesija" in text_lower:
         return "CESIJA"
-    if "ios" in text or "izvješće otvorenih stavaka" in text:
+    if "ios" in text_lower or "izvješće otvorenih stavaka" in text_lower:
         return "IOS"
-    if "konto kartica" in text:
+    if "konto kartica" in text_lower:
         return "KONTO_KARTICA"
     return "OSTALO"

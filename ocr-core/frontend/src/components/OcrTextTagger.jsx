@@ -1,19 +1,24 @@
+// frontend/components/OcrTextTagger.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Info } from "lucide-react";
 import { toast } from "react-toastify";
 
+// Nov, usklađen skup tipova dokumenata
 const DOCUMENT_TYPES = [
-  { key: "URA", label: "Ulazni račun (URA)" },
+  { key: "FAKTURA", label: "Faktura" },
   { key: "IRA", label: "Izlazni račun (IRA)" },
   { key: "IZVOD", label: "Izvod" },
   { key: "UGOVOR", label: "Ugovor" },
+  { key: "CESIJA", label: "Cesija" },
+  { key: "IOS", label: "IOS" },
+  { key: "KONTO_KARTICA", label: "Konto kartica" },
   { key: "OSTALO", label: "Ostalo" },
+  { key: "NEPOZNATO", label: "Nepoznato" },
 ];
 
 const TAG_TYPES = [
   { key: "oib", label: "OIB (HR)" },
-  { key: "euvat", label: "EU VAT (EU dobavljač)" },
-  { key: "vat", label: "VAT (Strani dobavljač)" },
+  { key: "vat_number", label: "VAT broj (EU/Strani dobavljač)" },
   { key: "invoice_number", label: "Broj računa" },
   { key: "date_invoice", label: "Datum računa" },
   { key: "due_date", label: "Datum valute" },
@@ -23,14 +28,19 @@ const TAG_TYPES = [
 ];
 
 const fieldsForType = {
-  URA: ["supplier_name", "amount", "date_invoice", "due_date", "invoice_number", "oib", "euvat", "vat"],
-  IRA: ["partner_name", "amount", "date_invoice", "due_date", "invoice_number", "oib", "euvat", "vat"],
-  IZVOD: ["amount", "date_invoice", "due_date", "oib", "euvat", "vat"],
-  UGOVOR: ["partner_name", "date_invoice", "due_date", "oib", "euvat", "vat"],
-  OSTALO: ["oib", "euvat", "vat"],
+  FAKTURA: ["supplier_name", "amount", "date_invoice", "due_date", "invoice_number", "oib", "vat_number"],
+  IRA: ["partner_name", "amount", "date_invoice", "due_date", "invoice_number", "oib", "vat_number"],
+  IZVOD: ["amount", "date_invoice", "due_date", "oib", "vat_number"],
+  UGOVOR: ["partner_name", "date_invoice", "due_date", "oib", "vat_number"],
+  CESIJA: ["partner_name", "date_invoice", "due_date"],
+  IOS: ["partner_name", "date_invoice", "due_date"],
+  KONTO_KARTICA: ["partner_name", "date_invoice", "due_date"],
+  OSTALO: ["oib", "vat_number"],
+  NEPOZNATO: [],
 };
 
 export default function OcrTextTagger({ text, initialTags = {}, onSave, loading }) {
+  // initialTags bi trebali biti podaci iz tablice documents (ne annotations)
   const [tags, setTags] = useState(initialTags);
   const textRef = useRef(null);
 
@@ -65,7 +75,6 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
       return;
     }
     const value = key.includes("date") ? normalizeDate(selected) : selected.trim();
-    console.log(`handleQuickTag key=${key} value=${value}`);
     setTags(prev => ({
       ...prev,
       [key]: value,
@@ -75,7 +84,6 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
 
   function handleInputChange(key, value) {
     const cleanValue = key.includes("date") ? normalizeDate(value) : value;
-    console.log(`handleInputChange key=${key} value=${cleanValue}`);
     setTags(prev => ({
       ...prev,
       [key]: cleanValue,
@@ -102,7 +110,6 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
   }
 
   function handleSave() {
-    console.log("handleSave sending tags:", tags);
     if (onSave) onSave(tags);
   }
 
@@ -161,7 +168,7 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
                   style={{ width: 200, padding: 6, border: "1px solid #ccc", borderRadius: 4 }}
                   value={tags[key] || ""}
                   onChange={e => handleInputChange(key, e.target.value)}
-                  placeholder={`Upiši ili označi ${label.toLowerCase()}`}
+                  placeholder={key === "supplier_name" ? "Strani dobavljač" : `Upiši ili označi ${label.toLowerCase()}`}
                   disabled={loading}
                 />
                 <button
