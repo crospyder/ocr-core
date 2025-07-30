@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from core.parsers.dispatcher import dispatch_parser
 from core.database.connection import SessionMain
-from core.database.models import Document, Partner, DocumentAnnotation
+from core.database.models import Document, Partner, DocumentAnnotation, Client
 from core.parsers.supplier_extractor import extract_supplier_info
 from core.utils.regex_common import extract_all_vats, extract_all_oibs, extract_invoice_date, extract_due_date
 from core.routes.oibvalidator import is_valid_oib
@@ -23,7 +23,7 @@ from core.vies_api.client import ViesClient
 from elasticsearch import Elasticsearch
 
 AI_LABEL_MAPPING: Dict[str, str] = {
-    "0": "FAKTURA",  # URA nema, sve se mapira na FAKTURA
+    "0": "FAKTURA",
     "1": "UGOVOR",
     "2": "IZVOD",
     "3": "CESIJA",
@@ -55,6 +55,18 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 sudreg_client = SudregClient()
 vies_client = ViesClient()
 
+# --- NOVO: Dohvat svih owner OIB-eva i HR VAT-ova ---
+def get_all_owner_oibs_and_hrvats(db: Session):
+    oibs = set()
+    hrvats = set()
+    clients = db.query(Client).all()
+    for c in clients:
+        if getattr(c, "oib", None):
+            oib = str(c.oib)
+            oibs.add(oib)
+            hrvats.add(f"HR{oib}")
+    return oibs, hrvats
+
 def str_to_date(date_str: Optional[str]):
     if not date_str:
         return None
@@ -70,23 +82,15 @@ def determine_final_document_type(
     text: str,
 ) -> str:
     text_lower = text.lower()
-
-    # Ručno izabrano IRA uvijek ima prioritet
     if document_type == "IRA":
         return "IRA"
-
-    # AI label mapiranje (URA ne postoji više, ako se pojavi, mapiraj na FAKTURA)
     if ai_label and ai_label in AI_LABEL_MAPPING:
         label = AI_LABEL_MAPPING[ai_label]
         if label == "URA":
             return "FAKTURA"
         return label
-
-    # Regex fallback za fakture
     if "faktura" in text_lower or "račun" in text_lower:
         return "FAKTURA"
-
-    # Ostatak dokumenta (npr. ponuda, ugovor...)
     return document_type or "OSTALO"
 
 def serialize_for_json(obj: Any) -> Any:
@@ -98,7 +102,11 @@ def serialize_for_json(obj: Any) -> Any:
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 def date_to_str(date_obj):
-    return date_obj.strftime("%d.%m.%Y") if date_obj else None
+    if not date_obj:
+        return None
+    if isinstance(date_obj, str):
+        return date_obj
+    return date_obj.strftime("%d.%m.%Y")
 
 def format_address(address_obj):
     if not address_obj:
@@ -139,25 +147,28 @@ def build_auto_annotation_dict(
     parsed_data: Dict[str, Any],
     skraceni_naziv: Optional[str],
     supplier_info: Any,
-    vat_number: Optional[str] = None,   # dodan argument
+    vat_number: Optional[str] = None,
+    partner_obj: Optional[Partner] = None,
 ) -> Dict[str, Any]:
     supplier_name = skraceni_naziv or (
         supplier_info.get("naziv_firme") if isinstance(supplier_info, dict) else ""
     )
-    partner_name = (
-        supplier_info.get("naziv_firme") if document_type == "IRA" and isinstance(supplier_info, dict) else ""
-    )
-    # VAT broj iz parsed_data ili argumenta
+    partner_name = ""
+    if partner_obj and getattr(partner_obj, "naziv", None):
+        partner_name = partner_obj.naziv
+    elif supplier_info and isinstance(supplier_info, dict):
+        partner_name = supplier_info.get("naziv_firme") or ""
+
     vat_from_parsed = parsed_data.get("vat_number", None)
     vat_final = vat_number or vat_from_parsed
     return {
         "document_type": document_type,
         "oib": oib,
-        "vat_number": vat_final,  # <--- DODANO
+        "vat_number": vat_final,
         "invoice_number": doc_number,
         "date_invoice": date_to_str(invoice_date),
         "date_valute": date_to_str(due_date),
-        "amount_total": str(
+        "amount": str(
             parsed_data.get("total")
             or parsed_data.get("iznos")
             or parsed_data.get("amount")
@@ -175,7 +186,6 @@ def upsert_document_annotations(db: Session, doc_id: int, annotation_dict: Dict[
     if not annotation:
         annotation = DocumentAnnotation(document_id=doc_id)
         db.add(annotation)
-
     for field, value in annotation_dict.items():
         if hasattr(annotation, field):
             setattr(annotation, field, value)
@@ -193,11 +203,11 @@ def sync_annotations_to_document(db: Session, doc: Document, annotations: Dict[s
         "amount": "amount",
         "document_type": "document_type",
     }
-
     for ann_field, doc_field in mapping.items():
         if ann_field in annotations:
             new_value = annotations[ann_field]
-
+            if new_value in [None, ""]:
+                continue
             if ann_field == "amount" and isinstance(new_value, str):
                 new_value = new_value.replace(",", ".")
             if ann_field == "amount":
@@ -205,7 +215,6 @@ def sync_annotations_to_document(db: Session, doc: Document, annotations: Dict[s
                     new_value = float(new_value)
                 except ValueError:
                     new_value = None
-
             current_value = getattr(doc, doc_field)
             if current_value != new_value:
                 setattr(doc, doc_field, new_value)
@@ -213,6 +222,33 @@ def sync_annotations_to_document(db: Session, doc: Document, annotations: Dict[s
 
 def is_training_mode_enabled() -> bool:
     return TRAINING_MODE_FLAG.get("enabled", False)
+
+def merge_doc_fields(parsed: dict, ann_data: dict = None) -> dict:
+    ann_data = ann_data or {}
+    def get_value(key):
+        return ann_data.get(key) if ann_data and ann_data.get(key) is not None else parsed.get(key)
+    return {
+        "amount": get_value("amount"),
+        "invoice_number": get_value("invoice_number"),
+        "oib": get_value("oib"),
+        "supplier_name_ocr": get_value("supplier_name") or get_value("partner_name") or parsed.get("supplier_name") or parsed.get("partner_name"),
+        "invoice_date": get_value("invoice_date"),
+        "due_date": get_value("due_date"),
+        "doc_number": get_value("invoice_number"),
+    }
+
+# ... [IMPORTS + sve isto do @router.post("/documents")]
+
+def filter_owner_fields(parsed_data, all_owner_oibs, all_owner_hrvats):
+    # Vrati novi dict gdje su owner OIB/VAT zamijenjeni s None
+    if parsed_data.get("oib") in all_owner_oibs:
+        parsed_data["oib"] = None
+    if parsed_data.get("vat_number") and parsed_data["vat_number"].upper() in all_owner_hrvats:
+        parsed_data["vat_number"] = None
+    # Ako imaš i supplier_oib i on ti dolazi iz AI-a/parsera
+    if parsed_data.get("supplier_oib") in all_owner_oibs:
+        parsed_data["supplier_oib"] = None
+    return parsed_data
 
 @router.post("/documents")
 async def upload_documents(
@@ -226,9 +262,9 @@ async def upload_documents(
     db: Session = SessionMain()
 
     try:
-        owner_oib = get_owner_oib(db)
-        owner_vat = f"HR{owner_oib}" if owner_oib else None
-        logger.info(f"Owner OIB: {owner_oib}, Owner VAT: {owner_vat}")
+        all_owner_oibs, all_owner_hrvats = get_all_owner_oibs_and_hrvats(db)
+        logger.info(f"All owner OIBs: {all_owner_oibs}")
+        logger.info(f"All owner HR VATs: {all_owner_hrvats}")
 
         for file in files:
             logger.info(f"Processing file: {file.filename}")
@@ -350,18 +386,18 @@ async def upload_documents(
                 else None
             )
 
-            # Extract OIB using regex; if none found, fallback to AI
+            # --- OIB kandidat: SVI OIB iz clients isključeni ---
             oib_candidates = [
-                x
-                for x in extract_all_oibs(text)
-                if is_valid_oib(x) and x != owner_oib
+                x for x in extract_all_oibs(text)
+                if is_valid_oib(x) and x not in all_owner_oibs
             ]
             oib = oib_candidates[0] if oib_candidates else None
             if not oib:
                 oib_ai = ai_parsed.get("oib") if isinstance(ai_parsed, dict) else None
-                if oib_ai == owner_oib:
-                    oib_ai = None
-                oib = oib_ai
+                if oib_ai and oib_ai not in all_owner_oibs:
+                    oib = oib_ai
+                else:
+                    oib = None
 
             doc_number = (
                 ai_parsed.get("invoice_number") if isinstance(ai_parsed, dict) else None
@@ -376,28 +412,25 @@ async def upload_documents(
             invoice_date = str_to_date(invoice_date_str)
             due_date = str_to_date(due_date_str)
 
+            # --- VAT kandidat: samo HR-VAT (HR{OIB}) isključeni ---
             vat_ai = (
                 ai_parsed.get("vat_number") if isinstance(ai_parsed, dict) else None
             )
-            if vat_ai:
+            vat_number = None
+            if vat_ai and vat_ai.upper() not in all_owner_hrvats:
                 vat_number = vat_ai
             else:
                 all_vats = extract_all_vats(text)
                 filtered_vats = [
-                    v
-                    for v in all_vats
-                    if owner_vat is None or v.upper() != owner_vat.upper()
+                    v for v in all_vats
+                    if v.upper() not in all_owner_hrvats
                 ]
-                if not filtered_vats and owner_vat and owner_vat in all_vats:
-                    filtered_vats = [owner_vat]
                 vat_number = filtered_vats[0] if filtered_vats else None
 
             text_lower = text.lower()
 
-            # Klasifikacija tipa dokumenta
             final_document_type = determine_final_document_type(document_type, ai_label, text)
 
-            # DISPATCH PARSER OUTPUT + AI/REGEX MERGE
             parser = dispatch_parser(final_document_type)
             parser_output = parser(text)
 
@@ -405,12 +438,13 @@ async def upload_documents(
             if isinstance(ai_parsed, dict):
                 parsed_data.update({k: v for k, v in ai_parsed.items() if v is not None})
 
-            # Merge parser_output, popuni prazna polja iz parsera ako ih nema u ai/regext outputu
             for k, v in parser_output.items():
                 if k not in parsed_data or parsed_data[k] in (None, '', [], {}):
                     parsed_data[k] = v
 
-            # Dodaj AI notifikacije ako je IRA (ručni upload) i postoji konflikt
+            # --- DODANO: filtriraj owner OIB/VAT iz parsed_data ---
+            parsed_data = filter_owner_fields(parsed_data, all_owner_oibs, all_owner_hrvats)
+
             ai_conflict = False
             if document_type == "IRA":
                 ai_suggestion = AI_LABEL_MAPPING.get(ai_label, None)
@@ -421,7 +455,6 @@ async def upload_documents(
                 parsed_data["ai_score"] = ai_suggestion_score
                 parsed_data["ai_conflict"] = ai_conflict
 
-            # Normalise amount
             amount_value: Optional[float] = None
             for key in ("amount", "total", "iznos", "amount_total"):
                 if key in parsed_data and parsed_data[key]:
@@ -448,7 +481,7 @@ async def upload_documents(
             else:
                 if oib:
                     partner_obj = db.query(Partner).filter_by(oib=oib).first()
-                    if partner_obj or oib != owner_oib:
+                    if partner_obj or oib not in all_owner_oibs:
                         if partner_obj:
                             supplier_info.update(
                                 {
@@ -513,6 +546,7 @@ async def upload_documents(
                                         db.commit()
                                     except Exception as e:
                                         logger.warning(f"VIES validation failed for OIB {oib}: {e}")
+                                    partner_obj = novi_partner
                             except Exception as e:
                                 sudreg_raw = {"error": str(e)}
                                 supplier_info["alert"] = f"❗ Sudreg API error: {e}"
@@ -575,29 +609,33 @@ async def upload_documents(
                             )
                             supplier_info.update({"naziv_firme": skraceni_naziv})
 
-            supplier_name_ocr = (
-                skraceni_naziv
-                or (
-                    supplier_info.get("naziv_firme")
-                    if isinstance(supplier_info, dict)
-                    else None
-                )
-                or "Nepoznat dobavljač"
-            )
+            # ----------- KORISTI ISTU LOGIKU KAO U REPARSE ---------
+            doc_fields = merge_doc_fields(parsed_data)
+            # Hard filtriraj owner OIB u doc_fields!
+            if doc_fields["oib"] in all_owner_oibs:
+                doc_fields["oib"] = None
+            # Override naziv partnera s baze/partnera
+            if partner_obj and getattr(partner_obj, "naziv", None):
+                doc_fields["supplier_name_ocr"] = partner_obj.naziv
+            elif skraceni_naziv:
+                doc_fields["supplier_name_ocr"] = skraceni_naziv
+            elif supplier_info.get("naziv_firme"):
+                doc_fields["supplier_name_ocr"] = supplier_info.get("naziv_firme")
+            # -------------------------------------------------------
 
             doc = Document(
                 filename=unique_name,
                 ocrresult=text,
                 supplier_id=None,
-                supplier_name_ocr=supplier_name_ocr,
-                supplier_oib=oib,
+                supplier_name_ocr=doc_fields["supplier_name_ocr"] or "Nepoznat dobavljač",
+                supplier_oib=doc_fields["oib"],
                 archived_at=upload_time,
                 date=upload_time,
                 document_type=final_document_type,
-                invoice_date=invoice_date,
-                due_date=due_date,
-                doc_number=doc_number,
-                amount=amount_value,
+                invoice_date=doc_fields["invoice_date"],
+                due_date=doc_fields["due_date"],
+                doc_number=doc_fields["doc_number"],
+                amount=doc_fields["amount"],
                 hash=file_hash,
                 sudreg_response=(
                     json.dumps(
@@ -615,33 +653,43 @@ async def upload_documents(
             db.add(doc)
             db.commit()
             db.refresh(doc)
+            logger.info(f"Document object: {doc}")
+            logger.info(f"invoice_date: {doc.invoice_date} ({type(doc.invoice_date)})")
+            logger.info(f"due_date: {doc.due_date} ({type(doc.due_date)})")
+
             logger.info(
                 f"Document saved with ID: {doc.id} and filename: {doc.filename}"
             )
 
             annotation_dict = build_auto_annotation_dict(
                 final_document_type,
-                oib,
-                doc_number,
-                invoice_date,
-                due_date,
+                doc_fields["oib"],
+                doc_fields["doc_number"],
+                doc_fields["invoice_date"],
+                doc_fields["due_date"],
                 parsed_data,
-                skraceni_naziv,
+                doc_fields["supplier_name_ocr"],
                 supplier_info,
                 vat_number=vat_number,
+                partner_obj=partner_obj,
             )
             upsert_document_annotations(db, doc.id, annotation_dict)
             sync_annotations_to_document(db, doc, annotation_dict)
 
             index_to_elasticsearch(doc)
 
+            # FILE RENAME NA ID – **OVO JE KORIGIRAN BLOK**
             try:
                 new_filename = f"{doc.id}.pdf"
                 new_path = os.path.join(UPLOAD_DIR, new_filename)
                 os.rename(file_path, new_path)
                 doc.filename = new_filename
                 db.commit()
+                db.refresh(doc)
                 logger.info(f"File renamed to {new_filename}")
+                logger.info(f"Trying to rename {file_path} -> {new_path}")
+                logger.info(f"Exists file_path: {os.path.exists(file_path)}; Exists new_path: {os.path.exists(new_path)}")
+
             except Exception as e:
                 logger.warning(f"File renaming failed: {e}")
 

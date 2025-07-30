@@ -21,7 +21,7 @@ import SearchPage from "./src/components/SearchPage";
 import SudReg_Manual from "./src/components/SudReg_Manual.jsx";
 import MailClients from "./src/components/mail-client.jsx";
 import Settings from "./src/components/pages/Settings.jsx";
-
+import UvozBaza from "./src/components/pages/uvoz-baza.jsx"; // === OVO JE TVOJ FAJL ===
 
 import BillingRouter from "./billing/router.jsx";
 
@@ -45,6 +45,7 @@ const router = createBrowserRouter([
       { path: "mail_clients", element: <MailClients /> },
       { path: "billing/*", element: <BillingRouter /> },  // <-- billing ruta dodana
       { path: "settings", element: <Settings /> },
+      { path: "uvoz-baza", element: <UvozBaza /> },    // === OVO JE TVOJE ===
     ],
   },
 ]);

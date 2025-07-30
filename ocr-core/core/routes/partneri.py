@@ -1,4 +1,4 @@
-# core/routes/partneri.py
+# partneri.py
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -7,7 +7,6 @@ from ..database.connection import get_db
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/partneri", tags=["partneri"])
-
 
 
 class PartnerOut(BaseModel):
@@ -34,6 +33,14 @@ class PartnerUpdate(BaseModel):
 def get_partneri(db: Session = Depends(get_db)):
     partneri = db.query(Partner).all()
     return partneri
+
+
+@router.get("/{oib}", response_model=PartnerOut)
+def get_partner_by_oib(oib: str, db: Session = Depends(get_db)):
+    partner = db.query(Partner).filter(Partner.oib == oib).first()
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner nije pronađen")
+    return partner
 
 
 @router.put("/{partner_id}")

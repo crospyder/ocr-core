@@ -31,13 +31,13 @@ class Document(Base):
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String(255), nullable=False)
     ocrresult = Column(Text)
-    supplier_id = Column(Integer, ForeignKey("clients.id"), nullable=True)
+    supplier_id = Column(Integer, ForeignKey("partneri.id"), nullable=True)
     supplier_name_ocr = Column(String(255), nullable=True)
     supplier_oib = Column(String(11), nullable=True)
     date = Column(TIMESTAMP, nullable=True)
     amount = Column(Numeric(12, 2), nullable=True)
     archived_at = Column(TIMESTAMP, server_default=func.now())
-    supplier = relationship("Client", backref="documents")
+    supplier = relationship("Partner", backref="documents")
     annotation = relationship("DocumentAnnotation", back_populates="document", uselist=False)
     sudreg_response = Column(Text, nullable=True)
     document_type = Column(String(50), nullable=True)
@@ -46,6 +46,7 @@ class Document(Base):
     parsed = Column(JSON, nullable=True)
     doc_number = Column(String(255), nullable=True)  # Broj računa
     hash = Column(String(64), unique=True, index=True, nullable=True)  # <--- hash polje
+    import_source = Column(String(50), nullable=True)  # 'uvoz_baza', 'mail', 'manual_upload'
     predlozi_izbacivanje = Column(Boolean, default=False)
 
 class User(Base):

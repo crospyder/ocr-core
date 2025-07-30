@@ -15,10 +15,11 @@ import re
 from io import BytesIO
 from PIL import Image
 import traceback
+import httpx
 
 router = APIRouter(prefix="/api/mail_processing", tags=["mail_processing"])
 
-MAX_PIXELS = 25_000_000  # prag veličine slike, možeš podesiti
+MAX_PIXELS = 25_000_000
 MAX_PDF_SIZE = 5 * 1024 * 1024  # 5 MB limit
 
 def decode_mime_words(s):
@@ -44,8 +45,7 @@ def is_pdf_image_size_valid(pdf_bytes: bytes) -> bool:
                 return False
             return True
     except Exception:
-        # Ako nije slika ili ne može otvoriti, pretpostavi valjano
-        return True
+        return True  # Ako nije slika ili ne može otvoriti, pretpostavi valjano
 
 def fetch_mail_list_with_attachments(imap_server, imap_port, username, password, since_date=None):
     print(f"[LOG] Spajam se na IMAP server {imap_server}:{imap_port} s korisnikom {username}")
@@ -85,7 +85,6 @@ def fetch_mail_list_with_attachments(imap_server, imap_port, username, password,
             filename = part.get_filename()
             if filename:
                 filename_decoded = decode_mime_words(filename)
-                # Filter samo PDF i do 5 MB
                 if filename_decoded.lower().endswith(".pdf"):
                     size = len(part.get_payload(decode=True)) if part.get_payload(decode=True) else 0
                     if size <= MAX_PDF_SIZE:
@@ -120,7 +119,8 @@ async def get_mail_list(db: Session = Depends(get_db)):
     try:
         password_decrypted = decrypt_password(account.password_encrypted)
         now = datetime.now(timezone.utc)
-        since_date = datetime(year=now.year-1, month=1, day=1, tzinfo=timezone.utc)
+        since_date = datetime(year=now.year, month=1, day=1, tzinfo=timezone.utc)
+
 
         messages = fetch_mail_list_with_attachments(
             account.imap_server,
@@ -151,6 +151,23 @@ async def process_mail_batch(db: Session = Depends(get_db)):
     processed_uids_set = set(uid for (uid,) in processed_uids)
     print(f"[LOG] Pronađeno već obrađenih mailova: {len(processed_uids_set)}")
 
+    # --- Dohvati DMS server info iz baze (app_settings) ---
+    dms_ip = "127.0.0.1"
+    dms_port = "8000"
+    try:
+        from core.crud.settings import get_setting
+        dms_ip_setting = get_setting(db, "dms_server_ip")
+        dms_port_setting = get_setting(db, "dms_server_port")
+        if dms_ip_setting:
+            dms_ip = dms_ip_setting.value.replace('"', '').strip()
+        if dms_port_setting:
+            dms_port = dms_port_setting.value.replace('"', '').strip()
+    except Exception as e:
+        print(f"[ERROR] Ne mogu dohvatiti DMS server IP/port iz baze: {e}")
+
+    upload_url = f"http://{dms_ip}:{dms_port}/api/upload/documents"
+    print(f"[LOG] Upload endpoint: {upload_url}")
+
     try:
         password_decrypted = decrypt_password(account.password_encrypted)
         now = datetime.now(timezone.utc)
@@ -168,12 +185,11 @@ async def process_mail_batch(db: Session = Depends(get_db)):
         uids = data[0].split()
 
         results = []
-        from core.routes.upload import process_uploaded_file
 
         for uid in uids:
             uid_str = uid.decode()
             if uid_str in processed_uids_set:
-                continue  # preskoči već obrađene
+                continue
 
             typ, full_msg_data = mail.fetch(uid, "(RFC822)")
             if typ != "OK" or not full_msg_data or not full_msg_data[0]:
@@ -181,37 +197,40 @@ async def process_mail_batch(db: Session = Depends(get_db)):
                 continue
 
             full_msg = email.message_from_bytes(full_msg_data[0][1], policy=email.policy.default)
-
-            # Izlistaj attachmente iz tog maila
             attachment_filenames = []
             for part in full_msg.iter_attachments():
                 att_name_raw = part.get_filename()
                 if att_name_raw:
                     att_name_decoded = decode_mime_words(att_name_raw)
-                    # Samo PDF i do 5 MB
                     if att_name_decoded.lower().endswith(".pdf"):
                         size = len(part.get_payload(decode=True)) if part.get_payload(decode=True) else 0
                         if size <= MAX_PDF_SIZE:
                             attachment_filenames.append((att_name_decoded, part))
 
             if not attachment_filenames:
-                # Nema relevantnih attachmenta, preskoči mail
                 continue
 
             for filename_original, part in attachment_filenames:
                 try:
                     attachment_content = part.get_payload(decode=True)
-
-                    # Nova validacija veličine slike unutar PDF-a
                     if not is_pdf_image_size_valid(attachment_content):
                         print(f"[WARNING] Attachment '{filename_original}' je prevelike dimenzije (više od {MAX_PIXELS} pixela), preskačem...")
                         continue
 
-                    result = await process_uploaded_file(
-                        file_bytes=attachment_content,
-                        filename=filename_original,
-                        document_type="email-prilog"
-                    )
+                    # Slanje na upload API, koristiš backend pipeline (sve automatski!)
+                    async with httpx.AsyncClient() as client:
+                        files = {'files': (filename_original, BytesIO(attachment_content), 'application/pdf')}
+                        data = {'document_type': 'email-prilog'}
+                        response = await client.post(
+                            upload_url,
+                            files=files,
+                            data=data,
+                            timeout=60,
+                        )
+                        if response.status_code == 200:
+                            result = response.json()
+                        else:
+                            result = {"error": f"API fail: {response.status_code} {response.text}"}
                 except Exception as e:
                     print(f"[ERROR] Greška pri obradi attachmenta '{filename_original}' u mailu UID {uid_str}: {e}")
                     print(traceback.format_exc())

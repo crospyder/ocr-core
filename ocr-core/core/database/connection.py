@@ -1,13 +1,10 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-# Zamijeni s tvojim PostgreSQL podacima: korisnik, lozinka, host, baza
 DATABASE_URL = "postgresql+psycopg2://npausic:1234@localhost/SpineICT_OCR?options=-csearch_path=spineict_ocr"
 
-
 engine_main = create_engine(
-    DATABASE_URL,   # ovdje koristimo DATABASE_URL, a ne DATABASE_URL_MAIN
+    DATABASE_URL,
     pool_pre_ping=True,
     echo=False
 )

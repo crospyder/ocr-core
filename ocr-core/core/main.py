@@ -31,6 +31,10 @@ from core.routes.settings import router as settings_router
 from core.billing import api as billing_api
 from core.routes import regex_config
 from core.routes import finances
+from core.routes.uvoz_baza import router as uvoz_baza_router
+from core.routes import import_mapping
+
+
 
  
 
@@ -87,6 +91,10 @@ app.include_router(billing_api.router, prefix="/billing", tags=["billing"])
 app.include_router(ml_metrics.router)
 app.include_router(regex_config.router, prefix="/api")
 app.include_router(finances.router, prefix="/api")
+app.include_router(uvoz_baza_router, prefix="/api")
+app.include_router(import_mapping.router)
+
+
 
 
 load_module_routers(app)

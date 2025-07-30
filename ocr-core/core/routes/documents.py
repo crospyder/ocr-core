@@ -16,6 +16,9 @@ from elasticsearch import Elasticsearch
 from pydantic import BaseModel
 from core.parsers.dispatcher import dispatch_parser
 from core.utils.regex_common import detect_doc_type
+from pydantic import BaseModel
+
+import requests  # Dodano za AI poziv
 
 router = APIRouter()
 
@@ -387,6 +390,18 @@ def reparse_all_documents(db: Session = Depends(get_db)):
     updated = 0
     errors = []
 
+    # --- AI LABEL MAPPING ---
+    AI_LABEL_MAPPING = {
+        "0": "FAKTURA",
+        "1": "UGOVOR",
+        "2": "IZVOD",
+        "3": "CESIJA",
+        "4": "IOS",
+        "5": "KONTO_KARTICA",
+        "6": "OSTALO",
+        "7": "NEPOZNATO",
+    }
+
     for doc in docs:
         logging.info(f"Parsing document id={doc.id} filename={doc.filename}")
         try:
@@ -394,7 +409,29 @@ def reparse_all_documents(db: Session = Depends(get_db)):
             if not ocr_text or len(ocr_text.strip()) < 10:
                 raise Exception("Prazan ili premali OCR tekst")
 
+            # --- AI CLASSIFICATION identično kao upload ---
+            ai_classify_result = {}
+            try:
+                from core.crud.settings import get_setting
+                model_ip_setting = get_setting(db, "model_server_ip")
+                model_port_setting = get_setting(db, "model_server_port")
+                model_ip = model_ip_setting.value if model_ip_setting else "127.0.0.1"
+                model_port = model_port_setting.value if model_port_setting else "9000"
+                model_server_url = f"http://{model_ip}:{model_port}"
+                payload = {"text": ocr_text}
+                resp = requests.post(f"{model_server_url}/classify", json=payload, timeout=15)
+                if resp.status_code == 200:
+                    ai_classify_result = resp.json()
+            except Exception as e:
+                logging.warning(f"AI classification failed for doc {doc.id}: {e}")
+
+            ai_parsed = ai_classify_result.get("parsed_fields", {}) if isinstance(ai_classify_result, dict) else {}
+            ai_label = ai_classify_result.get("best_label") if isinstance(ai_classify_result, dict) else None
+
             doc_type = doc.document_type or detect_doc_type(ocr_text)
+            if ai_label and ai_label in AI_LABEL_MAPPING:
+                doc_type = AI_LABEL_MAPPING[ai_label]
+
             parser = dispatch_parser(doc_type)
             parsed = parser(ocr_text)
             if isinstance(parsed, str):
@@ -406,7 +443,15 @@ def reparse_all_documents(db: Session = Depends(get_db)):
             if not isinstance(parsed, dict):
                 raise Exception(f"Parser vratio {type(parsed)} (nije dict) za doc_id={doc.id}")
 
-            # Nadjačavanje parsed podataka s annotation.annotations ako postoje i imaju smisla
+            # --- MERGE AI i parser podataka ---
+            merged_data = {}
+            if isinstance(ai_parsed, dict):
+                merged_data.update({k: v for k, v in ai_parsed.items() if v is not None})
+            for k, v in parsed.items():
+                if k not in merged_data or merged_data[k] in (None, '', [], {}):
+                    merged_data[k] = v
+
+            # --- Nadjačavanje parsed podataka s annotation.annotations ako postoje i imaju smisla ---
             ann_data = {}
             if doc.annotation and doc.annotation.annotations:
                 try:
@@ -420,20 +465,20 @@ def reparse_all_documents(db: Session = Depends(get_db)):
                     ann_data = {}
 
             def get_value(key):
-                # Prioritet: anotacija > parser rezultat
-                return ann_data.get(key) if ann_data.get(key) is not None else parsed.get(key)
+                # Prioritet: anotacija > merged_data (AI+parser)
+                return ann_data.get(key) if ann_data.get(key) is not None else merged_data.get(key)
 
-            # Update polja Document s nadjačanim vrijednostima
+            # --- Update polja Document s nadjačanim vrijednostima ---
             doc.amount = get_value("amount")
             doc.invoice_number = get_value("invoice_number")
             doc.oib = get_value("oib")
             doc.supplier_oib = get_value("oib")
-            doc.supplier_name_ocr = get_value("supplier_name") or get_value("partner_name") or parsed.get("supplier_name") or parsed.get("partner_name")
+            doc.supplier_name_ocr = get_value("supplier_name") or get_value("partner_name") or merged_data.get("supplier_name") or merged_data.get("partner_name")
             doc.invoice_date = get_value("invoice_date")
             doc.due_date = get_value("due_date")
             doc.doc_number = get_value("invoice_number")
 
-            doc.parsed = parsed
+            doc.parsed = merged_data  # <-- spremamo merged podatke
 
             updated += 1
         except Exception as e:
@@ -452,4 +497,26 @@ def reparse_all_documents(db: Session = Depends(get_db)):
         "message": f"Re-parsing complete. Updated {updated} documents.",
         "errors": errors,
         "total": len(docs)
+    }
+
+class BatchUpdateTypeRequest(BaseModel):
+    ids: list[int]
+    document_type: str
+
+@router.post("/batch_update_type")
+def batch_update_document_type(
+    payload: BatchUpdateTypeRequest,
+    db: Session = Depends(get_db)
+):
+    updated = 0
+    for doc_id in payload.ids:
+        doc = db.query(Document).filter(Document.id == doc_id).first()
+        if not doc:
+            continue
+        doc.document_type = payload.document_type
+        updated += 1
+    db.commit()
+    return {
+        "message": f"Ažurirano {updated} dokumenata.",
+        "updated_ids": payload.ids
     }

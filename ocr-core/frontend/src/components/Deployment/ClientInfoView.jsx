@@ -6,29 +6,35 @@ export default function ClientInfoView() {
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({
-    naziv_firme: "",
-    oib: "",
-    db_name: "",
-    broj_licenci: 1,
-    adresa: "",
-    kontakt_osoba: "",
-    email: "",
-    telefon: "",
-    licenca_pocetak: "",
-    licenca_kraj: "",
-    status_licence: "active",
+  const [formData, setFormData] = useState(() => {
+    const saved = localStorage.getItem("clientFormData");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          naziv_firme: "",
+          oib: "",
+          db_name: "",
+          broj_licenci: 1,
+          adresa: "",
+          kontakt_osoba: "",
+          email: "",
+          telefon: "",
+          licenca_pocetak: "",
+          licenca_kraj: "",
+          status_licence: "active",
+        };
   });
 
   useEffect(() => {
-    axios.get("/api/client/info")
+    axios
+      .get("/api/client/info")
       .then((res) => {
         if (res.data.needs_setup) {
           setEditMode(true);
         } else {
           const cl = res.data;
           setClient(cl);
-          setFormData({
+          const parsed = {
             naziv_firme: cl.naziv_firme || "",
             oib: cl.oib || "",
             db_name: cl.db_name || "",
@@ -40,7 +46,9 @@ export default function ClientInfoView() {
             licenca_pocetak: cl.licenca_pocetak ? cl.licenca_pocetak.substring(0, 10) : "",
             licenca_kraj: cl.licenca_kraj ? cl.licenca_kraj.substring(0, 10) : "",
             status_licence: cl.status_licence || "active",
-          });
+          };
+          setFormData(parsed);
+          localStorage.setItem("clientFormData", JSON.stringify(parsed));
         }
       })
       .catch(() => {
@@ -51,9 +59,13 @@ export default function ClientInfoView() {
       });
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem("clientFormData", JSON.stringify(formData));
+  }, [formData]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -72,10 +84,28 @@ export default function ClientInfoView() {
         setClient(res.data);
         toast.success("Klijent uspješno kreiran.");
       }
+      localStorage.setItem("clientFormData", JSON.stringify(formData));
       setEditMode(false);
     } catch (error) {
       toast.error(error.response?.data?.detail || "Greška kod spremanja podataka.");
     }
+  };
+
+  const handleResetForm = () => {
+    localStorage.removeItem("clientFormData");
+    setFormData({
+      naziv_firme: "",
+      oib: "",
+      db_name: "",
+      broj_licenci: 1,
+      adresa: "",
+      kontakt_osoba: "",
+      email: "",
+      telefon: "",
+      licenca_pocetak: "",
+      licenca_kraj: "",
+      status_licence: "active",
+    });
   };
 
   if (loading) return <p>Učitavanje...</p>;
@@ -107,7 +137,9 @@ export default function ClientInfoView() {
               { label: "Licenca kraj", name: "licenca_kraj", type: "date" },
             ].map(({ label, name, type, required, min }) => (
               <div key={name} className="client-info-field">
-                <label htmlFor={name} className="client-info-label">{label}</label>
+                <label htmlFor={name} className="client-info-label">
+                  {label}
+                </label>
                 <input
                   id={name}
                   name={name}
@@ -145,6 +177,13 @@ export default function ClientInfoView() {
                 onClick={() => setEditMode(false)}
               >
                 Odustani
+              </button>
+              <button
+                type="button"
+                className="client-info-button client-info-button-secondary"
+                onClick={handleResetForm}
+              >
+                Resetiraj formu
               </button>
             </div>
           </form>

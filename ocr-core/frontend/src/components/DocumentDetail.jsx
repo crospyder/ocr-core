@@ -1,11 +1,56 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import OcrTextTagger from "./OcrTextTagger";
 import PdfViewer from "./PdfViewer";
 import { toast } from "react-toastify";
 
+function StructuredParsedView({ parsed }) {
+  if (!parsed) return <div>Nema podataka za prikaz.</div>;
+
+  const fieldLabels = {
+    document_type: "Tip dokumenta",
+    invoice_number: "Broj računa",
+    date_invoice: "Datum računa",
+    due_date: "Datum dospijeća",
+    amount: "Iznos",
+    oib: "OIB",
+    supplier_name_ocr: "Dobavljač",
+    supplier_oib: "OIB dobavljača",
+    vat_number: "VAT broj",
+    partner_name: "Naziv partnera",
+  };
+
+  return (
+    <div style={{ padding: 20, border: "1px solid #ccc", borderRadius: 8, maxWidth: 700 }}>
+      <h3>Detalji dokumenta (strukturirani prikaz)</h3>
+      <table>
+        <tbody>
+          {Object.entries(parsed).map(([key, value]) => (
+            <tr key={key}>
+              <td style={{ fontWeight: "bold", paddingRight: 10, verticalAlign: "top" }}>
+                {fieldLabels[key] || key.replace(/_/g, " ")}
+              </td>
+              <td style={{ whiteSpace: "pre-wrap" }}>{String(value)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function DocumentDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const params = new URLSearchParams(location.search);
+  const idsStr = params.get("ids");
+  const ids = idsStr ? idsStr.split(",").map(Number) : [];
+  const currentIdx = ids.indexOf(Number(id));
+  const prevId = currentIdx > 0 ? ids[currentIdx - 1] : null;
+  const nextId = currentIdx !== -1 && currentIdx < ids.length - 1 ? ids[currentIdx + 1] : null;
+
   const [document, setDocument] = useState(null);
   const [loading, setLoading] = useState(true);
   const [initialTags, setInitialTags] = useState({});
@@ -20,8 +65,7 @@ export default function DocumentDetail() {
         const data = await res.json();
         setDocument(data);
 
-        // Koristimo polja iz documents kao initialTags
-        const tagsFromDocument = {
+        setInitialTags({
           document_type: data.document_type,
           invoice_number: data.doc_number,
           date_invoice: data.invoice_date,
@@ -30,11 +74,9 @@ export default function DocumentDetail() {
           oib: data.supplier_oib,
           supplier_name_ocr: data.supplier_name_ocr,
           supplier_oib: data.supplier_oib,
-          partner_name: data.partner_name || "",  // ako postoji
-          vat_number: "", // ako postoji u parsed, možeš dodati
-        };
-        setInitialTags(tagsFromDocument);
-
+          partner_name: data.partner_name || "",
+          vat_number: "",
+        });
       } catch (e) {
         toast.error(e.message);
       } finally {
@@ -65,7 +107,6 @@ export default function DocumentDetail() {
         partner_name: tags.partner_name,
       };
 
-      // Spremi u annotations
       const res = await fetch(`/api/annotations/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -75,7 +116,6 @@ export default function DocumentDetail() {
 
       toast.success("Oznake su spremljene!");
 
-      // Update documents tablice s ručno izmijenjenim podacima iz annotacija
       const docUpdateRes = await fetch(`/api/documents/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -93,24 +133,63 @@ export default function DocumentDetail() {
     }
   }
 
-  if (loading || !document) {
+  if (loading) {
     return (
       <div className="container mt-2">
-        <div className="card p-2 text-center">
-          <span>{loading ? "Učitavanje dokumenta..." : "Dokument nije pronađen."}</span>
-        </div>
+        <div className="card p-2 text-center">Učitavanje dokumenta...</div>
       </div>
     );
   }
 
+  if (!document) {
+    return (
+      <div className="container mt-2">
+        <div className="card p-2 text-center">Dokument nije pronađen.</div>
+      </div>
+    );
+  }
+
+  const isManualUpload = document.import_source === "manual_upload";
+
+  if (isManualUpload && document.parsed && Object.keys(document.parsed).length > 0) {
+    return (
+      <div className="container mt-3 document-detail-page">
+        <StructuredParsedView parsed={document.parsed} />
+      </div>
+    );
+  }
+
+  // Inače klasični prikaz (pdf + ocr + anotacije)
   return (
     <div className="container mt-3 document-detail-page">
       <div className="d-flex justify-between align-center mb-3">
-        <h2 className="fw-bold">Dokument: <span className="fw-medium">{document.filename}</span></h2>
+        <h2 className="fw-bold">
+          Dokument: <span className="fw-medium">{document.filename}</span>
+        </h2>
         {document.document_type && (
           <span className={`badge ${document.document_type?.toLowerCase()}`}>{document.document_type}</span>
         )}
       </div>
+
+      {/* Navigacijske strelice */}
+      {ids.length > 0 && (
+        <div className="mb-3 d-flex gap-2">
+          <button
+            className="btn btn-outline-secondary"
+            disabled={prevId === null}
+            onClick={() => navigate(`/documents/${prevId}?ids=${idsStr}`)}
+          >
+            ← Prethodni
+          </button>
+          <button
+            className="btn btn-outline-secondary"
+            disabled={nextId === null}
+            onClick={() => navigate(`/documents/${nextId}?ids=${idsStr}`)}
+          >
+            Sljedeći →
+          </button>
+        </div>
+      )}
 
       <div className="ocr-annotator mb-4">
         <OcrTextTagger
@@ -130,9 +209,9 @@ export default function DocumentDetail() {
           <h5 className="fw-bold mb-2">RAW odgovor iz Sudskog registra</h5>
           <pre style={{ fontSize: "0.9rem" }}>
             {document.sudreg_response
-              ? (typeof document.sudreg_response === "object"
-                  ? JSON.stringify(document.sudreg_response, null, 2)
-                  : document.sudreg_response)
+              ? typeof document.sudreg_response === "object"
+                ? JSON.stringify(document.sudreg_response, null, 2)
+                : document.sudreg_response
               : "Nema dostupnih podataka iz Sudskog registra."}
           </pre>
         </div>

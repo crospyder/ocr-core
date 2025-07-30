@@ -25,6 +25,8 @@ export default function Sidebar() {
     { to: "/search", label: "Pretraga", icon: <FileText size={18} /> },
     { to: "/tools/manual-sudreg", label: "Sudreg ručno", icon: <Search size={18} /> },
     { to: "/mail_clients", label: "Mail klijenti", icon: <Mail size={18} /> },
+    // === NOVO ===
+    { to: "/uvoz-baza", label: "Uvoz baza", icon: <FilePlus size={18} /> },
   ];
 
   const euredSubItems = [

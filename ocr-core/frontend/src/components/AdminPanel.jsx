@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,} from "recharts";
+import ImportMapping from "./ImportMapping";
 import ClientInfoView from "./Deployment/ClientInfoView";
 import MailSettingsView from "./Deployment/MailSettingsView";
 import Settings from "./pages/Settings";  // Ispravljena putanja na "pages"
@@ -123,6 +124,44 @@ function MlMetrics({ metrics }) {
   );
 }
 
+// NOVO: Prikaz grafičke povijesti metrika modela
+function MetricsHistoryChart({ history }) {
+  if (!history?.length) return null;
+
+  // Pretvori datume/UID u X-os (možeš po potrebi koristiti i .date ili .timestamp)
+  const data = history.map((m, i) => ({
+    ...m,
+    index: i + 1,
+    accuracy: m.accuracy ?? null,
+    loss: m.loss ?? null,
+    training_time_seconds: m.training_time_seconds ?? null,
+    label: m.timestamp || m.date || `Batch #${i + 1}`,
+  }));
+
+  return (
+    <div className="card card-compact mt-3 p-3" style={{ backgroundColor: "#2b3245", color: "white", borderRadius: 8 }}>
+      <h4>Napredak modela kroz vrijeme</h4>
+      <ResponsiveContainer width="100%" height={260}>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="label"
+            minTickGap={20}
+            style={{ fontSize: 12 }}
+            tickFormatter={str => str.length > 10 ? str.slice(0, 10) + "..." : str}
+          />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey="accuracy" stroke="#6cf" strokeWidth={2} dot={{ r: 2 }} name="Accuracy" />
+          <Line type="monotone" dataKey="loss" stroke="#fa7" strokeWidth={2} dot={{ r: 2 }} name="Loss" />
+          <Line type="monotone" dataKey="training_time_seconds" stroke="#1af794" strokeWidth={2} dot={{ r: 2 }} name="Vrijeme treniranja (s)" />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 function RegexEditor() {
   const [regexContent, setRegexContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -195,6 +234,7 @@ const TABS = [
   { key: "db", label: "Baza podataka" },
   { key: "regex", label: "Regex Editor" },
   { key: "settings", label: "Postavke poslužitelja" }, // dodat tab
+  { key: "import-mapping", label: "Mapiranje softvera" },
 ];
 
 export default function AdminPanel() {
@@ -208,6 +248,7 @@ export default function AdminPanel() {
   const [trainingMode, setTrainingMode] = useState(false);
   const [trainingModeLoading, setTrainingModeLoading] = useState(false);
   const [metrics, setMetrics] = useState(null);
+  const [metricsHistory, setMetricsHistory] = useState([]);
 
   useEffect(() => {
     axios.get("/api/settings/training-mode")
@@ -218,6 +259,7 @@ export default function AdminPanel() {
   useEffect(() => {
     if (activeTab === "ai") {
       fetchMetrics();
+      fetchMetricsHistory();
     }
   }, [activeTab]);
 
@@ -231,6 +273,19 @@ export default function AdminPanel() {
     } catch (e) {
       console.error("Fetch metrics error:", e);
       setMetrics(null);
+    }
+  }
+
+  async function fetchMetricsHistory() {
+    try {
+      const modelServerUrl = `http://${settings.model_server_ip || "10.0.1.6"}:${settings.model_server_port || "9000"}`;
+      const res = await fetch(`${modelServerUrl}/api/ml/metrics/history`);
+      if (!res.ok) throw new Error("Nema povijesti metrika");
+      const data = await res.json();
+      setMetricsHistory(data);
+    } catch (e) {
+      console.error("Fetch metrics history error:", e);
+      setMetricsHistory([]);
     }
   }
 
@@ -256,6 +311,7 @@ export default function AdminPanel() {
       const data = await res.json();
       setTrainMsg(data.message || "Treniranje pokrenuto!");
       await fetchMetrics();
+      await fetchMetricsHistory();
     } catch (err) {
       setTrainMsg("Greška pri treniranju: " + err.message);
     } finally {
@@ -287,6 +343,7 @@ export default function AdminPanel() {
               )}
               <TrainingLogWidget wsUrl={wsUrl} />
               <MlMetrics metrics={metrics} />
+              <MetricsHistoryChart history={metricsHistory} />
             </div>
           </div>
         );
@@ -302,6 +359,9 @@ export default function AdminPanel() {
         return <Settings />;
       default:
         return null;
+        case "import-mapping":
+        return <ImportMapping />;
+
     }
   }
 

@@ -1,0 +1,17 @@
+{
+  "PARTNERS": {
+    "OIB": "oib",
+    "oib": "PARTNER_VATNUMBER",
+    "naziv": "PARTNER_NAME",
+    "adresa": "PARTNER_STREET",
+    "mjesto": "CITY_NAME",
+    "kontakt": "PARTNER_EMAIL"
+  },
+  "INVOICES": {
+    "kupac_naziv": "CUSTOMER_NAME",
+    "partner_oib": "PARTNER_VATNUMBER",
+    "iznos": "VAT_NETINVOICE",
+    "broj_racuna": "IRABROJ",
+    "datum_racuna": "INVOICE_DATE"
+  }
+}

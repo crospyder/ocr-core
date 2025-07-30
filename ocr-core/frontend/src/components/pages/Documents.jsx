@@ -24,21 +24,20 @@ export default function Documents() {
   const [itemsPerPage, setItemsPerPage] = useState(parseInt(query.get("page_size") || "50", 10));
   const [sortConfig, setSortConfig] = useState({
     key: query.get("sort_key") || "date",
-    direction: query.get("sort_dir") || "desc"
+    direction: query.get("sort_dir") || "desc",
   });
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [batchType, setBatchType] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams();
 
     if (documentType) {
-      // Merge URA and IRA into FAKTURA filter on frontend
       if (documentType === "FAKTURA") {
         params.set("document_type", "FAKTURA");
       } else if (documentType === "URA" || documentType === "IRA") {
-        // Ignore separate URA and IRA, treat as FAKTURA for filtering consistency
         params.set("document_type", "FAKTURA");
       } else {
         params.set("document_type", documentType);
@@ -55,17 +54,30 @@ export default function Documents() {
 
     navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
   }, [
-    documentType, supplierOib, selectedSupplier, selectedYear,
-    currentPage, itemsPerPage, sortConfig, showDeleted,
-    navigate, location.pathname
+    documentType,
+    supplierOib,
+    selectedSupplier,
+    selectedYear,
+    currentPage,
+    itemsPerPage,
+    sortConfig,
+    showDeleted,
+    navigate,
+    location.pathname,
   ]);
 
   useEffect(() => {
     fetchDocuments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    documentType, supplierOib, selectedSupplier, selectedYear,
-    currentPage, itemsPerPage, sortConfig, showDeleted
+    documentType,
+    supplierOib,
+    selectedSupplier,
+    selectedYear,
+    currentPage,
+    itemsPerPage,
+    sortConfig,
+    showDeleted,
   ]);
 
   async function fetchDocuments() {
@@ -73,7 +85,6 @@ export default function Documents() {
     try {
       const queryParts = [];
       if (documentType) {
-        // Again map URA and IRA as FAKTURA on request side
         if (documentType === "FAKTURA") {
           queryParts.push(`document_type=FAKTURA`);
         } else if (documentType === "URA" || documentType === "IRA") {
@@ -98,7 +109,7 @@ export default function Documents() {
       setDocuments(Array.isArray(data.items) ? data.items : []);
       setTotalCount(data.total || 0);
       setError(null);
-      setSelectedIds([]); // resetiraj selekciju kod svakog fetcha
+      setSelectedIds([]);
     } catch (err) {
       toast.error(`❌ ${err.message}`);
       setDocuments([]);
@@ -112,7 +123,8 @@ export default function Documents() {
   }
 
   async function handleClearAll() {
-    if (!window.confirm("Jesi li siguran da želiš obrisati SVE dokumente, anotacije, partnere, PDF-ove i Elasticsearch indeks?")) return;
+    if (!window.confirm("Jesi li siguran da želiš obrisati SVE dokumente, anotacije, partnere, PDF-ove i Elasticsearch indeks?"))
+      return;
     setLoading(true);
     try {
       const res = await fetch("/api/documents/clear-all", { method: "DELETE" });
@@ -137,13 +149,41 @@ export default function Documents() {
     setLoading(true);
     try {
       const res = await fetch("/api/documents/batch_delete", {
-        method: "POST", // POST jer backend endpoint koristi POST!
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: selectedIds }),
       });
       if (!res.ok) throw new Error("Brisanje nije uspjelo!");
       toast.success("Dokumenti obrisani.");
       setSelectedIds([]);
+      fetchDocuments();
+    } catch (e) {
+      toast.error(e.message || "Greška!");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleBatchUpdateType() {
+    if (!batchType) {
+      toast.warn("Odaberi novu vrstu dokumenta.");
+      return;
+    }
+    if (!selectedIds.length) {
+      toast.warn("Nema označenih dokumenata.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/documents/batch_update_type", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds, document_type: batchType }),
+      });
+      if (!res.ok) throw new Error("Greška pri promjeni vrste.");
+      toast.success("Vrsta dokumenata ažurirana.");
+      setSelectedIds([]);
+      setBatchType("");
       fetchDocuments();
     } catch (e) {
       toast.error(e.message || "Greška!");
@@ -159,21 +199,24 @@ export default function Documents() {
   }
 
   const suppliers = useMemo(() => {
-    const setSuppliers = new Set(documents.map(d => d.supplier_name_ocr).filter(Boolean));
+    const setSuppliers = new Set(documents.map((d) => d.supplier_name_ocr).filter(Boolean));
     return Array.from(setSuppliers).sort();
   }, [documents]);
 
   const years = useMemo(() => {
-    const setYears = new Set(documents.map(d => {
-      if (d.invoice_date) return new Date(d.invoice_date).getFullYear();
-      return null;
-    }).filter(Boolean));
+    const setYears = new Set(
+      documents
+        .map((d) => {
+          if (d.invoice_date) return new Date(d.invoice_date).getFullYear();
+          return null;
+        })
+        .filter(Boolean)
+    );
     return Array.from(setYears).sort((a, b) => b - a);
   }, [documents]);
 
   const filteredDocuments = useMemo(() => {
-    // On frontend, show documents normally, as backend returns merged FAKTURA for URA and IRA
-    return documents.filter(doc => {
+    return documents.filter((doc) => {
       return (
         (!documentType || doc.document_type === documentType) &&
         (!selectedSupplier || doc.supplier_name_ocr === selectedSupplier) &&
@@ -277,7 +320,7 @@ export default function Documents() {
             </select>
           </div>
           <div className="filter-group d-flex flex-column">
-            <label htmlFor="selectedSupplier" className="filter-label">Dobavljač</label>
+            <label htmlFor="selectedSupplier" className="filter-label">Partneri</label>
             <select
               id="selectedSupplier"
               className="form-select"
@@ -286,7 +329,7 @@ export default function Documents() {
                 setSelectedSupplier(e.target.value);
                 setCurrentPage(1);
               }}
-              aria-label="Dobavljač"
+              aria-label="Partneri"
             >
               <option value="">Svi</option>
               {suppliers.map((s) => (
@@ -336,7 +379,7 @@ export default function Documents() {
               type="checkbox"
               id="showDeleted"
               checked={showDeleted}
-              onChange={e => setShowDeleted(e.target.checked)}
+              onChange={(e) => setShowDeleted(e.target.checked)}
               style={{ marginRight: "6px" }}
             />
             <label htmlFor="showDeleted" className="filter-label" style={{ marginBottom: 0 }}>
@@ -348,13 +391,36 @@ export default function Documents() {
       </div>
 
       {selectedIds.length > 0 && (
-        <div className="mb-2">
+        <div className="mb-2 d-flex align-items-center gap-3">
           <button
-            className="btn btn-danger me-2"
+            className="btn btn-danger"
             onClick={handleBatchDelete}
             disabled={loading}
           >
             Obriši označene ({selectedIds.length})
+          </button>
+          <select
+            className="form-select"
+            value={batchType}
+            onChange={(e) => setBatchType(e.target.value)}
+            style={{ maxWidth: 200 }}
+          >
+            <option value="">-- Promijeni vrstu u --</option>
+            <option value="FAKTURA">FAKTURA</option>
+            <option value="UGOVOR">UGOVOR</option>
+            <option value="IZVOD">IZVOD</option>
+            <option value="CESIJA">CESIJA</option>
+            <option value="IOS">IOS</option>
+            <option value="KONTO_KARTICA">KONTO_KARTICA</option>
+            <option value="IRA">IRA</option>
+            <option value="OSTALO">OSTALO</option>
+          </select>
+          <button
+            className="btn btn-secondary"
+            onClick={handleBatchUpdateType}
+            disabled={loading || !batchType}
+          >
+            Promijeni vrstu ({selectedIds.length})
           </button>
           <span>Označeno: {selectedIds.length} / {sortedDocuments.length} na ovoj stranici</span>
         </div>
@@ -376,53 +442,96 @@ export default function Documents() {
                     <input
                       type="checkbox"
                       checked={selectedIds.length > 0 && selectedIds.length === sortedDocuments.length}
-                      onChange={e => {
+                      onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedIds(sortedDocuments.map(doc => doc.id));
+                          setSelectedIds(sortedDocuments.map((doc) => doc.id));
                         } else {
                           setSelectedIds([]);
                         }
                       }}
                     />
                   </th>
-                  <th onClick={() => requestSort("id")} className="sortable">#</th>
-                  <th onClick={() => requestSort("filename")} className="sortable">Naziv</th>
-                  <th onClick={() => requestSort("document_type")} className="sortable">Vrsta dokumenta</th>
-                  <th onClick={() => requestSort("date")} className="sortable">Arhivirano</th>
-                  <th onClick={() => requestSort("supplier_name_ocr")} className="sortable">Dobavljač</th>
-                  <th onClick={() => requestSort("supplier_oib")} className="sortable">OIB</th>
-                  <th onClick={() => requestSort("doc_number")} className="sortable">Broj računa</th>
-                  <th onClick={() => requestSort("invoice_date")} className="sortable">Datum računa</th>
-                  <th onClick={() => requestSort("due_date")} className="sortable">Datum valute</th>
-                  <th onClick={() => requestSort("amount")} className="sortable">Iznos</th>
+                  <th onClick={() => requestSort("id")} className="sortable">
+                    #
+                  </th>
+                  <th onClick={() => requestSort("filename")} className="sortable">
+                    Naziv
+                  </th>
+                  <th onClick={() => requestSort("document_type")} className="sortable">
+                    Vrsta dokumenta
+                  </th>
+                  <th onClick={() => requestSort("date")} className="sortable">
+                    Arhivirano
+                  </th>
+                  <th onClick={() => requestSort("supplier_name_ocr")} className="sortable">
+                    Partneri
+                  </th>
+                  <th onClick={() => requestSort("supplier_oib")} className="sortable">
+                    OIB
+                  </th>
+                  <th onClick={() => requestSort("doc_number")} className="sortable">
+                    Broj dokumenta
+                  </th>
+                  <th onClick={() => requestSort("invoice_date")} className="sortable">
+                    Datum dokumenta
+                  </th>
+                  <th onClick={() => requestSort("due_date")} className="sortable">
+                    Datum valute (ako ima)
+                  </th>
+                  <th onClick={() => requestSort("amount")} className="sortable">
+                    Iznos
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {sortedDocuments.map((doc) => (
                   <tr
                     key={doc.id}
-                    style={doc.document_type === "OBRISANI DOKUMENT"
-                      ? { background: "#fbeaea", color: "#b30000" }
-                      : {}}
+                    style={
+                      doc.document_type === "OBRISANI DOKUMENT"
+                        ? { background: "#fbeaea", color: "#b30000" }
+                        : {}
+                    }
                   >
                     <td>
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(doc.id)}
-                        onChange={e => {
+                        onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedIds([...selectedIds, doc.id]);
                           } else {
-                            setSelectedIds(selectedIds.filter(id => id !== doc.id));
+                            setSelectedIds(selectedIds.filter((id) => id !== doc.id));
                           }
                         }}
                       />
                     </td>
                     <td>{doc.id}</td>
                     <td>
-                      <a href={`/documents/${doc.id}`} className="fw-bold">
-                        {doc.filename}
-                      </a>
+                      {doc.document_type === "synesis-uvoz" ? (
+                        <a
+                          href={`/documents/${doc.id}?ids=${sortedDocuments.map((d) => d.id).join(",")}`}
+                          className="fw-bold"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(`/documents/${doc.id}?ids=${sortedDocuments.map((d) => d.id).join(",")}`);
+                          }}
+                          style={{ color: "#b18a00", fontWeight: 600 }}
+                        >
+                          Synesis uvoz
+                        </a>
+                      ) : (
+                        <a
+                          href={`/documents/${doc.id}?ids=${sortedDocuments.map((d) => d.id).join(",")}`}
+                          className="fw-bold"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(`/documents/${doc.id}?ids=${sortedDocuments.map((d) => d.id).join(",")}`);
+                          }}
+                        >
+                          {doc.filename}
+                        </a>
+                      )}
                     </td>
                     <td>{renderDocTag(doc.document_type)}</td>
                     <td>{doc.date ? new Date(doc.date).toLocaleString("hr-HR") : "-"}</td>
@@ -430,7 +539,7 @@ export default function Documents() {
                       {doc.supplier_oib ? (
                         <a
                           href={`/documents/partner/${doc.supplier_oib}`}
-                          onClick={e => {
+                          onClick={(e) => {
                             e.preventDefault();
                             navigate(`/documents/partner/${doc.supplier_oib}`);
                           }}

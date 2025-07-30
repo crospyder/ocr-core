@@ -1,0 +1,18 @@
+{
+  "INVOICES": {
+    "kupac_naziv": "CUSTOMER_NAME",
+    "partner_oib": "CUSTOMER_VATNUMBER",
+    "broj_racuna": "FIS_RNOZNAKA",
+    "datum_racuna": "INVOICE_DATE",
+    "iznos": "REST_AMMOUNT"
+  },
+  "PARTNERS": {
+    "naziv": "PARTNER_NAME",
+    "oib": "PARTNER_VATNUMBER",
+    "adresa": "PARTNER_STREET",
+    "mjesto": "CITY_NAME",
+    "kontakt": "PARTNER_EMAIL",
+    "OIB": "PARTNER_VATNUMBER",
+    "VAT_ID": "PARTNER_VATNUMBER"
+  }
+}

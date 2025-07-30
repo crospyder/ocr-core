@@ -1,9 +1,8 @@
-// frontend/components/OcrTextTagger.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Info } from "lucide-react";
 import { toast } from "react-toastify";
 
-// Nov, usklađen skup tipova dokumenata
+// Tipovi dokumenata
 const DOCUMENT_TYPES = [
   { key: "FAKTURA", label: "Faktura" },
   { key: "IRA", label: "Izlazni račun (IRA)" },
@@ -16,6 +15,7 @@ const DOCUMENT_TYPES = [
   { key: "NEPOZNATO", label: "Nepoznato" },
 ];
 
+// Aktivni tagovi — maknut partner_name, koristi samo supplier_name_ocr
 const TAG_TYPES = [
   { key: "oib", label: "OIB (HR)" },
   { key: "vat_number", label: "VAT broj (EU/Strani dobavljač)" },
@@ -23,29 +23,33 @@ const TAG_TYPES = [
   { key: "date_invoice", label: "Datum računa" },
   { key: "due_date", label: "Datum valute" },
   { key: "amount", label: "Iznos" },
-  { key: "supplier_name", label: "Naziv dobavljača" },
-  { key: "partner_name", label: "Naziv partnera" },
+  { key: "supplier_name_ocr", label: "Naziv partnera/dobavljača" },
 ];
 
+// Polja po tipu dokumenta (partner_name izbačen)
 const fieldsForType = {
-  FAKTURA: ["supplier_name", "amount", "date_invoice", "due_date", "invoice_number", "oib", "vat_number"],
-  IRA: ["partner_name", "amount", "date_invoice", "due_date", "invoice_number", "oib", "vat_number"],
+  FAKTURA: ["supplier_name_ocr", "amount", "date_invoice", "due_date", "invoice_number", "oib", "vat_number"],
+  IRA: ["supplier_name_ocr", "amount", "date_invoice", "due_date", "invoice_number", "oib", "vat_number"],
   IZVOD: ["amount", "date_invoice", "due_date", "oib", "vat_number"],
-  UGOVOR: ["partner_name", "date_invoice", "due_date", "oib", "vat_number"],
-  CESIJA: ["partner_name", "date_invoice", "due_date"],
-  IOS: ["partner_name", "date_invoice", "due_date"],
-  KONTO_KARTICA: ["partner_name", "date_invoice", "due_date"],
+  UGOVOR: ["supplier_name_ocr", "date_invoice", "due_date", "oib", "vat_number"],
+  CESIJA: ["supplier_name_ocr", "date_invoice", "due_date"],
+  IOS: ["supplier_name_ocr", "date_invoice", "due_date"],
+  KONTO_KARTICA: ["supplier_name_ocr", "date_invoice", "due_date"],
   OSTALO: ["oib", "vat_number"],
   NEPOZNATO: [],
 };
 
 export default function OcrTextTagger({ text, initialTags = {}, onSave, loading }) {
-  // initialTags bi trebali biti podaci iz tablice documents (ne annotations)
-  const [tags, setTags] = useState(initialTags);
+  // Filtriraj initialTags (makni partner_name ako dođe legacy)
+  const cleanInit = { ...initialTags };
+  delete cleanInit.partner_name;
+  const [tags, setTags] = useState(cleanInit);
   const textRef = useRef(null);
 
   useEffect(() => {
-    setTags(initialTags || {});
+    const t = { ...(initialTags || {}) };
+    delete t.partner_name;
+    setTags(t);
   }, [initialTags]);
 
   const documentType = tags.document_type || "OSTALO";
@@ -168,7 +172,11 @@ export default function OcrTextTagger({ text, initialTags = {}, onSave, loading 
                   style={{ width: 200, padding: 6, border: "1px solid #ccc", borderRadius: 4 }}
                   value={tags[key] || ""}
                   onChange={e => handleInputChange(key, e.target.value)}
-                  placeholder={key === "supplier_name" ? "Strani dobavljač" : `Upiši ili označi ${label.toLowerCase()}`}
+                  placeholder={
+                    key === "supplier_name_ocr"
+                      ? "Naziv partnera/dobavljača (iz baze ili ručno)"
+                      : `Upiši ili označi ${label.toLowerCase()}`
+                  }
                   disabled={loading}
                 />
                 <button
